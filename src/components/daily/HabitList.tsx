@@ -1,10 +1,21 @@
 import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { GoalType } from '@/types';
+import { GoalType, Habit } from '@/types';
+import { HabitDetailModal } from './HabitDetailModal';
+
+const WEEK_DAYS = [
+  { value: 0, label: 'Dom' },
+  { value: 1, label: 'Seg' },
+  { value: 2, label: 'Ter' },
+  { value: 3, label: 'Qua' },
+  { value: 4, label: 'Qui' },
+  { value: 5, label: 'Sex' },
+  { value: 6, label: 'Sáb' },
+];
 
 const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: string; delay?: number }) => {
   const circumference = 2 * Math.PI * 24;
@@ -97,6 +108,9 @@ export const HabitList = () => {
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [newGoalName, setNewGoalName] = useState('');
   const [createdGoalIds, setCreatedGoalIds] = useState<Record<GoalType, string>>({} as Record<GoalType, string>);
+  const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [isOneTimeHabit, setIsOneTimeHabit] = useState(false);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   
   const [viewDate, setViewDate] = useState(new Date());
   const viewDateStr = viewDate.toISOString().split('T')[0];
@@ -143,6 +157,15 @@ export const HabitList = () => {
     return viewDate.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
+  const toggleWeekDay = (day: number) => {
+    if (isOneTimeHabit) return;
+    setSelectedWeekDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    );
+  };
+
   const handleAddHabit = () => {
     if (!newHabitName.trim()) {
       toast({
@@ -158,10 +181,14 @@ export const HabitList = () => {
       emoji: newHabitEmoji || undefined,
       xpReward: 20,
       goalId: selectedGoalId || undefined,
+      weekDays: isOneTimeHabit ? undefined : selectedWeekDays,
+      isOneTime: isOneTimeHabit,
     });
     setNewHabitName('');
     setNewHabitEmoji('');
     setSelectedGoalId(null);
+    setSelectedWeekDays([1, 2, 3, 4, 5]);
+    setIsOneTimeHabit(false);
     setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
@@ -238,17 +265,6 @@ export const HabitList = () => {
     return labels[step];
   };
 
-  const toggleHabitNotification = (habitId: string, enabled: boolean, time?: string) => {
-    updateHabit(habitId, { 
-      notificationEnabled: enabled, 
-      notificationTime: time || '09:00' 
-    });
-    toast({
-      title: enabled ? 'Notificação ativada' : 'Notificação desativada',
-      description: enabled ? `Você será lembrado às ${time || '09:00'}` : 'Lembrete removido',
-    });
-  };
-
   const isCircular = settings.progressDisplayMode === 'circular';
 
   return (
@@ -316,7 +332,6 @@ export const HabitList = () => {
                       />
                     </div>
                     
-                    {/* Goal selection */}
                     <div className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-muted-foreground" />
                       <select
@@ -337,6 +352,44 @@ export const HabitList = () => {
                       >
                         Criar objetivo
                       </button>
+                    </div>
+
+                    {/* Day Selection */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Repetição</span>
+                      </div>
+                      
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isOneTimeHabit}
+                          onChange={(e) => setIsOneTimeHabit(e.target.checked)}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                        />
+                        <span className="text-sm text-foreground">Evento único</span>
+                      </label>
+                      
+                      {!isOneTimeHabit && (
+                        <div className="flex gap-1">
+                          {WEEK_DAYS.map((day) => (
+                            <button
+                              key={day.value}
+                              type="button"
+                              onClick={() => toggleWeekDay(day.value)}
+                              className={cn(
+                                'flex-1 py-1.5 px-1 rounded-lg text-xs font-medium transition-all',
+                                selectedWeekDays.includes(day.value)
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                              )}
+                            >
+                              {day.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -415,12 +468,16 @@ export const HabitList = () => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    'flex items-center gap-3 p-3 rounded-xl transition-all group',
+                    'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
                     isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
                   )}
+                  onClick={() => setSelectedHabit(habit)}
                 >
                   <button
-                    onClick={() => toggleHabitCheck(habit.id, viewDateStr)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleHabitCheck(habit.id, viewDateStr);
+                    }}
                     className={cn(
                       'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
                       isCompleted 
@@ -448,40 +505,23 @@ export const HabitList = () => {
                         🎯 {linkedGoal.name}
                       </span>
                     )}
+                    {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
+                      <span className="text-xs text-muted-foreground/70">
+                        {habit.weekDays.map(d => WEEK_DAYS[d]?.label).join(', ')}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Notification toggle */}
-                    <button
-                      onClick={() => toggleHabitNotification(
-                        habit.id, 
-                        !habit.notificationEnabled,
-                        habit.notificationTime
-                      )}
-                      className={cn(
-                        'p-1.5 rounded-lg transition-colors',
-                        habit.notificationEnabled 
-                          ? 'text-primary bg-primary/10' 
-                          : 'text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-muted/30'
-                      )}
-                      title={habit.notificationEnabled ? `Lembrete às ${habit.notificationTime}` : 'Ativar lembrete'}
-                    >
-                      <Bell className="w-4 h-4" />
-                    </button>
-
                     {habit.notificationEnabled && (
-                      <input
-                        type="time"
-                        value={habit.notificationTime || '09:00'}
-                        onChange={(e) => updateHabit(habit.id, { notificationTime: e.target.value })}
-                        className="text-xs bg-transparent text-muted-foreground w-16"
-                      />
+                      <Bell className="w-3.5 h-3.5 text-primary" />
                     )}
-
                     <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
-
                     <button
-                      onClick={() => removeHabit(habit.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeHabit(habit.id);
+                      }}
                       className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
                     >
                       <X className="w-4 h-4" />
@@ -518,6 +558,15 @@ export const HabitList = () => {
           )}
         </div>
       </div>
+
+      {/* Habit Detail Modal */}
+      {selectedHabit && (
+        <HabitDetailModal
+          habit={selectedHabit}
+          isOpen={!!selectedHabit}
+          onClose={() => setSelectedHabit(null)}
+        />
+      )}
     </motion.div>
   );
 };

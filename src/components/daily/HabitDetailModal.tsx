@@ -1,0 +1,422 @@
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Target, Bell, Calendar, TrendingUp, Link } from 'lucide-react';
+import { useAppStore } from '@/store/useAppStore';
+import { cn } from '@/lib/utils';
+import { Habit, GoalType } from '@/types';
+import { toast } from '@/hooks/use-toast';
+
+interface HabitDetailModalProps {
+  habit: Habit;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const WEEK_DAYS = [
+  { value: 0, label: 'Dom', fullLabel: 'Domingo' },
+  { value: 1, label: 'Seg', fullLabel: 'Segunda' },
+  { value: 2, label: 'Ter', fullLabel: 'Terça' },
+  { value: 3, label: 'Qua', fullLabel: 'Quarta' },
+  { value: 4, label: 'Qui', fullLabel: 'Quinta' },
+  { value: 5, label: 'Sex', fullLabel: 'Sexta' },
+  { value: 6, label: 'Sáb', fullLabel: 'Sábado' },
+];
+
+export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalProps) => {
+  const { 
+    goals, 
+    habitChecks, 
+    updateHabit, 
+    addGoal,
+    settings 
+  } = useAppStore();
+
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(habit.goalId || null);
+  const [showGoalCreation, setShowGoalCreation] = useState(false);
+  const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
+  const [newGoalName, setNewGoalName] = useState('');
+  const [createdGoalIds, setCreatedGoalIds] = useState<Record<GoalType, string>>({} as Record<GoalType, string>);
+  const [weekDays, setWeekDays] = useState<number[]>(habit.weekDays || [1, 2, 3, 4, 5]);
+  const [isOneTime, setIsOneTime] = useState(habit.isOneTime || false);
+  const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
+  const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
+
+  // Calculate habit progress history
+  const progressHistory = useMemo(() => {
+    const last30Days: { date: string; completed: boolean }[] = [];
+    const today = new Date();
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
+      last30Days.push({ date: dateStr, completed: check?.completed || false });
+    }
+    
+    return last30Days;
+  }, [habit.id, habitChecks]);
+
+  const completionRate = useMemo(() => {
+    const completedCount = progressHistory.filter(d => d.completed).length;
+    return Math.round((completedCount / 30) * 100);
+  }, [progressHistory]);
+
+  // Get linked goals hierarchy
+  const linkedGoals = useMemo(() => {
+    if (!habit.goalId) return [];
+    
+    const result: { goal: typeof goals[0]; type: GoalType }[] = [];
+    let currentGoal = goals.find(g => g.id === habit.goalId);
+    
+    while (currentGoal) {
+      result.push({ goal: currentGoal, type: currentGoal.type });
+      currentGoal = currentGoal.parentGoalId 
+        ? goals.find(g => g.id === currentGoal!.parentGoalId) 
+        : undefined;
+    }
+    
+    return result;
+  }, [habit.goalId, goals]);
+
+  const toggleWeekDay = (day: number) => {
+    if (isOneTime) return;
+    setWeekDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day)
+        : [...prev, day].sort()
+    );
+  };
+
+  const handleSave = () => {
+    updateHabit(habit.id, {
+      goalId: selectedGoalId || undefined,
+      weekDays: isOneTime ? undefined : weekDays,
+      isOneTime,
+      notificationEnabled,
+      notificationTime,
+    });
+    toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
+    onClose();
+  };
+
+  const getStepLabel = (step: GoalType) => {
+    const labels: Record<GoalType, string> = {
+      yearly: 'Anual',
+      quarterly: 'Trimestral',
+      monthly: 'Mensal',
+      weekly: 'Semanal',
+    };
+    return labels[step];
+  };
+
+  const getNextStep = (current: GoalType): GoalType | null => {
+    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const idx = sequence.indexOf(current);
+    return idx < sequence.length - 1 ? sequence[idx + 1] : null;
+  };
+
+  const getParentType = (current: GoalType): GoalType => {
+    const map: Record<GoalType, GoalType> = {
+      weekly: 'monthly',
+      monthly: 'quarterly',
+      quarterly: 'yearly',
+      yearly: 'yearly',
+    };
+    return map[current];
+  };
+
+  const handleCreateGoalSequence = () => {
+    if (!newGoalName.trim()) {
+      toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
+      return;
+    }
+
+    const year = new Date().getFullYear();
+    const quarter = Math.ceil((new Date().getMonth() + 1) / 3);
+    const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const week = Math.ceil((new Date().getDate() + new Date(year, new Date().getMonth(), 1).getDay()) / 7);
+
+    const periods: Record<GoalType, string> = {
+      yearly: year.toString(),
+      quarterly: `${quarter}º Tri - ${year}`,
+      monthly: month,
+      weekly: `Semana ${week} - ${new Date().toLocaleDateString('pt-BR', { month: 'long' })}`,
+    };
+
+    const newGoal = addGoal({
+      name: newGoalName.trim(),
+      emoji: habit.emoji || undefined,
+      type: goalCreationStep,
+      period: periods[goalCreationStep],
+      progress: 0,
+      parentGoalId: createdGoalIds[getParentType(goalCreationStep)] || undefined,
+    });
+
+    setCreatedGoalIds(prev => ({ ...prev, [goalCreationStep]: newGoal.id }));
+
+    const nextStep = getNextStep(goalCreationStep);
+    if (nextStep) {
+      setGoalCreationStep(nextStep);
+      setNewGoalName('');
+    } else {
+      setSelectedGoalId(newGoal.id);
+      setShowGoalCreation(false);
+      setGoalCreationStep('yearly');
+      setNewGoalName('');
+      setCreatedGoalIds({} as Record<GoalType, string>);
+      toast({ title: 'Objetivos criados!', description: 'Hábito vinculado com sucesso.' });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl max-h-[85vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              {settings.showEmojis && habit.emoji && (
+                <span className="text-2xl">{habit.emoji}</span>
+              )}
+              <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-muted/50 transition-colors"
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="p-4 space-y-6">
+            {/* Progress History */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Histórico de Progresso</h3>
+                <span className="ml-auto text-sm text-primary font-semibold">{completionRate}%</span>
+              </div>
+              
+              <div className="grid grid-cols-10 gap-1">
+                {progressHistory.map((day, i) => (
+                  <div
+                    key={day.date}
+                    className={cn(
+                      'w-full aspect-square rounded-sm transition-colors',
+                      day.completed 
+                        ? 'bg-primary' 
+                        : 'bg-muted/30'
+                    )}
+                    title={`${new Date(day.date).toLocaleDateString('pt-BR')} - ${day.completed ? 'Concluído' : 'Não concluído'}`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Últimos 30 dias</p>
+            </div>
+
+            {/* Linked Goals Progress */}
+            {linkedGoals.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Progresso dos Objetivos</h3>
+                </div>
+                
+                <div className="space-y-3">
+                  {linkedGoals.map(({ goal, type }) => (
+                    <div key={goal.id} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-20">{getStepLabel(type)}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-foreground">{goal.name}</span>
+                          <span className="text-xs font-semibold text-primary">{goal.progress}%</span>
+                        </div>
+                        <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-primary rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${goal.progress}%` }}
+                            transition={{ duration: 0.5 }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Goal Linking Section */}
+            {!showGoalCreation ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Link className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Vincular a Objetivo</h3>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedGoalId || ''}
+                    onChange={(e) => setSelectedGoalId(e.target.value || null)}
+                    className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  >
+                    <option value="">Sem vínculo</option>
+                    {goals.map((goal) => (
+                      <option key={goal.id} value={goal.id}>
+                        {goal.emoji && `${goal.emoji} `}{goal.name} ({getStepLabel(goal.type)})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowGoalCreation(true)}
+                    className="px-3 py-2 bg-secondary/20 text-secondary-foreground rounded-xl text-sm font-medium hover:bg-secondary/30 transition-colors whitespace-nowrap"
+                  >
+                    Criar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-foreground">Criar objetivo - {getStepLabel(goalCreationStep)}</h4>
+                  <button
+                    onClick={() => {
+                      setShowGoalCreation(false);
+                      setGoalCreationStep('yearly');
+                      setNewGoalName('');
+                      setCreatedGoalIds({} as Record<GoalType, string>);
+                    }}
+                    className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="flex gap-1 mb-2">
+                  {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
+                    <div
+                      key={step}
+                      className={cn(
+                        'flex-1 h-1 rounded-full transition-colors',
+                        i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
+                          ? 'bg-primary'
+                          : 'bg-muted'
+                      )}
+                    />
+                  ))}
+                </div>
+
+                <input
+                  type="text"
+                  placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
+                  value={newGoalName}
+                  onChange={(e) => setNewGoalName(e.target.value)}
+                  className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                
+                <button
+                  onClick={handleCreateGoalSequence}
+                  className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                >
+                  {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
+                </button>
+              </div>
+            )}
+
+            {/* Day Selection */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Repetição</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isOneTime}
+                    onChange={(e) => setIsOneTime(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">Evento único (sem repetição)</span>
+                </label>
+                
+                {!isOneTime && (
+                  <div className="flex gap-1">
+                    {WEEK_DAYS.map((day) => (
+                      <button
+                        key={day.value}
+                        onClick={() => toggleWeekDay(day.value)}
+                        className={cn(
+                          'flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all',
+                          weekDays.includes(day.value)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                        title={day.fullLabel}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Notifications */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Bell className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">Notificação</h3>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-3 cursor-pointer flex-1">
+                  <input
+                    type="checkbox"
+                    checked={notificationEnabled}
+                    onChange={(e) => setNotificationEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">Ativar lembrete</span>
+                </label>
+                
+                {notificationEnabled && (
+                  <input
+                    type="time"
+                    value={notificationTime}
+                    onChange={(e) => setNotificationTime(e.target.value)}
+                    className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <button
+              onClick={handleSave}
+              className="w-full px-4 py-3 gradient-primary text-primary-foreground rounded-xl font-medium"
+            >
+              Salvar Alterações
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
