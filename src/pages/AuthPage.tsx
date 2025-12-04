@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
-import { DracoIcon } from '@/components/icons/DracoIcon';
+import dracoLogo from '@/assets/draco-logo.jpeg';
 
 type AuthView = 'login' | 'signup' | 'forgot';
 
@@ -11,7 +11,7 @@ export const AuthPage = () => {
   const [view, setView] = useState<AuthView>('login');
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+    <div data-theme="ocean" className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
@@ -26,9 +26,13 @@ export const AuthPage = () => {
         {/* Logo & Title */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 mx-auto mb-4 animate-float">
-            <DracoIcon level={1} />
+            <img 
+              src={dracoLogo} 
+              alt="Draco Habits Logo" 
+              className="w-full h-full object-contain rounded-2xl"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gradient-fire mb-2">
+          <h1 className="text-3xl font-bold text-gradient-primary mb-2">
             Draco Habits
           </h1>
           <p className="text-muted-foreground">
