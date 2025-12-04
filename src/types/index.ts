@@ -31,6 +31,7 @@ export interface Goal {
   period: string; // e.g., "2025", "Q1-2025", "March-2025", "Week-13-2025"
   progress: number; // 0-100
   wallpaper?: string;
+  parentGoalId?: string; // Reference to parent goal (weekly→monthly→quarterly→yearly)
   createdAt: string;
 }
 
