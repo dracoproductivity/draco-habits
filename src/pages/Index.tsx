@@ -14,7 +14,8 @@ const Index = () => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
-  }, [settings.themeColor]);
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.themeColor, settings.darkMode]);
 
   if (!isAuthenticated) {
     return <AuthPage />;

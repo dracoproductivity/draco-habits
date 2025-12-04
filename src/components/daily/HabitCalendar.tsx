@@ -19,10 +19,12 @@ export const HabitCalendar = () => {
     });
   };
 
-  const getCompletedCount = (dateStr: string) => {
-    return habitChecks.filter(
+  const getCompletionPercentage = (dateStr: string) => {
+    if (habits.length === 0) return 0;
+    const completedCount = habitChecks.filter(
       (hc) => hc.date === dateStr && hc.completed
     ).length;
+    return Math.round((completedCount / habits.length) * 100);
   };
 
   const getDaysInMonth = () => {
@@ -87,15 +89,24 @@ export const HabitCalendar = () => {
     setCurrentDate(newDate);
   };
 
-  const getIndicatorColor = (count: number) => {
-    if (count === 0) return 'bg-muted/30';
-    const percentage = (count / habits.length) * 100;
-    if (percentage < 50) return 'bg-destructive/60';
-    if (percentage < 80) return 'bg-primary/60';
-    return 'bg-success';
+  const getPercentageColor = (percentage: number) => {
+    if (percentage === 0) return 'bg-muted/30 text-muted-foreground';
+    if (percentage <= 25) return 'bg-red-500/80 text-white';
+    if (percentage <= 50) return 'bg-orange-500/80 text-white';
+    if (percentage <= 75) return 'bg-yellow-500/80 text-black';
+    return 'bg-green-500/80 text-white';
+  };
+
+  const getIndicatorColor = (percentage: number) => {
+    if (percentage === 0) return 'bg-muted/30';
+    if (percentage <= 25) return 'bg-red-500';
+    if (percentage <= 50) return 'bg-orange-500';
+    if (percentage <= 75) return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   const selectedDayHabits = selectedDate ? getCompletedHabits(selectedDate) : [];
+  const selectedDayPercentage = selectedDate ? getCompletionPercentage(selectedDate) : 0;
 
   return (
     <motion.div 
@@ -148,6 +159,27 @@ export const HabitCalendar = () => {
         </button>
       </div>
 
+      {/* Color legend */}
+      <div className="flex items-center justify-center gap-2 text-xs">
+        <span className="text-muted-foreground">Conclusão:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-red-500" />
+          <span className="text-muted-foreground">0-25%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-orange-500" />
+          <span className="text-muted-foreground">26-50%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-yellow-500" />
+          <span className="text-muted-foreground">51-75%</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-green-500" />
+          <span className="text-muted-foreground">76-100%</span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-7 gap-1">
         {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
           <div key={day} className="text-center text-xs text-muted-foreground py-2 font-medium">
@@ -156,10 +188,10 @@ export const HabitCalendar = () => {
         ))}
 
         {days.map((day, index) => {
-          const count = getCompletedCount(day.dateStr);
+          const percentage = getCompletionPercentage(day.dateStr);
           const isToday = day.dateStr === today;
           const isSelected = day.dateStr === selectedDate;
-          const hasHabits = count > 0;
+          const hasActivity = percentage > 0;
 
           return (
             <motion.button
@@ -172,8 +204,7 @@ export const HabitCalendar = () => {
                 'aspect-square flex flex-col items-center justify-center rounded-xl transition-all relative',
                 !day.isCurrentMonth && 'opacity-30',
                 isToday && 'ring-2 ring-primary',
-                isSelected && 'bg-primary/20',
-                hasHabits && 'hover:bg-muted/30'
+                isSelected && 'ring-2 ring-primary/50 bg-primary/10'
               )}
             >
               <span className={cn(
@@ -185,8 +216,19 @@ export const HabitCalendar = () => {
               {habits.length > 0 && (
                 <div className={cn(
                   'w-1.5 h-1.5 rounded-full mt-0.5',
-                  getIndicatorColor(count)
+                  getIndicatorColor(percentage)
                 )} />
+              )}
+              {hasActivity && (
+                <span className={cn(
+                  'absolute -bottom-0.5 text-[8px] font-bold px-1 rounded',
+                  percentage <= 25 ? 'text-red-500' :
+                  percentage <= 50 ? 'text-orange-500' :
+                  percentage <= 75 ? 'text-yellow-600' :
+                  'text-green-500'
+                )}>
+                  {percentage}%
+                </span>
               )}
             </motion.button>
           );
@@ -204,13 +246,21 @@ export const HabitCalendar = () => {
           >
             <div className="pt-4 border-t border-border/30">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-medium text-foreground">
-                  {new Date(selectedDate).toLocaleDateString('pt-BR', { 
-                    weekday: 'long', 
-                    day: 'numeric', 
-                    month: 'short' 
-                  })}
-                </h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-foreground">
+                    {new Date(selectedDate).toLocaleDateString('pt-BR', { 
+                      weekday: 'long', 
+                      day: 'numeric', 
+                      month: 'short' 
+                    })}
+                  </h4>
+                  <span className={cn(
+                    'px-2 py-0.5 rounded-full text-xs font-bold',
+                    getPercentageColor(selectedDayPercentage)
+                  )}>
+                    {selectedDayPercentage}%
+                  </span>
+                </div>
                 <button 
                   onClick={() => setSelectedDate(null)}
                   className="p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -229,8 +279,8 @@ export const HabitCalendar = () => {
                       transition={{ delay: i * 0.05 }}
                       className="flex items-center gap-2 text-sm"
                     >
-                      <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-success" />
+                      <div className="w-5 h-5 rounded-md bg-green-500/20 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-green-500" />
                       </div>
                       <span className="text-foreground">{habit.emoji && `${habit.emoji} `}{habit.name}</span>
                     </motion.div>
