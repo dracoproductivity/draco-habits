@@ -15,6 +15,8 @@ export interface Habit {
   goalId?: string; // Linked goal
   notificationEnabled?: boolean;
   notificationTime?: string;
+  weekDays?: number[]; // 0=Sunday, 1=Monday, etc. Days the habit repeats
+  isOneTime?: boolean; // If true, it's a single event without repetition
   createdAt: string;
 }
 
