@@ -97,7 +97,7 @@ export const GoalsPage = () => {
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg card-dark rounded-3xl p-6 h-[90vh] max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg card-dark rounded-t-3xl p-6 h-[90vh] overflow-y-auto"
             >
               <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-6" />
 
