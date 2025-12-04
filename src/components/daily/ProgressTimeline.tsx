@@ -24,13 +24,20 @@ export const ProgressTimeline = () => {
   const getWeekDays = () => {
     const days: { name: string; progress: number }[] = [];
     
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i - (weekOffset * 7));
+    // Get Monday of current week
+    const currentDay = today.getDay();
+    const diffToMonday = currentDay === 0 ? 6 : currentDay - 1; // Sunday = 0, so go back 6 days
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday - (weekOffset * 7));
+    
+    // Monday to Sunday (7 days)
+    const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
       const dateStr = d.toISOString().split('T')[0];
-      const dayName = d.toLocaleDateString('pt-BR', { weekday: 'short' }).slice(0, 3);
       days.push({
-        name: dayName,
+        name: dayNames[i],
         progress: getDailyProgress(dateStr),
       });
     }
