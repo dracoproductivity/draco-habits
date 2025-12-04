@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2 } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { Goal, GoalType } from '@/types';
@@ -59,10 +59,10 @@ const generateMonthOptions = () => {
 const generateQuarterOptions = () => {
   const year = new Date().getFullYear();
   return [
-    { value: `Q1-${year}`, label: `T1 ${year} (Jan-Mar)` },
-    { value: `Q2-${year}`, label: `T2 ${year} (Abr-Jun)` },
-    { value: `Q3-${year}`, label: `T3 ${year} (Jul-Set)` },
-    { value: `Q4-${year}`, label: `T4 ${year} (Out-Dez)` },
+    { value: `1º Tri - ${year}`, label: `1º Tri - ${year} (Jan-Mar)` },
+    { value: `2º Tri - ${year}`, label: `2º Tri - ${year} (Abr-Jun)` },
+    { value: `3º Tri - ${year}`, label: `3º Tri - ${year} (Jul-Set)` },
+    { value: `4º Tri - ${year}`, label: `4º Tri - ${year} (Out-Dez)` },
   ];
 };
 
@@ -85,12 +85,17 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, updateGoal, removeGoal, settings } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings } = useAppStore();
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [editingType, setEditingType] = useState<GoalType | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
   const [editingParent, setEditingParent] = useState<boolean>(false);
+  const [showNewGoalModal, setShowNewGoalModal] = useState(false);
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalType, setNewGoalType] = useState<GoalType>('weekly');
+  const [newGoalPeriod, setNewGoalPeriod] = useState('');
 
   // Get potential parent goals for a given goal type
   const getParentGoalOptions = (type: GoalType): Goal[] => {
@@ -141,6 +146,34 @@ export const GoalsPage = () => {
     }
   };
 
+  const handleAddGoalClick = () => {
+    if (filter === 'all') {
+      setShowTypeSelector(true);
+    } else {
+      openNewGoalModal(filter as GoalType);
+    }
+  };
+
+  const openNewGoalModal = (type: GoalType) => {
+    setNewGoalType(type);
+    setNewGoalPeriod(getPeriodOptions(type)[0]?.value || '');
+    setNewGoalName('');
+    setShowTypeSelector(false);
+    setShowNewGoalModal(true);
+  };
+
+  const handleCreateGoal = () => {
+    if (!newGoalName.trim()) return;
+    addGoal({
+      name: newGoalName.trim(),
+      type: newGoalType,
+      period: newGoalPeriod,
+      progress: 0,
+    });
+    setShowNewGoalModal(false);
+    setNewGoalName('');
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -185,10 +218,130 @@ export const GoalsPage = () => {
         {filteredGoals.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <p>Nenhum objetivo encontrado</p>
-            <p className="text-sm">Adicione objetivos na aba "Ano"</p>
+            <p className="text-sm">Clique no botão + para adicionar</p>
           </div>
         )}
       </div>
+
+      {/* Add Goal Button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={handleAddGoalClick}
+        className="fixed bottom-24 right-4 w-14 h-14 rounded-full gradient-fire text-primary-foreground shadow-lg flex items-center justify-center z-50"
+      >
+        <Plus className="w-6 h-6" />
+      </motion.button>
+
+      {/* Type Selector Modal (when filter is 'all') */}
+      <AnimatePresence>
+        {showTypeSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowTypeSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+            >
+              <h3 className="text-lg font-bold mb-4 text-center">Escolha o tipo de objetivo</h3>
+              <div className="space-y-2">
+                {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => openNewGoalModal(type)}
+                    className={cn(
+                      'w-full p-3 rounded-xl text-left transition-colors flex items-center gap-3',
+                      'hover:bg-muted/50 border border-border/50'
+                    )}
+                  >
+                    <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[type])}>
+                      {typeLabels[type]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* New Goal Modal */}
+      <AnimatePresence>
+        {showNewGoalModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowNewGoalModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold">Novo Objetivo</h3>
+                <button onClick={() => setShowNewGoalModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nome do objetivo</label>
+                  <input
+                    type="text"
+                    value={newGoalName}
+                    onChange={(e) => setNewGoalName(e.target.value)}
+                    placeholder="Ex: Ler 12 livros"
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
+                  <div className={cn('px-3 py-2 rounded-full text-xs font-semibold inline-block', typeColors[newGoalType])}>
+                    {typeLabels[newGoalType]}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+                  <select
+                    value={newGoalPeriod}
+                    onChange={(e) => setNewGoalPeriod(e.target.value)}
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                  >
+                    {getPeriodOptions(newGoalType).map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleCreateGoal}
+                  disabled={!newGoalName.trim()}
+                  className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Criar Objetivo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Goal detail modal */}
       <AnimatePresence>

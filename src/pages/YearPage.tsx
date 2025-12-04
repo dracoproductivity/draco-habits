@@ -69,9 +69,9 @@ export const YearPage = () => {
             title={`Trimestre ${q}`}
             subtitle={QUARTER_MONTHS[q]}
             type="quarterly"
-            period={`Q${q}-${year}`}
+            period={`${q}º Tri - ${year}`}
             className={q !== quarter ? 'opacity-50' : ''}
-            onClick={() => openModal(`Trimestre ${q}`, 'quarterly', `Q${q}-${year}`, QUARTER_MONTHS[q])}
+            onClick={() => openModal(`Trimestre ${q}`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
           />
         ))}
       </div>
