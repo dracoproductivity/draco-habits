@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { PeriodCard } from '@/components/year/PeriodCard';
+import { PeriodItem } from '@/components/year/PeriodItem';
 import { PeriodModal } from '@/components/year/PeriodModal';
 import { GoalType } from '@/types';
 
@@ -37,52 +37,55 @@ export const YearPage = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen pb-20 p-4"
     >
-      <header className="mb-6">
+      <header className="mb-8">
         <h1 className="text-2xl font-bold text-gradient-fire">Visão do Ano</h1>
         <p className="text-muted-foreground">Organize seus objetivos por período</p>
       </header>
 
-      <div className="space-y-4">
-        {/* Week and Month row */}
-        <div className="grid grid-cols-2 gap-3">
-          <PeriodCard
-            title="Semana"
-            type="weekly"
-            period={`Semana ${weekNumber}`}
-            onClick={() => openModal('Semana', 'weekly', `Semana ${weekNumber}`)}
-          />
-          <PeriodCard
-            title={month.charAt(0).toUpperCase() + month.slice(1)}
-            type="monthly"
-            period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
-            onClick={() => openModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
-          />
-        </div>
-
-        {/* Quarters row */}
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((q) => (
-            <PeriodCard
-              key={q}
-              title={`Trimestre ${q}`}
-              subtitle={QUARTER_MONTHS[q]}
-              type="quarterly"
-              period={`Q${q}-${year}`}
-              className={q !== quarter ? 'opacity-60' : ''}
-              onClick={() => openModal(`Trimestre ${q}`, 'quarterly', `Q${q}-${year}`, QUARTER_MONTHS[q])}
-            />
-          ))}
-        </div>
-
-        {/* Year card */}
-        <PeriodCard
-          title={`Ano ${year}`}
-          type="yearly"
-          period={year.toString()}
-          className="col-span-2"
-          onClick={() => openModal(`Ano ${year}`, 'yearly', year.toString())}
+      {/* Week and Month */}
+      <div className="grid grid-cols-2 gap-2 mb-6">
+        <PeriodItem
+          title="Semana"
+          type="weekly"
+          period={`Semana ${weekNumber}`}
+          onClick={() => openModal('Semana', 'weekly', `Semana ${weekNumber}`)}
+        />
+        <PeriodItem
+          title={month.charAt(0).toUpperCase() + month.slice(1)}
+          type="monthly"
+          period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
+          onClick={() => openModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
         />
       </div>
+
+      {/* Separator */}
+      <div className="h-px bg-border/30 mb-6" />
+
+      {/* Quarters */}
+      <div className="grid grid-cols-2 gap-2 mb-6">
+        {[1, 2, 3, 4].map((q) => (
+          <PeriodItem
+            key={q}
+            title={`Trimestre ${q}`}
+            subtitle={QUARTER_MONTHS[q]}
+            type="quarterly"
+            period={`Q${q}-${year}`}
+            className={q !== quarter ? 'opacity-50' : ''}
+            onClick={() => openModal(`Trimestre ${q}`, 'quarterly', `Q${q}-${year}`, QUARTER_MONTHS[q])}
+          />
+        ))}
+      </div>
+
+      {/* Separator */}
+      <div className="h-px bg-border/30 mb-6" />
+
+      {/* Year */}
+      <PeriodItem
+        title={`Ano ${year}`}
+        type="yearly"
+        period={year.toString()}
+        onClick={() => openModal(`Ano ${year}`, 'yearly', year.toString())}
+      />
 
       {/* Period Modal */}
       {selectedPeriod && (

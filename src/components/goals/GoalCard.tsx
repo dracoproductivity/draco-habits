@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link2 } from 'lucide-react';
 import { Goal } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,11 @@ const typeColors: Record<Goal['type'], string> = {
 };
 
 export const GoalCard = ({ goal, index, onClick }: GoalCardProps) => {
-  const { settings } = useAppStore();
+  const { settings, goals } = useAppStore();
+
+  const parentGoal = goal.parentGoalId 
+    ? goals.find(g => g.id === goal.parentGoalId)
+    : null;
 
   return (
     <motion.button
@@ -48,6 +53,13 @@ export const GoalCard = ({ goal, index, onClick }: GoalCardProps) => {
           </div>
           
           <p className="text-sm text-muted-foreground mb-2">{goal.period}</p>
+
+          {parentGoal && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+              <Link2 className="w-3 h-3" />
+              <span>Vinculado a: {parentGoal.emoji && settings.showEmojis ? parentGoal.emoji + ' ' : ''}{parentGoal.name}</span>
+            </div>
+          )}
           
           <div className="flex items-center gap-3">
             <div className="flex-1 progress-bar">

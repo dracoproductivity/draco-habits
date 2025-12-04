@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { Goal, GoalType } from '@/types';
@@ -28,6 +28,14 @@ const typeColors: Record<GoalType, string> = {
   monthly: 'bg-primary/10 text-primary border border-primary/30',
   quarterly: 'bg-secondary/10 text-secondary border border-secondary/30',
   yearly: 'gradient-fire text-primary-foreground',
+};
+
+// Hierarchy: weekly → monthly → quarterly → yearly
+const parentTypeMap: Record<GoalType, GoalType | null> = {
+  weekly: 'monthly',
+  monthly: 'quarterly',
+  quarterly: 'yearly',
+  yearly: null,
 };
 
 const generateWeekOptions = () => {
@@ -82,6 +90,27 @@ export const GoalsPage = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [editingType, setEditingType] = useState<GoalType | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
+  const [editingParent, setEditingParent] = useState<boolean>(false);
+
+  // Get potential parent goals for a given goal type
+  const getParentGoalOptions = (type: GoalType): Goal[] => {
+    const parentType = parentTypeMap[type];
+    if (!parentType) return [];
+    return goals.filter(g => g.type === parentType);
+  };
+
+  const handleParentChange = (parentId: string | null) => {
+    if (selectedGoal) {
+      updateGoal(selectedGoal.id, { parentGoalId: parentId || undefined });
+      setSelectedGoal({ ...selectedGoal, parentGoalId: parentId || undefined });
+      setEditingParent(false);
+    }
+  };
+
+  const getParentGoal = (parentId?: string): Goal | undefined => {
+    if (!parentId) return undefined;
+    return goals.find(g => g.id === parentId);
+  };
 
   const filteredGoals = filter === 'all'
     ? goals
@@ -293,6 +322,71 @@ export const GoalsPage = () => {
                     </AnimatePresence>
                   </div>
                 </div>
+
+                {/* Parent Goal selector */}
+                {parentTypeMap[selectedGoal.type] && (
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
+                      <Link2 className="w-4 h-4" />
+                      Vincular a objetivo {typeLabels[parentTypeMap[selectedGoal.type]!]}
+                    </label>
+                    <div className="relative">
+                      <button
+                        onClick={() => setEditingParent(!editingParent)}
+                        className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
+                      >
+                        <span className="font-medium">
+                          {selectedGoal.parentGoalId 
+                            ? (getParentGoal(selectedGoal.parentGoalId)?.name || 'Objetivo removido')
+                            : 'Nenhum (independente)'}
+                        </span>
+                        <ChevronDown className={cn('w-4 h-4 transition-transform', editingParent && 'rotate-180')} />
+                      </button>
+                      <AnimatePresence>
+                        {editingParent && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg max-h-48 overflow-y-auto"
+                          >
+                            <button
+                              onClick={() => handleParentChange(null)}
+                              className={cn(
+                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm',
+                                !selectedGoal.parentGoalId && 'bg-muted/30'
+                              )}
+                            >
+                              Nenhum (independente)
+                            </button>
+                            {getParentGoalOptions(selectedGoal.type).map((goal) => (
+                              <button
+                                key={goal.id}
+                                onClick={() => handleParentChange(goal.id)}
+                                className={cn(
+                                  'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm flex items-center gap-2',
+                                  selectedGoal.parentGoalId === goal.id && 'bg-muted/30'
+                                )}
+                              >
+                                {settings.showEmojis && goal.emoji && <span>{goal.emoji}</span>}
+                                <span>{goal.name}</span>
+                                <span className="text-xs text-muted-foreground ml-auto">{goal.progress}%</span>
+                              </button>
+                            ))}
+                            {getParentGoalOptions(selectedGoal.type).length === 0 && (
+                              <p className="p-2 text-sm text-muted-foreground text-center">
+                                Nenhum objetivo {typeLabels[parentTypeMap[selectedGoal.type]!].toLowerCase()} disponível
+                              </p>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Vincule este objetivo a um objetivo de nível superior para acompanhar o progresso em cascata.
+                    </p>
+                  </div>
+                )}
 
                 {/* Meta info */}
                 <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
