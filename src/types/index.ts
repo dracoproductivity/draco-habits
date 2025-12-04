@@ -44,15 +44,22 @@ export interface DracoState {
   totalXP: number;
 }
 
-export type ThemeColor = 'fire' | 'purple' | 'emerald' | 'ocean' | 'rose';
+export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray';
 export type ProgressDisplayMode = 'linear' | 'circular';
+
+export interface NotificationReminder {
+  id: string;
+  time: string;
+  message: string;
+  enabled: boolean;
+}
 
 export interface AppSettings {
   themeColor: ThemeColor;
   progressDisplayMode: ProgressDisplayMode;
   showEmojis: boolean;
   notificationsEnabled: boolean;
-  notificationTime: string;
+  notificationReminders: NotificationReminder[];
 }
 
 export type TabType = 'daily' | 'year' | 'goals' | 'profile' | 'settings';

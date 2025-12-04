@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Palette, 
   Bell, 
@@ -10,19 +10,27 @@ import {
   Trash2,
   Check,
   BarChart3,
-  Circle
+  Circle,
+  Plus,
+  X,
+  Clock
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ThemeColor, ProgressDisplayMode } from '@/types';
+import { ThemeColor, ProgressDisplayMode, NotificationReminder } from '@/types';
 
-const THEME_OPTIONS: { id: ThemeColor; name: string; colors: string[] }[] = [
-  { id: 'fire', name: 'Fogo', colors: ['#f59e0b', '#ea580c'] },
-  { id: 'purple', name: 'Roxo', colors: ['#a855f7', '#c026d3'] },
-  { id: 'emerald', name: 'Esmeralda', colors: ['#10b981', '#059669'] },
-  { id: 'ocean', name: 'Oceano', colors: ['#0ea5e9', '#3b82f6'] },
-  { id: 'rose', name: 'Rosa', colors: ['#f43f5e', '#ec4899'] },
+const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
+  { id: 'blue', name: 'Azul', color: '200 90% 50%' },
+  { id: 'green', name: 'Verde', color: '160 80% 45%' },
+  { id: 'yellow', name: 'Amarelo', color: '45 95% 55%' },
+  { id: 'neutral', name: 'Neutro', color: '0 0% 90%' },
+  { id: 'red', name: 'Vermelho', color: '0 80% 55%' },
+  { id: 'purple', name: 'Roxo', color: '270 80% 60%' },
+  { id: 'pink', name: 'Rosa', color: '350 80% 55%' },
+  { id: 'orange', name: 'Laranja', color: '25 95% 55%' },
+  { id: 'lilac', name: 'Lilás', color: '280 65% 70%' },
+  { id: 'gray', name: 'Cinza', color: '220 15% 55%' },
 ];
 
 const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
@@ -30,9 +38,22 @@ const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: t
   { id: 'circular', name: 'Circular', icon: Circle },
 ];
 
+const FRIENDLY_MESSAGES = [
+  'Ei, campeão! 🏆 Hora de brilhar nos seus hábitos!',
+  'Bora lá! 💪 Seus hábitos estão te esperando!',
+  'Opa! 🌟 Que tal dar uma olhada nos seus objetivos?',
+  'Psiu! 🎯 Não esquece dos hábitos de hoje!',
+  'Hey! 🚀 Vamos conquistar mais um dia juntos?',
+  'E aí! 🌈 Seus hábitos estão com saudade de você!',
+  'Alô! 🎉 Hora de fazer acontecer!',
+  'Atenção! 🔔 O sucesso está te chamando!',
+];
+
 export const SettingsPage = () => {
   const { settings, updateSettings, logout, user } = useAppStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAddReminder, setShowAddReminder] = useState(false);
+  const [newReminderTime, setNewReminderTime] = useState('09:00');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
@@ -51,6 +72,51 @@ export const SettingsPage = () => {
     toast({
       title: 'Conta excluída',
       description: 'Sua conta foi removida',
+    });
+  };
+
+  const addReminder = () => {
+    const randomMessage = FRIENDLY_MESSAGES[Math.floor(Math.random() * FRIENDLY_MESSAGES.length)];
+    const newReminder: NotificationReminder = {
+      id: Date.now().toString(),
+      time: newReminderTime,
+      message: randomMessage,
+      enabled: true,
+    };
+    updateSettings({
+      notificationReminders: [...(settings.notificationReminders || []), newReminder],
+    });
+    setShowAddReminder(false);
+    setNewReminderTime('09:00');
+    toast({
+      title: 'Lembrete adicionado! 🎉',
+      description: `Você será lembrado às ${newReminderTime}`,
+    });
+  };
+
+  const removeReminder = (id: string) => {
+    updateSettings({
+      notificationReminders: settings.notificationReminders?.filter((r) => r.id !== id) || [],
+    });
+    toast({
+      title: 'Lembrete removido',
+      description: 'O lembrete foi excluído',
+    });
+  };
+
+  const toggleReminder = (id: string) => {
+    updateSettings({
+      notificationReminders: settings.notificationReminders?.map((r) =>
+        r.id === id ? { ...r, enabled: !r.enabled } : r
+      ) || [],
+    });
+  };
+
+  const updateReminderMessage = (id: string, message: string) => {
+    updateSettings({
+      notificationReminders: settings.notificationReminders?.map((r) =>
+        r.id === id ? { ...r, message } : r
+      ) || [],
     });
   };
 
@@ -77,7 +143,7 @@ export const SettingsPage = () => {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground mb-3">Escolha seu tema</p>
+              <p className="text-sm text-muted-foreground mb-3">Escolha sua cor</p>
               <div className="grid grid-cols-5 gap-2">
                 {THEME_OPTIONS.map((theme) => (
                   <button
@@ -93,10 +159,10 @@ export const SettingsPage = () => {
                     <div 
                       className="w-8 h-8 rounded-full"
                       style={{ 
-                        background: `linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]})` 
+                        backgroundColor: `hsl(${theme.color})` 
                       }}
                     />
-                    <span className="text-xs text-foreground">{theme.name}</span>
+                    <span className="text-[10px] text-foreground">{theme.name}</span>
                     {settings.themeColor === theme.id && (
                       <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-2.5 h-2.5 text-primary-foreground" />
@@ -154,8 +220,8 @@ export const SettingsPage = () => {
         {/* Notifications */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-              <Bell className="w-5 h-5 text-secondary-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <Bell className="w-5 h-5 text-primary-foreground" />
             </div>
             <h2 className="font-semibold text-foreground">Notificações</h2>
           </div>
@@ -182,29 +248,129 @@ export const SettingsPage = () => {
               </button>
             </div>
 
-            {settings.notificationsEnabled && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="flex items-center justify-between"
-              >
-                <p className="font-medium text-foreground">Horário do lembrete</p>
-                <input
-                  type="time"
-                  value={settings.notificationTime}
-                  onChange={(e) => updateSettings({ notificationTime: e.target.value })}
-                  className="bg-muted/50 border border-border/50 rounded-xl px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                />
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {settings.notificationsEnabled && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3"
+                >
+                  <p className="text-sm text-muted-foreground">Seus lembretes:</p>
+                  
+                  {/* Reminder List */}
+                  <div className="space-y-2">
+                    {(settings.notificationReminders || []).map((reminder) => (
+                      <motion.div
+                        key={reminder.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className={cn(
+                          'p-3 rounded-xl border transition-all',
+                          reminder.enabled 
+                            ? 'bg-primary/10 border-primary/30' 
+                            : 'bg-muted/30 border-border/30 opacity-60'
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-primary" />
+                            <span className="font-semibold text-foreground">{reminder.time}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => toggleReminder(reminder.id)}
+                              className={cn(
+                                'w-8 h-5 rounded-full transition-all relative',
+                                reminder.enabled ? 'bg-primary' : 'bg-muted'
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                                  reminder.enabled ? 'right-0.5' : 'left-0.5'
+                                )}
+                              />
+                            </button>
+                            <button
+                              onClick={() => removeReminder(reminder.id)}
+                              className="p-1 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={reminder.message}
+                          onChange={(e) => updateReminderMessage(reminder.id, e.target.value)}
+                          className="mt-2 w-full bg-transparent text-sm text-muted-foreground border-none outline-none placeholder:text-muted-foreground/50"
+                          placeholder="Mensagem do lembrete..."
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Add Reminder */}
+                  <AnimatePresence>
+                    {showAddReminder ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="p-3 rounded-xl bg-muted/30 border border-border/50 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-foreground">Novo lembrete</p>
+                          <button
+                            onClick={() => setShowAddReminder(false)}
+                            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="time"
+                            value={newReminderTime}
+                            onChange={(e) => setNewReminderTime(e.target.value)}
+                            className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                          />
+                          <button
+                            onClick={addReminder}
+                            className="px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                          >
+                            Adicionar
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          💡 A mensagem será gerada automaticamente de forma divertida!
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        onClick={() => setShowAddReminder(true)}
+                        className="w-full py-3 flex items-center justify-center gap-2 border-2 border-dashed border-border/50 rounded-xl text-muted-foreground hover:border-primary/50 hover:text-primary transition-all"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Adicionar lembrete</span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
         {/* Account */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center">
-              <User className="w-5 h-5 text-success-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <User className="w-5 h-5 text-primary-foreground" />
             </div>
             <h2 className="font-semibold text-foreground">Conta</h2>
           </div>
@@ -263,8 +429,8 @@ export const SettingsPage = () => {
         {/* About */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-              <Info className="w-5 h-5 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <Info className="w-5 h-5 text-primary-foreground" />
             </div>
             <h2 className="font-semibold text-foreground">Sobre</h2>
           </div>

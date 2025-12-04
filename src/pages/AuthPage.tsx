@@ -11,7 +11,7 @@ export const AuthPage = () => {
   const [view, setView] = useState<AuthView>('login');
 
   return (
-    <div data-theme="ocean" className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+    <div data-theme="blue" className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
