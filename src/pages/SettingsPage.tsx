@@ -8,12 +8,14 @@ import {
   ChevronRight,
   LogOut,
   Trash2,
-  Check
+  Check,
+  BarChart3,
+  Circle
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ThemeColor } from '@/types';
+import { ThemeColor, ProgressDisplayMode } from '@/types';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; colors: string[] }[] = [
   { id: 'fire', name: 'Fogo', colors: ['#f59e0b', '#ea580c'] },
@@ -21,6 +23,11 @@ const THEME_OPTIONS: { id: ThemeColor; name: string; colors: string[] }[] = [
   { id: 'emerald', name: 'Esmeralda', colors: ['#10b981', '#059669'] },
   { id: 'ocean', name: 'Oceano', colors: ['#0ea5e9', '#3b82f6'] },
   { id: 'rose', name: 'Rosa', colors: ['#f43f5e', '#ec4899'] },
+];
+
+const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
+  { id: 'linear', name: 'Linear', icon: BarChart3 },
+  { id: 'circular', name: 'Circular', icon: Circle },
 ];
 
 export const SettingsPage = () => {
@@ -95,6 +102,27 @@ export const SettingsPage = () => {
                         <Check className="w-2.5 h-2.5 text-primary-foreground" />
                       </div>
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/30">
+              <p className="text-sm text-muted-foreground mb-3">Exibição do progresso (Aba Ano)</p>
+              <div className="grid grid-cols-2 gap-2">
+                {PROGRESS_DISPLAY_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => updateSettings({ progressDisplayMode: option.id })}
+                    className={cn(
+                      'flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all',
+                      settings.progressDisplayMode === option.id 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                    )}
+                  >
+                    <option.icon className="w-5 h-5" />
+                    <span className="text-sm font-medium">{option.name}</span>
                   </button>
                 ))}
               </div>
