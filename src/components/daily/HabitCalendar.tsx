@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 
@@ -9,7 +9,15 @@ type CalendarView = 'week' | 'month';
 export const HabitCalendar = () => {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { habits, habitChecks } = useAppStore();
+
+  const getCompletedHabits = (dateStr: string) => {
+    return habits.filter(habit => {
+      const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
+      return check?.completed;
+    });
+  };
 
   const getCompletedCount = (dateStr: string) => {
     return habitChecks.filter(
@@ -24,7 +32,6 @@ export const HabitCalendar = () => {
     const lastDay = new Date(year, month + 1, 0);
     const days: { date: Date; dateStr: string; isCurrentMonth: boolean }[] = [];
 
-    // Add days from previous month
     const startPadding = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
     for (let i = startPadding; i > 0; i--) {
       const d = new Date(year, month, 1 - i);
@@ -35,7 +42,6 @@ export const HabitCalendar = () => {
       });
     }
 
-    // Add days of current month
     for (let i = 1; i <= lastDay.getDate(); i++) {
       const d = new Date(year, month, i);
       days.push({
@@ -82,23 +88,29 @@ export const HabitCalendar = () => {
   };
 
   const getIndicatorColor = (count: number) => {
-    if (count === 0) return 'bg-transparent';
+    if (count === 0) return 'bg-muted/30';
     const percentage = (count / habits.length) * 100;
     if (percentage < 50) return 'bg-destructive/60';
     if (percentage < 80) return 'bg-primary/60';
     return 'bg-success';
   };
 
+  const selectedDayHabits = selectedDate ? getCompletedHabits(selectedDate) : [];
+
   return (
-    <div className="card-dark p-4 space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-hover rounded-2xl p-4 space-y-4"
+    >
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Calendário</h3>
-        <div className="flex items-center gap-2">
+        <h3 className="font-semibold text-foreground">Calendário</h3>
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/30">
           <button
             onClick={() => setView('week')}
             className={cn(
-              'px-3 py-1 rounded-lg text-sm transition-all',
-              view === 'week' ? 'gradient-fire text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+              view === 'week' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Semana
@@ -106,8 +118,8 @@ export const HabitCalendar = () => {
           <button
             onClick={() => setView('month')}
             className={cn(
-              'px-3 py-1 rounded-lg text-sm transition-all',
-              view === 'month' ? 'gradient-fire text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+              view === 'month' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Mês
@@ -118,11 +130,11 @@ export const HabitCalendar = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="font-medium">
+        <span className="font-medium text-foreground capitalize">
           {currentDate.toLocaleDateString('pt-BR', {
             month: 'long',
             year: 'numeric',
@@ -130,7 +142,7 @@ export const HabitCalendar = () => {
         </span>
         <button
           onClick={() => navigate(1)}
-          className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -138,7 +150,7 @@ export const HabitCalendar = () => {
 
       <div className="grid grid-cols-7 gap-1">
         {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
-          <div key={day} className="text-center text-xs text-muted-foreground py-1">
+          <div key={day} className="text-center text-xs text-muted-foreground py-2 font-medium">
             {day}
           </div>
         ))}
@@ -146,34 +158,91 @@ export const HabitCalendar = () => {
         {days.map((day, index) => {
           const count = getCompletedCount(day.dateStr);
           const isToday = day.dateStr === today;
+          const isSelected = day.dateStr === selectedDate;
+          const hasHabits = count > 0;
 
           return (
-            <motion.div
+            <motion.button
               key={day.dateStr}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.01 }}
+              onClick={() => setSelectedDate(isSelected ? null : day.dateStr)}
               className={cn(
-                'aspect-square flex flex-col items-center justify-center rounded-lg transition-all',
+                'aspect-square flex flex-col items-center justify-center rounded-xl transition-all relative',
                 !day.isCurrentMonth && 'opacity-30',
-                isToday && 'ring-2 ring-primary'
+                isToday && 'ring-2 ring-primary',
+                isSelected && 'bg-primary/20',
+                hasHabits && 'hover:bg-muted/30'
               )}
             >
-              <span className="text-xs mb-0.5">{day.date.getDate()}</span>
+              <span className={cn(
+                'text-sm font-medium',
+                isToday && 'text-primary'
+              )}>
+                {day.date.getDate()}
+              </span>
               {habits.length > 0 && (
-                <div className="flex gap-0.5">
-                  {Array.from({ length: Math.min(count, 4) }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={cn('w-1.5 h-1.5 rounded-full', getIndicatorColor(count))}
-                    />
-                  ))}
-                </div>
+                <div className={cn(
+                  'w-1.5 h-1.5 rounded-full mt-0.5',
+                  getIndicatorColor(count)
+                )} />
               )}
-            </motion.div>
+            </motion.button>
           );
         })}
       </div>
-    </div>
+
+      {/* Completed Habits List */}
+      <AnimatePresence>
+        {selectedDate && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="pt-4 border-t border-border/30">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-foreground">
+                  {new Date(selectedDate).toLocaleDateString('pt-BR', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'short' 
+                  })}
+                </h4>
+                <button 
+                  onClick={() => setSelectedDate(null)}
+                  className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {selectedDayHabits.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedDayHabits.map((habit, i) => (
+                    <motion.div
+                      key={habit.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-success" />
+                      </div>
+                      <span className="text-foreground">{habit.emoji && `${habit.emoji} `}{habit.name}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum hábito concluído neste dia</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
