@@ -13,7 +13,8 @@ import {
   Circle,
   Plus,
   X,
-  Clock
+  Clock,
+  Moon
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/hooks/use-toast';
@@ -57,7 +58,8 @@ export const SettingsPage = () => {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
-  }, [settings.themeColor]);
+    document.documentElement.classList.toggle('dark', settings.darkMode);
+  }, [settings.themeColor, settings.darkMode]);
 
   const handleLogout = () => {
     logout();
@@ -170,6 +172,32 @@ export const SettingsPage = () => {
                     )}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Moon className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="font-medium text-foreground">Modo Noturno</p>
+                    <p className="text-sm text-muted-foreground">Ativar tema escuro</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => updateSettings({ darkMode: !settings.darkMode })}
+                  className={cn(
+                    'w-12 h-6 rounded-full transition-all duration-300 relative',
+                    settings.darkMode ? 'bg-primary' : 'bg-muted'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'absolute top-1 w-4 h-4 rounded-full bg-foreground transition-all duration-300',
+                      settings.darkMode ? 'right-1' : 'left-1'
+                    )}
+                  />
+                </button>
               </div>
             </div>
 

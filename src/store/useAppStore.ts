@@ -31,7 +31,8 @@ interface AppStore {
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
   
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => void;
+  addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => Habit;
+  updateHabit: (id: string, updates: Partial<Habit>) => void;
   removeHabit: (id: string) => void;
   toggleHabitCheck: (habitId: string, date: string) => void;
   
@@ -70,6 +71,7 @@ const defaultSettings: AppSettings = {
   notificationReminders: [
     { id: '1', time: '09:00', message: 'Bom dia! 🌞 Hora de começar seus hábitos!', enabled: true },
   ],
+  darkMode: true,
 };
 
 const defaultHabits: Habit[] = [
@@ -156,6 +158,15 @@ export const useAppStore = create<AppStore>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ habits: [...state.habits, newHabit] }));
+        return newHabit;
+      },
+
+      updateHabit: (id, updates) => {
+        set((state) => ({
+          habits: state.habits.map((h) =>
+            h.id === id ? { ...h, ...updates } : h
+          ),
+        }));
       },
 
       removeHabit: (id) => {

@@ -12,6 +12,9 @@ export interface Habit {
   name: string;
   emoji?: string;
   xpReward: number;
+  goalId?: string; // Linked goal
+  notificationEnabled?: boolean;
+  notificationTime?: string;
   createdAt: string;
 }
 
@@ -60,6 +63,7 @@ export interface AppSettings {
   showEmojis: boolean;
   notificationsEnabled: boolean;
   notificationReminders: NotificationReminder[];
+  darkMode: boolean;
 }
 
 export type TabType = 'daily' | 'year' | 'goals' | 'profile' | 'settings';
