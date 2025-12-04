@@ -41,9 +41,10 @@ export interface DracoState {
   totalXP: number;
 }
 
+export type ThemeColor = 'fire' | 'purple' | 'emerald' | 'ocean' | 'rose';
+
 export interface AppSettings {
-  backgroundColor: string;
-  fontColor: string;
+  themeColor: ThemeColor;
   showEmojis: boolean;
   notificationsEnabled: boolean;
   notificationTime: string;

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
@@ -9,7 +10,11 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
 
 const Index = () => {
-  const { isAuthenticated, activeTab } = useAppStore();
+  const { isAuthenticated, activeTab, settings } = useAppStore();
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', settings.themeColor);
+  }, [settings.themeColor]);
 
   if (!isAuthenticated) {
     return <AuthPage />;

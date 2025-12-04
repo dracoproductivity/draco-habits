@@ -63,8 +63,7 @@ const defaultDraco: DracoState = {
 };
 
 const defaultSettings: AppSettings = {
-  backgroundColor: '#0a0f1a',
-  fontColor: '#f5f0e6',
+  themeColor: 'fire',
   showEmojis: true,
   notificationsEnabled: true,
   notificationTime: '09:00',
