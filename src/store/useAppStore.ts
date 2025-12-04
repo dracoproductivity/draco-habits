@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, GoalType } from '@/types';
+import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, GoalType, NotificationReminder } from '@/types';
 
 interface AppStore {
   // Auth
@@ -63,11 +63,13 @@ const defaultDraco: DracoState = {
 };
 
 const defaultSettings: AppSettings = {
-  themeColor: 'fire',
+  themeColor: 'blue',
   progressDisplayMode: 'linear',
   showEmojis: true,
   notificationsEnabled: true,
-  notificationTime: '09:00',
+  notificationReminders: [
+    { id: '1', time: '09:00', message: 'Bom dia! 🌞 Hora de começar seus hábitos!', enabled: true },
+  ],
 };
 
 const defaultHabits: Habit[] = [
