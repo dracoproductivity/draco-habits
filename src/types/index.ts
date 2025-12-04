@@ -32,6 +32,8 @@ export interface Goal {
   progress: number; // 0-100
   wallpaper?: string;
   parentGoalId?: string; // Reference to parent goal (weekly→monthly→quarterly→yearly)
+  weekDays?: number[]; // 0=Sunday, 1=Monday, etc. (for weekly goals)
+  repeatWeekly?: boolean; // If true, repeats every week; if false, only for selected period
   createdAt: string;
 }
 

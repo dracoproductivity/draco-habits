@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { Goal, GoalType } from '@/types';
 import { cn } from '@/lib/utils';
+import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 type FilterType = 'all' | Goal['type'];
 
@@ -38,11 +40,30 @@ const parentTypeMap: Record<GoalType, GoalType | null> = {
   yearly: null,
 };
 
+const weekDayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
 const generateWeekOptions = () => {
   const options: { value: string; label: string }[] = [];
   const year = new Date().getFullYear();
+  const yearStart = startOfYear(new Date(year, 0, 1));
+  
   for (let i = 1; i <= 52; i++) {
-    options.push({ value: `Semana ${i}`, label: `Semana ${i}` });
+    const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
+    
+    const startDay = format(weekStart, 'd', { locale: ptBR });
+    const endDay = format(weekEnd, 'd', { locale: ptBR });
+    const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
+    const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
+    
+    const dateRange = startMonth === endMonth 
+      ? `${startDay}-${endDay} de ${startMonth}`
+      : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
+    
+    options.push({ 
+      value: `Semana ${i}`, 
+      label: `Semana ${i} - ${dateRange}` 
+    });
   }
   return options;
 };
@@ -96,6 +117,14 @@ export const GoalsPage = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalType, setNewGoalType] = useState<GoalType>('weekly');
   const [newGoalPeriod, setNewGoalPeriod] = useState('');
+  
+  // Weekly goal creation from parent
+  const [showWeeklyGoalPrompt, setShowWeeklyGoalPrompt] = useState(false);
+  const [weeklyGoalName, setWeeklyGoalName] = useState('');
+  const [weeklyGoalDays, setWeeklyGoalDays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri default
+  const [weeklyGoalRepeat, setWeeklyGoalRepeat] = useState(true);
+  const [weeklyGoalPeriod, setWeeklyGoalPeriod] = useState('');
+  const [parentGoalForWeekly, setParentGoalForWeekly] = useState<Goal | null>(null);
 
   // Get potential parent goals for a given goal type
   const getParentGoalOptions = (type: GoalType): Goal[] => {
@@ -164,7 +193,7 @@ export const GoalsPage = () => {
 
   const handleCreateGoal = () => {
     if (!newGoalName.trim()) return;
-    addGoal({
+    const newGoal = addGoal({
       name: newGoalName.trim(),
       type: newGoalType,
       period: newGoalPeriod,
@@ -172,6 +201,53 @@ export const GoalsPage = () => {
     });
     setShowNewGoalModal(false);
     setNewGoalName('');
+    
+    // Show weekly goal prompt for non-weekly goals
+    if (newGoalType !== 'weekly' && newGoal) {
+      setParentGoalForWeekly(newGoal);
+      setWeeklyGoalName('');
+      setWeeklyGoalDays([1, 2, 3, 4, 5]);
+      setWeeklyGoalRepeat(true);
+      setWeeklyGoalPeriod(generateWeekOptions()[0]?.value || '');
+      setShowWeeklyGoalPrompt(true);
+    }
+  };
+
+  const handleCreateWeeklyGoal = () => {
+    if (!weeklyGoalName.trim() || !parentGoalForWeekly) return;
+    
+    // Find the monthly goal to link to (need to traverse hierarchy)
+    let parentId: string | undefined;
+    if (parentGoalForWeekly.type === 'monthly') {
+      parentId = parentGoalForWeekly.id;
+    } else {
+      // For quarterly/yearly, try to find a monthly goal linked to it
+      const monthlyGoals = goals.filter(g => g.type === 'monthly' && g.parentGoalId === parentGoalForWeekly.id);
+      if (monthlyGoals.length > 0) {
+        parentId = monthlyGoals[0].id;
+      }
+    }
+    
+    addGoal({
+      name: weeklyGoalName.trim(),
+      type: 'weekly',
+      period: weeklyGoalPeriod,
+      progress: 0,
+      parentGoalId: parentId,
+      weekDays: weeklyGoalDays,
+      repeatWeekly: weeklyGoalRepeat,
+    });
+    
+    setShowWeeklyGoalPrompt(false);
+    setParentGoalForWeekly(null);
+  };
+
+  const toggleWeekDay = (day: number) => {
+    if (weeklyGoalDays.includes(day)) {
+      setWeeklyGoalDays(weeklyGoalDays.filter(d => d !== day));
+    } else {
+      setWeeklyGoalDays([...weeklyGoalDays, day].sort());
+    }
   };
 
   return (
@@ -206,32 +282,43 @@ export const GoalsPage = () => {
 
       {/* Goals list */}
       <div className="space-y-3">
-        {filteredGoals.map((goal, index) => (
-          <GoalCard
-            key={goal.id}
-            goal={goal}
-            index={index}
-            onClick={() => setSelectedGoal(goal)}
-          />
-        ))}
-
-        {filteredGoals.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>Nenhum objetivo encontrado</p>
-            <p className="text-sm">Clique no botão + para adicionar</p>
+        {filteredGoals.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleAddGoalClick}
+              className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              Adicionar Objetivo
+            </motion.button>
           </div>
+        ) : (
+          <>
+            {filteredGoals.map((goal, index) => (
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                index={index}
+                onClick={() => setSelectedGoal(goal)}
+              />
+            ))}
+            
+            {/* Add button below list */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleAddGoalClick}
+              className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-medium">Adicionar Objetivo</span>
+            </motion.button>
+          </>
         )}
       </div>
-
-      {/* Add Goal Button */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleAddGoalClick}
-        className="fixed bottom-24 right-4 w-14 h-14 rounded-full gradient-fire text-primary-foreground shadow-lg flex items-center justify-center z-50"
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
 
       {/* Type Selector Modal (when filter is 'all') */}
       <AnimatePresence>
@@ -343,6 +430,140 @@ export const GoalsPage = () => {
         )}
       </AnimatePresence>
 
+      {/* Weekly Goal Prompt Modal */}
+      <AnimatePresence>
+        {showWeeklyGoalPrompt && parentGoalForWeekly && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowWeeklyGoalPrompt(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Criar Hábito Semanal</h3>
+                <button onClick={() => setShowWeeklyGoalPrompt(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 mb-4">
+                <p className="text-sm text-muted-foreground">
+                  💡 Crie um hábito semanal vinculado ao objetivo "{parentGoalForWeekly.name}" para acompanhar seu progresso de forma mais granular.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nome do hábito</label>
+                  <input
+                    type="text"
+                    value={weeklyGoalName}
+                    onChange={(e) => setWeeklyGoalName(e.target.value)}
+                    placeholder="Ex: Ler 30 minutos por dia"
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Dias da semana
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {weekDayLabels.map((label, index) => (
+                      <button
+                        key={index}
+                        onClick={() => toggleWeekDay(index)}
+                        className={cn(
+                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                          weeklyGoalDays.includes(index)
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
+                    <Repeat className="w-4 h-4" />
+                    Repetição
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setWeeklyGoalRepeat(true)}
+                      className={cn(
+                        'flex-1 p-3 rounded-xl text-sm font-medium transition-all border',
+                        weeklyGoalRepeat
+                          ? 'gradient-fire text-primary-foreground border-transparent'
+                          : 'bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50'
+                      )}
+                    >
+                      Toda semana
+                    </button>
+                    <button
+                      onClick={() => setWeeklyGoalRepeat(false)}
+                      className={cn(
+                        'flex-1 p-3 rounded-xl text-sm font-medium transition-all border',
+                        !weeklyGoalRepeat
+                          ? 'gradient-fire text-primary-foreground border-transparent'
+                          : 'bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50'
+                      )}
+                    >
+                      Apenas uma semana
+                    </button>
+                  </div>
+                </div>
+
+                {!weeklyGoalRepeat && (
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Selecione a semana</label>
+                    <select
+                      value={weeklyGoalPeriod}
+                      onChange={(e) => setWeeklyGoalPeriod(e.target.value)}
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                    >
+                      {generateWeekOptions().map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowWeeklyGoalPrompt(false)}
+                    className="flex-1 py-3 border border-border text-muted-foreground rounded-xl hover:bg-muted/50 transition-colors"
+                  >
+                    Pular
+                  </button>
+                  <button
+                    onClick={handleCreateWeeklyGoal}
+                    disabled={!weeklyGoalName.trim() || weeklyGoalDays.length === 0}
+                    className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Criar Hábito
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Goal detail modal */}
       <AnimatePresence>
         {selectedGoal && (
@@ -397,6 +618,33 @@ export const GoalsPage = () => {
                     className="w-full accent-primary h-2"
                   />
                 </div>
+
+                {/* Week days display for weekly goals */}
+                {selectedGoal.type === 'weekly' && selectedGoal.weekDays && (
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Dias da semana</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {weekDayLabels.map((label, index) => (
+                        <span
+                          key={index}
+                          className={cn(
+                            'w-10 h-10 rounded-full text-sm font-medium flex items-center justify-center',
+                            selectedGoal.weekDays?.includes(index)
+                              ? 'gradient-fire text-primary-foreground'
+                              : 'bg-muted/20 text-muted-foreground/50'
+                          )}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                    {selectedGoal.repeatWeekly !== undefined && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {selectedGoal.repeatWeekly ? '🔄 Repete toda semana' : '📅 Apenas esta semana'}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Type selector */}
                 <div>

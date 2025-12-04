@@ -35,7 +35,7 @@ interface AppStore {
   removeHabit: (id: string) => void;
   toggleHabitCheck: (habitId: string, date: string) => void;
   
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => void;
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Goal;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
   
@@ -202,6 +202,7 @@ export const useAppStore = create<AppStore>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ goals: [...state.goals, newGoal] }));
+        return newGoal;
       },
 
       updateGoal: (id, updates) => {
