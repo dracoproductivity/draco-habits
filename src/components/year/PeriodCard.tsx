@@ -71,9 +71,12 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
     <motion.div
       layout
       className={cn(
-        'card-dark overflow-hidden relative group',
+        'overflow-hidden relative group rounded-2xl cursor-pointer glass-hover',
+        'bg-card/30 backdrop-blur-sm border border-border/30',
         className
       )}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
       {/* Wallpaper background */}
       <div 
