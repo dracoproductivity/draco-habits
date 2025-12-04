@@ -21,8 +21,22 @@ export const GoalsPage = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
-  const filteredGoals = filter === 'all' 
-    ? goals 
+  const typeLabels: Record<Goal['type'], string> = {
+    weekly: 'Semanal',
+    monthly: 'Mensal',
+    quarterly: 'Trimestral',
+    yearly: 'Anual',
+  };
+
+  const typeColors: Record<Goal['type'], string> = {
+    weekly: 'bg-success/10 text-success border border-success/30',
+    monthly: 'bg-primary/10 text-primary border border-primary/30',
+    quarterly: 'bg-secondary/10 text-secondary border border-secondary/30',
+    yearly: 'gradient-fire text-primary-foreground',
+  };
+
+  const filteredGoals = filter === 'all'
+    ? goals
     : goals.filter((g) => g.type === filter);
 
   const handleProgressChange = (value: number) => {
@@ -88,7 +102,7 @@ export const GoalsPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm"
             onClick={() => setSelectedGoal(null)}
           >
             <motion.div
@@ -120,6 +134,25 @@ export const GoalsPage = () => {
               </div>
 
               <div className="space-y-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={cn(
+                      'px-3 py-1 rounded-full text-xs font-semibold border',
+                      selectedGoal && typeColors[selectedGoal.type]
+                    )}
+                  >
+                    {selectedGoal && typeLabels[selectedGoal.type]}
+                  </span>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    {selectedGoal.period}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-muted" />
+                    Criado em {new Date(selectedGoal.createdAt).toLocaleDateString('pt-BR')}
+                  </div>
+                </div>
+
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Progresso</span>
@@ -127,14 +160,37 @@ export const GoalsPage = () => {
                       {selectedGoal.progress}%
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedGoal.progress}
-                    onChange={(e) => handleProgressChange(parseInt(e.target.value))}
-                    className="w-full accent-primary"
-                  />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 progress-bar">
+                        <motion.div
+                          className="progress-fill"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${selectedGoal.progress}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium">{selectedGoal.progress}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={selectedGoal.progress}
+                      onChange={(e) => handleProgressChange(parseInt(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
+                    <p className="text-xs text-muted-foreground">Categoria</p>
+                    <p className="font-semibold">{typeLabels[selectedGoal.type]}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
+                    <p className="text-xs text-muted-foreground">Período</p>
+                    <p className="font-semibold">{selectedGoal.period}</p>
+                  </div>
                 </div>
 
                 <button
