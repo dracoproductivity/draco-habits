@@ -41,10 +41,9 @@ export const HabitList = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4"
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-foreground">Hábitos do dia</h3>
+        <h3 className="font-semibold text-foreground text-lg">Hábitos do dia</h3>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
           className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
