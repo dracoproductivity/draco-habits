@@ -45,7 +45,7 @@ export const ProfilePage = () => {
       className="min-h-screen pb-20 p-4"
     >
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gradient-fire">Perfil</h1>
+        <h1 className="text-2xl font-bold text-gradient-primary">Perfil</h1>
         <p className="text-muted-foreground">Suas informações pessoais</p>
       </header>
 

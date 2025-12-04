@@ -257,7 +257,7 @@ export const GoalsPage = () => {
       className="min-h-screen pb-20 p-4"
     >
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gradient-fire">Objetivos</h1>
+        <h1 className="text-2xl font-bold text-gradient-primary">Objetivos</h1>
         <p className="text-muted-foreground">Acompanhe seu progresso</p>
       </header>
 
@@ -605,7 +605,7 @@ export const GoalsPage = () => {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-muted-foreground">Progresso</span>
-                    <span className="text-2xl font-bold text-gradient-fire">
+                    <span className="text-2xl font-bold text-gradient-primary">
                       {selectedGoal.progress}%
                     </span>
                   </div>

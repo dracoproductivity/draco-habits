@@ -38,7 +38,7 @@ export const WelcomeModal = () => {
               <div className="w-24 h-24 mx-auto mb-4 animate-float">
                 <DracoIcon level={1} />
               </div>
-              <h2 className="text-2xl font-bold text-gradient-fire mb-2">
+              <h2 className="text-2xl font-bold text-gradient-primary mb-2">
                 Bem-vindo ao Draco Habits!
               </h2>
               <p className="text-muted-foreground text-sm">

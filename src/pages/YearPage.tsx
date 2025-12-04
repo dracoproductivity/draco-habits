@@ -38,7 +38,7 @@ export const YearPage = () => {
       className="min-h-screen pb-20 p-4"
     >
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gradient-fire">Visão do Ano</h1>
+        <h1 className="text-2xl font-bold text-gradient-primary">Visão do Ano</h1>
         <p className="text-muted-foreground">Organize seus objetivos por período</p>
       </header>
 
