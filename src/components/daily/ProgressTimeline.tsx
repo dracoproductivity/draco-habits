@@ -89,7 +89,7 @@ export const ProgressTimeline = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-5"
+      className="glass-hover rounded-2xl p-5"
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-foreground">Evolução</h3>

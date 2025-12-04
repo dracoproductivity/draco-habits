@@ -14,17 +14,17 @@ export const DailyPage = () => {
     >
       <DailyHeader />
 
-      <div className="p-4 space-y-6">
-        {/* Progress summary */}
+      <div className="px-4 pt-2 pb-4 space-y-8">
+        {/* Progress summary - clean, no boxes */}
         <ProgressBoxes />
 
-        {/* Habit checklist */}
+        {/* Habit checklist - clean list style */}
         <HabitList />
 
-        {/* Progress timeline */}
+        {/* Progress timeline - glass card */}
         <ProgressTimeline />
 
-        {/* Calendar view */}
+        {/* Calendar view - glass card with habit list */}
         <HabitCalendar />
       </div>
     </motion.div>
