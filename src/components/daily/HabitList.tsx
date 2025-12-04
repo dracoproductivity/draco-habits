@@ -1,21 +1,17 @@
-import { motion } from 'framer-motion';
-import { Check, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, Plus, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 export const HabitList = () => {
-  const { habits, toggleHabitCheck, getHabitCheckForDate, addHabit, removeHabit, settings } = useAppStore();
-  const [showAddHabit, setShowAddHabit] = useState(false);
+  const { habits, settings, addHabit, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitEmoji, setNewHabitEmoji] = useState('');
 
   const today = new Date().toISOString().split('T')[0];
-
-  const handleToggle = (habitId: string) => {
-    toggleHabitCheck(habitId, today);
-  };
 
   const handleAddHabit = () => {
     if (!newHabitName.trim()) {
@@ -32,10 +28,9 @@ export const HabitList = () => {
       emoji: newHabitEmoji || undefined,
       xpReward: 20,
     });
-
     setNewHabitName('');
     setNewHabitEmoji('');
-    setShowAddHabit(false);
+    setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
       description: `"${newHabitName}" foi adicionado à sua lista`,
@@ -43,31 +38,35 @@ export const HabitList = () => {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-lg">Hábitos do dia</h3>
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-foreground">Hábitos do dia</h3>
         <button
-          onClick={() => setShowAddHabit(!showAddHabit)}
-          className="text-primary hover:text-primary/80 transition-colors"
+          onClick={() => setShowAddForm(!showAddForm)}
+          className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
         >
           <Plus className="w-5 h-5" />
         </button>
       </div>
 
-      {showAddHabit && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="card-dark p-3 space-y-3"
-        >
-          <div className="flex gap-2">
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-4 flex gap-2"
+          >
             <input
               type="text"
-              placeholder="Emoji (opcional)"
+              placeholder="Emoji"
               value={newHabitEmoji}
               onChange={(e) => setNewHabitEmoji(e.target.value)}
-              className="input-dark w-16 text-center"
+              className="w-14 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-center text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
               maxLength={2}
             />
             <input
@@ -75,85 +74,66 @@ export const HabitList = () => {
               placeholder="Nome do hábito"
               value={newHabitName}
               onChange={(e) => setNewHabitName(e.target.value)}
-              className="input-dark flex-1"
+              className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddHabit()}
             />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowAddHabit(false)}
-              className="btn-ghost flex-1 py-2 text-sm"
-            >
-              Cancelar
-            </button>
             <button
               onClick={handleAddHabit}
-              className="btn-fire flex-1 py-2 text-sm"
+              className="px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
             >
               Adicionar
             </button>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-2">
         {habits.map((habit, index) => {
           const check = getHabitCheckForDate(habit.id, today);
-          const isCompleted = check?.completed;
+          const isCompleted = check?.completed ?? false;
 
           return (
             <motion.div
               key={habit.id}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
               className={cn(
-                'card-dark p-3 flex items-center gap-3 transition-all duration-300 group',
-                isCompleted && 'border-success/30 glow-success'
+                'flex items-center gap-3 p-3 rounded-xl transition-all group',
+                isCompleted ? 'bg-primary/10' : 'bg-muted/30 hover:bg-muted/50'
               )}
             >
               <button
-                onClick={() => handleToggle(habit.id)}
+                onClick={() => toggleHabitCheck(habit.id, today)}
                 className={cn(
-                  'w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-300',
-                  isCompleted
-                    ? 'bg-success border-success'
-                    : 'border-border hover:border-primary'
+                  'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
+                  isCompleted 
+                    ? 'bg-primary border-primary' 
+                    : 'border-muted-foreground/50 hover:border-primary'
                 )}
               >
-                {isCompleted && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500 }}
-                  >
-                    <Check className="w-5 h-5 text-success-foreground" />
-                  </motion.div>
-                )}
+                {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
               </button>
 
               <div className="flex-1 flex items-center gap-2">
                 {settings.showEmojis && habit.emoji && (
-                  <span className="text-xl">{habit.emoji}</span>
+                  <span className="text-lg">{habit.emoji}</span>
                 )}
-                <span
-                  className={cn(
-                    'font-medium transition-all duration-300',
-                    isCompleted && 'text-muted-foreground line-through'
-                  )}
-                >
+                <span className={cn(
+                  'font-medium transition-all',
+                  isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                )}>
                   {habit.name}
                 </span>
               </div>
 
-              <span className="text-xs text-muted-foreground">
-                +{habit.xpReward} XP
-              </span>
+              <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
 
               <button
                 onClick={() => removeHabit(habit.id)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
               >
-                <Trash2 className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
             </motion.div>
           );
@@ -166,6 +146,6 @@ export const HabitList = () => {
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
