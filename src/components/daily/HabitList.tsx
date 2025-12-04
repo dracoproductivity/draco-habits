@@ -99,7 +99,7 @@ export const HabitList = () => {
               transition={{ delay: index * 0.05 }}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-xl transition-all group',
-                isCompleted ? 'bg-primary/10' : 'bg-muted/30 hover:bg-muted/50'
+                isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
               )}
             >
               <button

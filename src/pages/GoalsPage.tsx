@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2 } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
-import { Goal } from '@/types';
+import { Goal, GoalType } from '@/types';
 import { cn } from '@/lib/utils';
 
 type FilterType = 'all' | Goal['type'];
@@ -16,24 +16,72 @@ const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'yearly', label: 'Anual' },
 ];
 
+const typeLabels: Record<GoalType, string> = {
+  weekly: 'Semanal',
+  monthly: 'Mensal',
+  quarterly: 'Trimestral',
+  yearly: 'Anual',
+};
+
+const typeColors: Record<GoalType, string> = {
+  weekly: 'bg-success/10 text-success border border-success/30',
+  monthly: 'bg-primary/10 text-primary border border-primary/30',
+  quarterly: 'bg-secondary/10 text-secondary border border-secondary/30',
+  yearly: 'gradient-fire text-primary-foreground',
+};
+
+const generateWeekOptions = () => {
+  const options: { value: string; label: string }[] = [];
+  const year = new Date().getFullYear();
+  for (let i = 1; i <= 52; i++) {
+    options.push({ value: `Semana ${i}`, label: `Semana ${i}` });
+  }
+  return options;
+};
+
+const generateMonthOptions = () => {
+  const months = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+  const year = new Date().getFullYear();
+  return months.map(m => ({ value: `${m} ${year}`, label: `${m} ${year}` }));
+};
+
+const generateQuarterOptions = () => {
+  const year = new Date().getFullYear();
+  return [
+    { value: `Q1-${year}`, label: `T1 ${year} (Jan-Mar)` },
+    { value: `Q2-${year}`, label: `T2 ${year} (Abr-Jun)` },
+    { value: `Q3-${year}`, label: `T3 ${year} (Jul-Set)` },
+    { value: `Q4-${year}`, label: `T4 ${year} (Out-Dez)` },
+  ];
+};
+
+const generateYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  return [
+    { value: (currentYear - 1).toString(), label: (currentYear - 1).toString() },
+    { value: currentYear.toString(), label: currentYear.toString() },
+    { value: (currentYear + 1).toString(), label: (currentYear + 1).toString() },
+  ];
+};
+
+const getPeriodOptions = (type: GoalType) => {
+  switch (type) {
+    case 'weekly': return generateWeekOptions();
+    case 'monthly': return generateMonthOptions();
+    case 'quarterly': return generateQuarterOptions();
+    case 'yearly': return generateYearOptions();
+  }
+};
+
 export const GoalsPage = () => {
   const { goals, updateGoal, removeGoal, settings } = useAppStore();
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-
-  const typeLabels: Record<Goal['type'], string> = {
-    weekly: 'Semanal',
-    monthly: 'Mensal',
-    quarterly: 'Trimestral',
-    yearly: 'Anual',
-  };
-
-  const typeColors: Record<Goal['type'], string> = {
-    weekly: 'bg-success/10 text-success border border-success/30',
-    monthly: 'bg-primary/10 text-primary border border-primary/30',
-    quarterly: 'bg-secondary/10 text-secondary border border-secondary/30',
-    yearly: 'gradient-fire text-primary-foreground',
-  };
+  const [editingType, setEditingType] = useState<GoalType | null>(null);
+  const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
 
   const filteredGoals = filter === 'all'
     ? goals
@@ -43,6 +91,24 @@ export const GoalsPage = () => {
     if (selectedGoal) {
       updateGoal(selectedGoal.id, { progress: value });
       setSelectedGoal({ ...selectedGoal, progress: value });
+    }
+  };
+
+  const handleTypeChange = (newType: GoalType) => {
+    if (selectedGoal) {
+      const periodOptions = getPeriodOptions(newType);
+      const newPeriod = periodOptions[0]?.value || '';
+      updateGoal(selectedGoal.id, { type: newType, period: newPeriod });
+      setSelectedGoal({ ...selectedGoal, type: newType, period: newPeriod });
+      setEditingType(null);
+    }
+  };
+
+  const handlePeriodChange = (newPeriod: string) => {
+    if (selectedGoal) {
+      updateGoal(selectedGoal.id, { period: newPeriod });
+      setSelectedGoal({ ...selectedGoal, period: newPeriod });
+      setEditingPeriod(null);
     }
   };
 
@@ -102,19 +168,17 @@ export const GoalsPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
             onClick={() => setSelectedGoal(null)}
           >
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               transition={{ type: 'spring', damping: 25 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg card-dark rounded-t-3xl p-6 h-[90vh] overflow-y-auto"
+              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-6" />
-
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-3">
                   {settings.showEmojis && selectedGoal.emoji && (
@@ -134,63 +198,107 @@ export const GoalsPage = () => {
               </div>
 
               <div className="space-y-6">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-semibold border',
-                      selectedGoal && typeColors[selectedGoal.type]
-                    )}
-                  >
-                    {selectedGoal && typeLabels[selectedGoal.type]}
-                  </span>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
-                    {selectedGoal.period}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-2 h-2 rounded-full bg-muted" />
-                    Criado em {new Date(selectedGoal.createdAt).toLocaleDateString('pt-BR')}
-                  </div>
-                </div>
-
+                {/* Progress section */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-sm text-muted-foreground">Progresso</span>
                     <span className="text-2xl font-bold text-gradient-fire">
                       {selectedGoal.progress}%
                     </span>
                   </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 progress-bar">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={selectedGoal.progress}
+                    onChange={(e) => handleProgressChange(parseInt(e.target.value))}
+                    className="w-full accent-primary h-2"
+                  />
+                </div>
+
+                {/* Type selector */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setEditingType(editingType ? null : selectedGoal.type)}
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
+                    >
+                      <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}>
+                        {typeLabels[selectedGoal.type]}
+                      </span>
+                      <ChevronDown className={cn('w-4 h-4 transition-transform', editingType && 'rotate-180')} />
+                    </button>
+                    <AnimatePresence>
+                      {editingType && (
                         <motion.div
-                          className="progress-fill"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${selectedGoal.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{selectedGoal.progress}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={selectedGoal.progress}
-                      onChange={(e) => handleProgressChange(parseInt(e.target.value))}
-                      className="w-full accent-primary"
-                    />
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg"
+                        >
+                          {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => handleTypeChange(type)}
+                              className={cn(
+                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors',
+                                selectedGoal.type === type && 'bg-muted/30'
+                              )}
+                            >
+                              <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[type])}>
+                                {typeLabels[type]}
+                              </span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
-                    <p className="text-xs text-muted-foreground">Categoria</p>
-                    <p className="font-semibold">{typeLabels[selectedGoal.type]}</p>
+                {/* Period selector */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setEditingPeriod(editingPeriod ? null : selectedGoal.period)}
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
+                    >
+                      <span className="font-medium">{selectedGoal.period}</span>
+                      <ChevronDown className={cn('w-4 h-4 transition-transform', editingPeriod && 'rotate-180')} />
+                    </button>
+                    <AnimatePresence>
+                      {editingPeriod && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg max-h-48 overflow-y-auto"
+                        >
+                          {getPeriodOptions(selectedGoal.type).map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => handlePeriodChange(option.value)}
+                              className={cn(
+                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm',
+                                selectedGoal.period === option.value && 'bg-muted/30'
+                              )}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/10 border border-border/30">
-                    <p className="text-xs text-muted-foreground">Período</p>
-                    <p className="font-semibold">{selectedGoal.period}</p>
-                  </div>
+                </div>
+
+                {/* Meta info */}
+                <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
+                  <p className="text-xs text-muted-foreground">
+                    Criado em {new Date(selectedGoal.createdAt).toLocaleDateString('pt-BR')}
+                  </p>
                 </div>
 
                 <button
