@@ -42,9 +42,11 @@ export interface DracoState {
 }
 
 export type ThemeColor = 'fire' | 'purple' | 'emerald' | 'ocean' | 'rose';
+export type ProgressDisplayMode = 'linear' | 'circular';
 
 export interface AppSettings {
   themeColor: ThemeColor;
+  progressDisplayMode: ProgressDisplayMode;
   showEmojis: boolean;
   notificationsEnabled: boolean;
   notificationTime: string;

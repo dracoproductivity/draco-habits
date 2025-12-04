@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, ChevronDown, ChevronUp, X, Image } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -10,25 +10,55 @@ interface PeriodCardProps {
   title: string;
   type: GoalType;
   period: string;
-  wallpaper?: string;
   className?: string;
 }
 
-const defaultWallpapers = [
-  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=400&h=200&fit=crop',
-];
+const themeGradients: Record<string, string> = {
+  fire: 'linear-gradient(135deg, hsl(32 95% 25% / 0.8), hsl(15 90% 20% / 0.6), hsl(32 70% 15% / 0.4))',
+  purple: 'linear-gradient(135deg, hsl(270 80% 30% / 0.8), hsl(280 70% 25% / 0.6), hsl(260 60% 15% / 0.4))',
+  emerald: 'linear-gradient(135deg, hsl(160 80% 25% / 0.8), hsl(140 70% 20% / 0.6), hsl(150 60% 15% / 0.4))',
+  ocean: 'linear-gradient(135deg, hsl(200 80% 30% / 0.8), hsl(220 70% 25% / 0.6), hsl(210 60% 15% / 0.4))',
+  rose: 'linear-gradient(135deg, hsl(340 80% 35% / 0.8), hsl(320 70% 30% / 0.6), hsl(330 60% 20% / 0.4))',
+};
+
+const ProgressCircle = ({ progress }: { progress: number }) => {
+  const radius = 20;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg width="50" height="50" className="transform -rotate-90">
+      <circle
+        cx="25"
+        cy="25"
+        r={radius}
+        stroke="hsl(var(--muted))"
+        strokeWidth="4"
+        fill="none"
+      />
+      <motion.circle
+        cx="25"
+        cy="25"
+        r={radius}
+        stroke="hsl(var(--primary))"
+        strokeWidth="4"
+        fill="none"
+        strokeLinecap="round"
+        initial={{ strokeDashoffset: circumference }}
+        animate={{ strokeDashoffset }}
+        style={{ strokeDasharray: circumference }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      />
+    </svg>
+  );
+};
 
 export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) => {
   const { goals, addGoal, updateGoal, removeGoal, settings } = useAppStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAddGoal, setShowAddGoal] = useState(false);
-  const [showWallpaperPicker, setShowWallpaperPicker] = useState(false);
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalEmoji, setNewGoalEmoji] = useState('');
-  const [selectedWallpaper, setSelectedWallpaper] = useState(defaultWallpapers[0]);
 
   const periodGoals = goals.filter((g) => g.type === type && g.period === period);
   const averageProgress = periodGoals.length > 0
@@ -51,7 +81,6 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
       type,
       period,
       progress: 0,
-      wallpaper: selectedWallpaper,
     });
 
     setNewGoalName('');
@@ -67,6 +96,15 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
     updateGoal(goalId, { progress: Math.min(100, Math.max(0, newProgress)) });
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input')) return;
+    setIsExpanded(!isExpanded);
+  };
+
+  const currentGradient = themeGradients[settings.themeColor] || themeGradients.fire;
+  const isCircular = settings.progressDisplayMode === 'circular';
+
   return (
     <motion.div
       layout
@@ -77,19 +115,16 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
       )}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
+      onClick={handleCardClick}
     >
-      {/* Wallpaper background */}
+      {/* Theme gradient background */}
       <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `url(${selectedWallpaper})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+        className="absolute inset-0"
+        style={{ background: currentGradient }}
       />
       
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-card via-card/80 to-transparent" />
+      {/* Additional overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/40 to-transparent" />
 
       <div className="relative z-10 p-4">
         {/* Header */}
@@ -100,58 +135,27 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-gradient-fire">{averageProgress}%</span>
-            <button
-              onClick={() => setShowWallpaperPicker(!showWallpaperPicker)}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
-            >
-              <Image className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </button>
+            {isCircular ? (
+              <div className="relative flex items-center justify-center">
+                <ProgressCircle progress={averageProgress} />
+                <span className="absolute text-xs font-bold">{averageProgress}%</span>
+              </div>
+            ) : (
+              <span className="text-2xl font-bold text-gradient-primary">{averageProgress}%</span>
+            )}
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="progress-bar mb-3">
-          <motion.div
-            className="progress-fill"
-            initial={{ width: 0 }}
-            animate={{ width: `${averageProgress}%` }}
-          />
-        </div>
-
-        {/* Wallpaper picker */}
-        <AnimatePresence>
-          {showWallpaperPicker && (
+        {/* Linear Progress bar */}
+        {!isCircular && (
+          <div className="progress-bar mb-3">
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-3 grid grid-cols-4 gap-2"
-            >
-              {defaultWallpapers.map((wp, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedWallpaper(wp);
-                    setShowWallpaperPicker(false);
-                  }}
-                  className={cn(
-                    'aspect-video rounded-lg overflow-hidden border-2 transition-all',
-                    selectedWallpaper === wp ? 'border-primary' : 'border-transparent'
-                  )}
-                >
-                  <img src={wp} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+              className="progress-fill"
+              initial={{ width: 0 }}
+              animate={{ width: `${averageProgress}%` }}
+            />
+          </div>
+        )}
 
         {/* Expanded content */}
         <AnimatePresence>
@@ -173,7 +177,10 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
                       <span className="font-medium text-sm">{goal.name}</span>
                     </div>
                     <button
-                      onClick={() => removeGoal(goal.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeGoal(goal.id);
+                      }}
                       className="text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <X className="w-4 h-4" />
@@ -186,6 +193,7 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
                       max="100"
                       value={goal.progress}
                       onChange={(e) => handleProgressChange(goal.id, parseInt(e.target.value))}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex-1 accent-primary"
                     />
                     <span className="text-sm font-medium w-12 text-right">{goal.progress}%</span>
@@ -201,7 +209,7 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
 
               {/* Add goal form */}
               {showAddGoal ? (
-                <div className="bg-muted/50 rounded-xl p-3 space-y-3">
+                <div className="bg-muted/50 rounded-xl p-3 space-y-3" onClick={(e) => e.stopPropagation()}>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -221,13 +229,19 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setShowAddGoal(false)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowAddGoal(false);
+                      }}
                       className="btn-ghost flex-1 py-2 text-sm"
                     >
                       Cancelar
                     </button>
                     <button
-                      onClick={handleAddGoal}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddGoal();
+                      }}
                       className="btn-fire flex-1 py-2 text-sm"
                     >
                       Adicionar
@@ -236,7 +250,10 @@ export const PeriodCard = ({ title, type, period, className }: PeriodCardProps) 
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowAddGoal(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAddGoal(true);
+                  }}
                   className="w-full py-2 border border-dashed border-border rounded-xl text-muted-foreground hover:text-foreground hover:border-primary transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4" />

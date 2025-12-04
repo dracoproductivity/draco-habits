@@ -64,6 +64,7 @@ const defaultDraco: DracoState = {
 
 const defaultSettings: AppSettings = {
   themeColor: 'fire',
+  progressDisplayMode: 'linear',
   showEmojis: true,
   notificationsEnabled: true,
   notificationTime: '09:00',
