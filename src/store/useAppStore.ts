@@ -435,6 +435,21 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'draco-habits-storage',
+      version: 2, // Increment to reset old incompatible data
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        isFirstTime: state.isFirstTime,
+        user: state.user,
+        draco: state.draco,
+        habits: state.habits,
+        habitChecks: state.habitChecks,
+        goals: state.goals,
+        customCategories: state.customCategories,
+        dailyTracking: state.dailyTracking,
+        lastCheckInDate: state.lastCheckInDate,
+        settings: state.settings,
+        activeTab: state.activeTab,
+      }),
     }
   )
 );
