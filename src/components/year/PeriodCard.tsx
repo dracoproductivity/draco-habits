@@ -10,6 +10,7 @@ interface PeriodCardProps {
   period: string;
   className?: string;
   onClick?: () => void;
+  quarterMonths?: string[]; // For quarterly cards, show month progress
 }
 
 const ProgressCircle = ({ progress }: { progress: number }) => {
@@ -44,7 +45,7 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
   );
 };
 
-export const PeriodCard = ({ title, subtitle, type, period, className, onClick }: PeriodCardProps) => {
+export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths }: PeriodCardProps) => {
   const { goals, settings } = useAppStore();
 
   const periodGoals = goals.filter((g) => g.type === type && g.period === period);
@@ -57,6 +58,15 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick }
   // Get first 3 goals for preview
   const previewGoals = periodGoals.slice(0, 3);
   const remainingCount = periodGoals.length - 3;
+
+  // Calculate monthly progress for quarters
+  const getMonthProgress = (monthName: string) => {
+    const year = new Date().getFullYear();
+    const monthPeriod = `${monthName} ${year}`;
+    const monthGoals = goals.filter((g) => g.type === 'monthly' && g.period === monthPeriod);
+    if (monthGoals.length === 0) return 0;
+    return Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length);
+  };
 
   return (
     <motion.div
@@ -114,8 +124,29 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick }
           </div>
         )}
 
-        {/* Goals Preview (sub-subtitles) */}
-        {previewGoals.length > 0 && (
+        {/* Monthly progress for quarters */}
+        {quarterMonths && quarterMonths.length > 0 && (
+          <div className="space-y-2 mt-3 pt-3 border-t border-border/20">
+            {quarterMonths.map((month) => {
+              const monthProgress = getMonthProgress(month);
+              return (
+                <div key={month} className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground flex-1">{month}</span>
+                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${monthProgress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-primary w-8 text-right">{monthProgress}%</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Goals Preview (sub-subtitles) - only for non-quarterly */}
+        {!quarterMonths && previewGoals.length > 0 && (
           <div className="space-y-1.5 mt-3 pt-3 border-t border-border/20">
             {previewGoals.map((goal) => (
               <div key={goal.id} className="flex items-center gap-2 text-sm">
@@ -135,7 +166,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick }
         )}
 
         {/* Summary if no goals */}
-        {periodGoals.length === 0 && (
+        {!quarterMonths && periodGoals.length === 0 && (
           <p className="text-sm text-muted-foreground/60 mt-2">
             Nenhum objetivo
           </p>
