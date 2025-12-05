@@ -6,10 +6,14 @@ import { GoalsPage } from './GoalsPage';
 import { AnalyticsPage } from './AnalyticsPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
+import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
+import { useResponsive } from '@/hooks/useResponsive';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const { isAuthenticated, activeTab, settings } = useAppStore();
+  const { isDesktop, isTablet } = useResponsive();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
@@ -37,10 +41,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-lg mx-auto">
+      {/* Desktop Sidebar */}
+      {isDesktop && <DesktopSidebar />}
+      
+      {/* Main Content */}
+      <main className={cn(
+        'mx-auto transition-all duration-300',
+        isDesktop ? 'ml-64 max-w-4xl px-8' : isTablet ? 'max-w-2xl px-6' : 'max-w-lg'
+      )}>
         {renderPage()}
       </main>
-      <BottomNav />
+      
+      {/* Bottom Nav - Only for mobile and tablet */}
+      {!isDesktop && <BottomNav />}
+      
       <WelcomeModal />
     </div>
   );

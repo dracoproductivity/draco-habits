@@ -2,19 +2,21 @@ import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Calendar, Target } from 'lucide-react';
 
 export const AnalyticsPage = () => {
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen pb-20 p-4"
+      className={`min-h-screen p-4 ${isDesktop ? 'pb-8 pt-6' : 'pb-20'}`}
     >
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gradient-primary">Análises</h1>
+        <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Análises</h1>
         <p className="text-muted-foreground">Acompanhe suas estatísticas</p>
       </header>
 
       {/* Placeholder cards */}
-      <div className="space-y-4">
+      <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-4'}`}>
         <div className="glass-hover rounded-2xl p-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center">
             <TrendingUp className="w-6 h-6 text-primary-foreground" />

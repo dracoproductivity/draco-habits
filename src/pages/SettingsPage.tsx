@@ -203,18 +203,21 @@ export const SettingsPage = () => {
 
   const age = calculateAge(birthDate);
 
+  // Check for desktop
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen pb-20 p-4"
+      className={`min-h-screen p-4 ${isDesktop ? 'pb-8 pt-6' : 'pb-20'}`}
     >
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gradient-primary">Configurações</h1>
+        <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Configurações</h1>
         <p className="text-muted-foreground">Personalize sua experiência</p>
       </header>
 
-      <div className="space-y-4">
+      <div className={`${isDesktop ? 'grid grid-cols-2 gap-6' : 'space-y-4'}`}>
         {/* Profile Section */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
