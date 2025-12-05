@@ -18,7 +18,7 @@ const WEEK_DAYS = [
 ];
 
 const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: string; delay?: number }) => {
-  const circumference = 2 * Math.PI * 24;
+  const circumference = 2 * Math.PI * 32;
   const offset = circumference - (value / 100) * circumference;
 
   return (
@@ -28,23 +28,23 @@ const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: s
       transition={{ delay }}
       className="flex flex-col items-center"
     >
-      <div className="relative w-14 h-14">
+      <div className="relative w-20 h-20">
         <svg className="w-full h-full -rotate-90">
           <circle
-            cx="28"
-            cy="28"
-            r="24"
+            cx="40"
+            cy="40"
+            r="32"
             fill="none"
             stroke="hsl(var(--muted) / 0.3)"
-            strokeWidth="3"
+            strokeWidth="4"
           />
           <motion.circle
-            cx="28"
-            cy="28"
-            r="24"
+            cx="40"
+            cy="40"
+            r="32"
             fill="none"
             stroke="hsl(var(--primary))"
-            strokeWidth="3"
+            strokeWidth="4"
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
@@ -53,10 +53,10 @@ const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: s
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-bold text-foreground">{value}%</span>
+          <span className="text-sm font-bold text-foreground">{value}%</span>
         </div>
       </div>
-      <span className="text-[10px] text-muted-foreground mt-1">{label}</span>
+      <span className="text-xs text-muted-foreground mt-1">{label}</span>
     </motion.div>
   );
 };
@@ -67,15 +67,16 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
       initial={{ opacity: 0, x: 10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
-      className="flex flex-col gap-1 min-w-[80px]"
+      className="flex flex-col gap-1.5 min-w-[100px]"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">{label}</span>
-        <span className="text-xs font-bold text-foreground">{value}%</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="text-sm font-bold text-foreground">{value}%</span>
       </div>
-      <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+      <div className="h-3 bg-muted/30 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-primary rounded-full"
+          className="h-full rounded-full"
+          style={{ background: 'var(--gradient-progress)' }}
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
           transition={{ duration: 0.8, ease: 'easeOut', delay: delay + 0.1 }}
@@ -272,32 +273,32 @@ export const HabitList = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-6">
         {/* Habit list section */}
         <div className="flex-1">
+          {/* Title */}
+          <h3 className="font-semibold text-foreground text-lg mb-3">Hábitos do dia</h3>
+          
+          {/* Day navigation and Add button */}
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <h3 className="font-semibold text-foreground text-lg">Hábitos do dia</h3>
-              {/* Day navigation */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => navigateDay(-1)}
-                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm text-muted-foreground min-w-[70px] text-center">{formatViewDate()}</span>
-                <button
-                  onClick={() => navigateDay(1)}
-                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="flex items-center gap-1 bg-muted/20 rounded-xl px-2 py-1">
+              <button
+                onClick={() => navigateDay(-1)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-foreground font-medium min-w-[80px] text-center">{formatViewDate()}</span>
+              <button
+                onClick={() => navigateDay(1)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors"
+              className="p-2 rounded-xl text-primary-foreground gradient-primary hover:opacity-90 transition-colors"
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -540,10 +541,10 @@ export const HabitList = () => {
           </motion.div>
         </div>
 
-        {/* Progress indicators on the right side */}
+        {/* Progress indicators on the right side - vertically centered */}
         <div className={cn(
-          "flex flex-col gap-3 pt-10",
-          isCircular ? "items-center" : "min-w-[90px]"
+          "flex flex-col justify-center gap-4 self-center",
+          isCircular ? "items-center" : "min-w-[110px]"
         )}>
           {isCircular ? (
             <>
