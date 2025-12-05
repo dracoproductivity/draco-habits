@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory } from '@/types';
+import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory, DailyLog } from '@/types';
 
 interface AppStore {
   // Auth
@@ -18,6 +18,9 @@ interface AppStore {
   // Goals
   goals: Goal[];
   customCategories: CustomCategory[];
+  
+  // Daily Logs (sleep/phone)
+  dailyLogs: DailyLog[];
   
   // Settings
   settings: AppSettings;
@@ -44,6 +47,9 @@ interface AppStore {
   addCustomCategory: (category: Omit<CustomCategory, 'id'>) => CustomCategory;
   updateCustomCategory: (id: string, updates: Partial<CustomCategory>) => void;
   removeCustomCategory: (id: string) => void;
+  
+  addDailyLog: (log: DailyLog) => void;
+  getDailyLogs: (startDate: string, endDate: string) => DailyLog[];
   
   updateSettings: (settings: Partial<AppSettings>) => void;
   setActiveTab: (tab: TabType) => void;
@@ -80,6 +86,8 @@ const defaultSettings: AppSettings = {
     { id: '1', time: '09:00', message: 'Bom dia! 🌞 Hora de começar seus hábitos!', enabled: true },
   ],
   darkMode: true,
+  minSleepHours: 7,
+  maxPhoneHours: 2,
 };
 
 // Empty defaults for first-time users
@@ -98,6 +106,7 @@ export const useAppStore = create<AppStore>()(
       habitChecks: [],
       goals: defaultGoals,
       customCategories: [],
+      dailyLogs: [],
       settings: defaultSettings,
       activeTab: 'daily',
       showWelcomeModal: false,
@@ -259,6 +268,23 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({
           customCategories: state.customCategories.filter((c) => c.id !== id),
         }));
+      },
+
+      addDailyLog: (log) => {
+        set((state) => {
+          const existingIndex = state.dailyLogs.findIndex((l) => l.date === log.date);
+          if (existingIndex >= 0) {
+            const newLogs = [...state.dailyLogs];
+            newLogs[existingIndex] = log;
+            return { dailyLogs: newLogs };
+          }
+          return { dailyLogs: [...state.dailyLogs, log] };
+        });
+      },
+
+      getDailyLogs: (startDate, endDate) => {
+        const { dailyLogs } = get();
+        return dailyLogs.filter((log) => log.date >= startDate && log.date <= endDate);
       },
 
       updateSettings: (updates) => {

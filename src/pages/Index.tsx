@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
@@ -8,17 +8,33 @@ import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
+import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
 import { useResponsive } from '@/hooks/useResponsive';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 const Index = () => {
   const { isAuthenticated, activeTab, settings } = useAppStore();
   const { isDesktop, isTablet } = useResponsive();
+  const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
+
+  // Check if morning check-in should be shown
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const currentHour = new Date().getHours();
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Only show after 5am and if not already filled today
+    if (currentHour >= 5 && settings.lastDailyLogDate !== today) {
+      setShowMorningCheckIn(true);
+    }
+  }, [isAuthenticated, settings.lastDailyLogDate]);
 
   if (!isAuthenticated) {
     return <AuthPage />;
@@ -56,6 +72,10 @@ const Index = () => {
       {!isDesktop && <BottomNav />}
       
       <WelcomeModal />
+      <MorningCheckInModal 
+        isOpen={showMorningCheckIn} 
+        onClose={() => setShowMorningCheckIn(false)} 
+      />
     </div>
   );
 };
