@@ -404,9 +404,10 @@ export const GoalsPage = () => {
           {/* Month */}
           <PeriodCard
             title={month.charAt(0).toUpperCase() + month.slice(1)}
+            subtitle="Mês atual"
             type="monthly"
             period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
-            onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
+            onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`, 'Mês atual')}
           />
 
           {/* Quarters */}

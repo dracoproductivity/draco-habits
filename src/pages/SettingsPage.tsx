@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } from '@/types';
 import { DracoIcon } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
+import { Switch } from '@/components/ui/switch';
 import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
@@ -408,20 +409,10 @@ export const SettingsPage = () => {
                     <p className="text-sm text-muted-foreground">Ativar tema escuro</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => updateSettings({ darkMode: !settings.darkMode })}
-                  className={cn(
-                    'w-12 h-6 rounded-full transition-all duration-300 relative',
-                    settings.darkMode ? 'bg-primary' : 'bg-muted'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'absolute top-1 w-4 h-4 rounded-full bg-foreground transition-all duration-300',
-                      settings.darkMode ? 'right-1' : 'left-1'
-                    )}
-                  />
-                </button>
+                <Switch
+                  checked={settings.darkMode}
+                  onCheckedChange={(checked) => updateSettings({ darkMode: checked })}
+                />
               </div>
             </div>
 
