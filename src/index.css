@@ -51,7 +51,7 @@
   }
 
   [data-theme="green"] {
-    --background: 160 40% 5%;
+    --background: 210 50% 6%;
     --foreground: 160 20% 95%;
 
     --card: 160 35% 9%;
@@ -156,7 +156,7 @@
   }
 
   [data-theme="red"] {
-    --background: 0 40% 6%;
+    --background: 210 50% 6%;
     --foreground: 0 20% 95%;
 
     --card: 0 35% 10%;
@@ -191,7 +191,7 @@
   }
 
   [data-theme="purple"] {
-    --background: 270 40% 6%;
+    --background: 210 50% 6%;
     --foreground: 270 20% 95%;
 
     --card: 270 35% 10%;
@@ -226,7 +226,7 @@
   }
 
   [data-theme="pink"] {
-    --background: 350 40% 6%;
+    --background: 210 50% 6%;
     --foreground: 350 20% 95%;
 
     --card: 350 35% 10%;
@@ -261,7 +261,7 @@
   }
 
   [data-theme="orange"] {
-    --background: 25 47% 6%;
+    --background: 210 50% 6%;
     --foreground: 25 20% 95%;
 
     --card: 25 40% 10%;

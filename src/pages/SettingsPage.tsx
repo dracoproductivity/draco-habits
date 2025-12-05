@@ -30,14 +30,10 @@ import { format, differenceInYears, parse } from 'date-fns';
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
   { id: 'blue', name: 'Azul', color: '200 90% 50%' },
   { id: 'green', name: 'Verde', color: '160 80% 45%' },
-  { id: 'yellow', name: 'Amarelo', color: '45 95% 55%' },
-  { id: 'neutral', name: 'Neutro', color: '0 0% 90%' },
   { id: 'red', name: 'Vermelho', color: '0 80% 55%' },
   { id: 'purple', name: 'Roxo', color: '270 80% 60%' },
-  { id: 'pink', name: 'Rosa', color: '350 80% 55%' },
   { id: 'orange', name: 'Laranja', color: '25 95% 55%' },
-  { id: 'lilac', name: 'Lilás', color: '280 65% 70%' },
-  { id: 'gray', name: 'Cinza', color: '220 15% 55%' },
+  { id: 'pink', name: 'Rosa', color: '350 80% 55%' },
 ];
 
 const DRACO_COLORS: { id: DracoState['color']; name: string; color: string }[] = [

@@ -68,7 +68,7 @@ export interface DracoState {
   color: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'pink';
 }
 
-export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray';
+export type ThemeColor = 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'pink';
 export type ProgressDisplayMode = 'linear' | 'circular';
 
 export interface NotificationReminder {
