@@ -46,8 +46,8 @@ const Index = () => {
       
       {/* Main Content */}
       <main className={cn(
-        'mx-auto transition-all duration-300',
-        isDesktop ? 'ml-64 max-w-4xl px-8' : isTablet ? 'max-w-2xl px-6' : 'max-w-lg'
+        'transition-all duration-300',
+        isDesktop ? 'ml-64 px-8' : isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
       )}>
         {renderPage()}
       </main>
