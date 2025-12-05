@@ -217,7 +217,7 @@ export const SettingsPage = () => {
         <p className="text-muted-foreground">Personalize sua experiência</p>
       </header>
 
-      <div className={`${isDesktop ? 'grid grid-cols-2 gap-6' : 'space-y-4'}`}>
+      <div className="space-y-4">
         {/* Profile Section */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
