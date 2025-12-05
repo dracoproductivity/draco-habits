@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Eye } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { PeriodCard } from '@/components/year/PeriodCard';
 import { PeriodModal } from '@/components/year/PeriodModal';
-import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
+import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
+import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -116,7 +117,7 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, addGoal, updateGoal, removeGoal, settings, habits, customCategories, addCustomCategory } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, habits, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
   
   // View mode toggle
   const [viewMode, setViewMode] = useState<ViewMode>('progress');
@@ -124,6 +125,7 @@ export const GoalsPage = () => {
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [editingType, setEditingType] = useState<GoalType | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
   const [editingParent, setEditingParent] = useState<boolean>(false);
@@ -430,55 +432,86 @@ export const GoalsPage = () => {
 
           {/* Content based on filter */}
           {filter === 'habits' ? (
-            /* Habits List View */
-            <div className="space-y-3">
+            /* Habits List View - Same as Daily */
+            <div className="space-y-2">
               {habits.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
                   <p className="text-muted-foreground mb-4">Nenhum hábito encontrado</p>
                   <p className="text-sm text-muted-foreground/70">Crie hábitos na aba Daily</p>
                 </div>
               ) : (
-                habits.map((habit) => {
-                  const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-                  const weekDayNames = habit.weekDays?.map(d => weekDayLabels[d]).join(', ');
-                  
+                habits.map((habit, index) => {
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const check = getHabitCheckForDate(habit.id, todayStr);
+                  const isCompleted = check?.completed ?? false;
+                  const linkedGoal = goals.find(g => g.id === habit.goalId);
+
                   return (
                     <motion.div
                       key={habit.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-2xl bg-muted/20 border border-border/30 glass-hover"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          {settings.showEmojis && habit.emoji && (
-                            <span className="text-2xl">{habit.emoji}</span>
-                          )}
-                          <div>
-                            <h4 className="font-semibold">{habit.name}</h4>
-                            {habit.isOneTime ? (
-                              <p className="text-xs text-muted-foreground">Evento único</p>
-                            ) : weekDayNames ? (
-                              <p className="text-xs text-muted-foreground">{weekDayNames}</p>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-medium text-primary">+{habit.xpReward} XP</span>
-                        </div>
-                      </div>
-                      
-                      {linkedGoal && (
-                        <div className="mt-3 pt-3 border-t border-border/20">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span className="text-muted-foreground">Vinculado a:</span>
-                            <span className="font-medium">
-                              {linkedGoal.emoji && settings.showEmojis ? `${linkedGoal.emoji} ` : ''}{linkedGoal.name}
-                            </span>
-                          </div>
-                        </div>
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={cn(
+                        'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
+                        isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
                       )}
+                      onClick={() => setSelectedHabit(habit)}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHabitCheck(habit.id, todayStr);
+                        }}
+                        className={cn(
+                          'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
+                          isCompleted 
+                            ? 'bg-primary border-primary' 
+                            : 'border-muted-foreground/50 hover:border-primary'
+                        )}
+                      >
+                        {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
+                      </button>
+
+                      <div className="flex-1 flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                          {settings.showEmojis && habit.emoji && (
+                            <span className="text-lg">{habit.emoji}</span>
+                          )}
+                          <span className={cn(
+                            'font-medium transition-all',
+                            isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                          )}>
+                            {habit.name}
+                          </span>
+                        </div>
+                        {linkedGoal && (
+                          <span className="text-xs text-muted-foreground">
+                            🎯 {linkedGoal.name}
+                          </span>
+                        )}
+                        {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
+                          <span className="text-xs text-muted-foreground/70">
+                            {habit.weekDays.map(d => weekDayLabels[d]).join(', ')}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {habit.notificationEnabled && (
+                          <Bell className="w-3.5 h-3.5 text-primary" />
+                        )}
+                        <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeHabit(habit.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </motion.div>
                   );
                 })
@@ -1151,6 +1184,15 @@ export const GoalsPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Habit Detail Modal */}
+      {selectedHabit && (
+        <HabitDetailModal
+          habit={selectedHabit}
+          isOpen={!!selectedHabit}
+          onClose={() => setSelectedHabit(null)}
+        />
+      )}
     </motion.div>
   );
 };
