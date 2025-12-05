@@ -156,6 +156,7 @@ export const GoalsPage = () => {
     subtitle?: string;
     type: GoalType;
     period: string;
+    quarterMonths?: string[];
   } | null>(null);
   
   // Weekly goal creation from parent
@@ -345,8 +346,8 @@ export const GoalsPage = () => {
     setNewCategoryXP(20);
   };
 
-  const openPeriodModal = (title: string, type: GoalType, period: string, subtitle?: string) => {
-    setSelectedPeriod({ title, subtitle, type, period });
+  const openPeriodModal = (title: string, type: GoalType, period: string, subtitle?: string, quarterMonths?: string[]) => {
+    setSelectedPeriod({ title, subtitle, type, period, quarterMonths });
   };
 
   const allCategories = [
@@ -427,7 +428,7 @@ export const GoalsPage = () => {
               type="quarterly"
               period={`${q}º Tri - ${year}`}
               quarterMonths={QUARTER_MONTH_ARRAYS[q]}
-              onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
+              onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
             />
           ))}
 
@@ -600,6 +601,7 @@ export const GoalsPage = () => {
           subtitle={selectedPeriod.subtitle}
           type={selectedPeriod.type}
           period={selectedPeriod.period}
+          quarterMonths={selectedPeriod.quarterMonths}
         />
       )}
 
