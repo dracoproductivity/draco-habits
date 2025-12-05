@@ -60,18 +60,46 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
     ? Math.round(periodGoals.reduce((acc, g) => acc + g.progress, 0) / periodGoals.length)
     : 0;
 
+  // Extract year from period
+  const extractYear = () => {
+    const yearMatch = period.match(/\d{4}/);
+    return yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear();
+  };
+  const displayYear = extractYear();
+
   // Get monthly goals for a specific month
   const getMonthlyGoals = (monthName: string) => {
-    const year = new Date().getFullYear();
-    const monthPeriod = `${monthName} ${year}`;
+    const monthPeriod = `${monthName} ${displayYear}`;
     return goals.filter((g) => g.type === 'monthly' && g.period === monthPeriod);
+  };
+
+  const MONTH_NAMES = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  // Check if a month has started
+  const isMonthStarted = (monthName: string) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    
+    if (displayYear > currentYear) return false;
+    if (displayYear < currentYear) return true;
+    
+    const monthIndex = MONTH_NAMES.indexOf(monthName);
+    return monthIndex !== -1 && monthIndex <= currentMonth;
   };
 
   // Calculate monthly progress
   const getMonthProgress = (monthName: string) => {
     const monthGoals = getMonthlyGoals(monthName);
-    if (monthGoals.length === 0) return 0;
-    return Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length);
+    const hasStarted = isMonthStarted(monthName);
+    if (monthGoals.length === 0) return { progress: 0, hasStarted };
+    return { 
+      progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
+      hasStarted
+    };
   };
 
   const toggleMonthExpanded = (month: string) => {
@@ -178,8 +206,8 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
             {quarterMonths && quarterMonths.length > 0 && (
               <div className="space-y-3 mb-6">
                 <h3 className="text-sm font-semibold text-muted-foreground">Progresso Mensal</h3>
-                {quarterMonths.map((month) => {
-                  const monthProgress = getMonthProgress(month);
+              {quarterMonths.map((month) => {
+                  const { progress: monthProgress, hasStarted: monthHasStarted } = getMonthProgress(month);
                   const monthGoals = getMonthlyGoals(month);
                   const isExpanded = expandedMonths.includes(month);
 
@@ -196,13 +224,19 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary rounded-full transition-all"
-                              style={{ width: `${monthProgress}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-primary w-10 text-right">{monthProgress}%</span>
+                          {!monthHasStarted && monthProgress === 0 ? (
+                            <span className="text-xs text-muted-foreground">Não iniciado</span>
+                          ) : (
+                            <>
+                              <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{ width: `${monthProgress}%` }}
+                                />
+                              </div>
+                              <span className="text-sm font-medium text-primary w-10 text-right">{monthProgress}%</span>
+                            </>
+                          )}
                           {monthGoals.length > 0 && (
                             isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />
                           )}

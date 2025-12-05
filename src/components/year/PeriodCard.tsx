@@ -11,7 +11,62 @@ interface PeriodCardProps {
   className?: string;
   onClick?: () => void;
   quarterMonths?: string[]; // For quarterly cards, show month progress
+  displayYear?: number; // Year being displayed
 }
+
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+// Check if a period has started
+const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): boolean => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentQuarter = Math.ceil((currentMonth + 1) / 3);
+  
+  const yearToCheck = displayYear || currentYear;
+  
+  if (yearToCheck > currentYear) return false;
+  if (yearToCheck < currentYear) return true;
+  
+  // Same year - check period
+  if (type === 'yearly') return true;
+  
+  if (type === 'quarterly') {
+    const quarterMatch = period.match(/(\d+)º Tri/);
+    if (quarterMatch) {
+      const quarter = parseInt(quarterMatch[1]);
+      return quarter <= currentQuarter;
+    }
+  }
+  
+  if (type === 'monthly') {
+    const monthName = period.split(' ')[0];
+    const monthIndex = MONTH_NAMES.indexOf(monthName);
+    return monthIndex !== -1 && monthIndex <= currentMonth;
+  }
+  
+  if (type === 'weekly') {
+    const weekMatch = period.match(/Semana (\d+)/);
+    const yearMatch = period.match(/(\d{4})/);
+    if (weekMatch) {
+      const week = parseInt(weekMatch[1]);
+      const periodYear = yearMatch ? parseInt(yearMatch[1]) : currentYear;
+      
+      if (periodYear > currentYear) return false;
+      if (periodYear < currentYear) return true;
+      
+      const currentWeek = Math.ceil(
+        (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
+      );
+      return week <= currentWeek;
+    }
+  }
+  
+  return true;
+};
 
 const ProgressCircle = ({ progress }: { progress: number }) => {
   const radius = 20;
@@ -45,7 +100,7 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
   );
 };
 
-export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths }: PeriodCardProps) => {
+export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
   const { goals, settings } = useAppStore();
 
   const periodGoals = goals.filter((g) => g.type === type && g.period === period);
@@ -54,6 +109,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
     : 0;
 
   const isCircular = settings.progressDisplayMode === 'circular';
+  const hasStarted = isPeriodStarted(type, period, displayYear);
   
   // Get first 3 goals for preview
   const previewGoals = periodGoals.slice(0, 3);
@@ -61,11 +117,14 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
 
   // Calculate monthly progress for quarters
   const getMonthProgress = (monthName: string) => {
-    const year = new Date().getFullYear();
+    const year = displayYear || new Date().getFullYear();
     const monthPeriod = `${monthName} ${year}`;
     const monthGoals = goals.filter((g) => g.type === 'monthly' && g.period === monthPeriod);
-    if (monthGoals.length === 0) return 0;
-    return Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length);
+    if (monthGoals.length === 0) return { progress: 0, hasStarted: isPeriodStarted('monthly', monthPeriod, year) };
+    return { 
+      progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
+      hasStarted: isPeriodStarted('monthly', monthPeriod, year)
+    };
   };
 
   return (
@@ -102,7 +161,9 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
           
           <div className="flex items-center gap-2">
-            {isCircular ? (
+            {!hasStarted && averageProgress === 0 ? (
+              <span className="text-sm font-medium text-muted-foreground">Não iniciado</span>
+            ) : isCircular ? (
               <div className="relative flex items-center justify-center">
                 <ProgressCircle progress={averageProgress} />
                 <span className="absolute text-xs font-bold">{averageProgress}%</span>
@@ -128,17 +189,23 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
         {quarterMonths && quarterMonths.length > 0 && (
           <div className="space-y-2 mt-3 pt-3 border-t border-border/20">
             {quarterMonths.map((month) => {
-              const monthProgress = getMonthProgress(month);
+              const { progress: monthProgress, hasStarted: monthHasStarted } = getMonthProgress(month);
               return (
                 <div key={month} className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground flex-1">{month}</span>
-                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${monthProgress}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-medium text-primary w-8 text-right">{monthProgress}%</span>
+                  {!monthHasStarted && monthProgress === 0 ? (
+                    <span className="text-xs text-muted-foreground/70">Não iniciado</span>
+                  ) : (
+                    <>
+                      <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${monthProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium text-primary w-8 text-right">{monthProgress}%</span>
+                    </>
+                  )}
                 </div>
               );
             })}
