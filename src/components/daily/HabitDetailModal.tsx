@@ -38,6 +38,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [createdGoalIds, setCreatedGoalIds] = useState<Record<GoalType, string>>({} as Record<GoalType, string>);
   const [weekDays, setWeekDays] = useState<number[]>(habit.weekDays || [1, 2, 3, 4, 5]);
   const [isOneTime, setIsOneTime] = useState(habit.isOneTime || false);
+  const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(habit.repeatFrequency || 1);
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
 
@@ -99,6 +100,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       goalId: selectedGoalId || undefined,
       weekDays: isOneTime ? undefined : weekDays,
       isOneTime,
+      repeatFrequency: isOneTime ? undefined : repeatFrequency,
       notificationEnabled,
       notificationTime,
     });
@@ -371,23 +373,50 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 </button>
                 
                 {!isOneTime && (
-                  <div className="flex gap-1">
-                    {WEEK_DAYS.map((day) => (
-                      <button
-                        key={day.value}
-                        onClick={() => toggleWeekDay(day.value)}
-                        className={cn(
-                          'flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all',
-                          weekDays.includes(day.value)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                        )}
-                        title={day.fullLabel}
-                      >
-                        {day.label}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    {/* Frequency selection */}
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground">Frequência:</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {([1, 2, 3, 4] as const).map((freq) => (
+                          <button
+                            key={freq}
+                            onClick={() => setRepeatFrequency(freq)}
+                            className={cn(
+                              'py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                              repeatFrequency === freq
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            {freq === 1 ? 'Toda semana' : `A cada ${freq} sem.`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Week days selection */}
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground">Dias da semana:</span>
+                      <div className="flex gap-1">
+                        {WEEK_DAYS.map((day) => (
+                          <button
+                            key={day.value}
+                            onClick={() => toggleWeekDay(day.value)}
+                            className={cn(
+                              'flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all',
+                              weekDays.includes(day.value)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                            title={day.fullLabel}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

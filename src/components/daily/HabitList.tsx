@@ -242,6 +242,7 @@ export const HabitList = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [isOneTimeHabit, setIsOneTimeHabit] = useState(false);
+  const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   
   // Store all goal data before creating them at the end
@@ -323,12 +324,14 @@ export const HabitList = () => {
       goalId: selectedGoalId || undefined,
       weekDays: isOneTimeHabit ? undefined : selectedWeekDays,
       isOneTime: isOneTimeHabit,
+      repeatFrequency: isOneTimeHabit ? undefined : repeatFrequency,
     });
     setNewHabitName('');
     setNewHabitEmoji('');
     setSelectedGoalId(null);
     setSelectedWeekDays([1, 2, 3, 4, 5]);
     setIsOneTimeHabit(false);
+    setRepeatFrequency(1);
     setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
@@ -569,23 +572,51 @@ export const HabitList = () => {
                       </div>
                       
                       {!isOneTimeHabit && (
-                        <div className="flex gap-1">
-                          {WEEK_DAYS.map((day) => (
-                            <button
-                              key={day.value}
-                              type="button"
-                              onClick={() => toggleWeekDay(day.value)}
-                              className={cn(
-                                'flex-1 py-1.5 px-1 rounded-lg text-xs font-medium transition-all',
-                                selectedWeekDays.includes(day.value)
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                              )}
-                            >
-                              {day.label}
-                            </button>
-                          ))}
-                        </div>
+                        <>
+                          {/* Frequency selection */}
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Frequência:</span>
+                            <div className="grid grid-cols-4 gap-1">
+                              {([1, 2, 3, 4] as const).map((freq) => (
+                                <button
+                                  key={freq}
+                                  type="button"
+                                  onClick={() => setRepeatFrequency(freq)}
+                                  className={cn(
+                                    'py-1.5 px-1 rounded-lg text-xs font-medium transition-all',
+                                    repeatFrequency === freq
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                  )}
+                                >
+                                  {freq === 1 ? 'Toda sem.' : `${freq} sem.`}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Week days selection */}
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Dias:</span>
+                            <div className="flex gap-1">
+                              {WEEK_DAYS.map((day) => (
+                                <button
+                                  key={day.value}
+                                  type="button"
+                                  onClick={() => toggleWeekDay(day.value)}
+                                  className={cn(
+                                    'flex-1 py-1.5 px-1 rounded-lg text-xs font-medium transition-all',
+                                    selectedWeekDays.includes(day.value)
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                  )}
+                                >
+                                  {day.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
 
