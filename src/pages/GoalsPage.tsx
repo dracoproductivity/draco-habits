@@ -1023,12 +1023,17 @@ export const GoalsPage = () => {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => setEditingType(selectedGoal.type)}
-                      className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}
-                    >
-                      {typeLabels[selectedGoal.type]}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}>
+                        {typeLabels[selectedGoal.type]}
+                      </span>
+                      <button
+                        onClick={() => setEditingType(selectedGoal.type)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                      >
+                        Trocar
+                      </button>
+                    </div>
                   )}
                 </div>
 
