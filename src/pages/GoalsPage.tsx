@@ -965,14 +965,6 @@ export const GoalsPage = () => {
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
                   <div className="space-y-2">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={selectedGoal.progress}
-                      onChange={(e) => handleProgressChange(parseInt(e.target.value))}
-                      className="w-full accent-primary"
-                    />
                     <div className="h-3 rounded-full bg-muted/50 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
@@ -982,7 +974,17 @@ export const GoalsPage = () => {
                         transition={{ duration: 0.3 }}
                       />
                     </div>
-                    <p className="text-center font-bold text-lg">{selectedGoal.progress}%</p>
+                    <div className="flex items-center justify-between">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={selectedGoal.progress}
+                        onChange={(e) => handleProgressChange(parseInt(e.target.value))}
+                        className="flex-1 accent-primary"
+                      />
+                      <span className="ml-3 font-bold text-lg w-12 text-right">{selectedGoal.progress}%</span>
+                    </div>
                   </div>
                 </div>
 
