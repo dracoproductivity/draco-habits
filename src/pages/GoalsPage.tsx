@@ -417,7 +417,6 @@ export const GoalsPage = () => {
               subtitle={QUARTER_MONTHS[q]}
               type="quarterly"
               period={`${q}º Tri - ${year}`}
-              className={q !== quarter ? 'opacity-60' : ''}
               onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
             />
           ))}
