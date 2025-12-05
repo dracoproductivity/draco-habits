@@ -5,14 +5,17 @@ import { useAppStore } from '@/store/useAppStore';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  Cell,
+  LineChart,
+  Line,
 } from 'recharts';
 
 type TimeRange = 'weekly' | 'monthly';
@@ -160,8 +163,8 @@ export const AnalyticsPage = () => {
         <p className="text-muted-foreground">Acompanhe seus dados de saúde</p>
       </header>
 
-      {/* Sleep & Phone Charts */}
-      <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-4'} mb-6`}>
+      {/* Sleep & Phone Charts - Side by Side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Sleep Chart */}
         <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-4">
@@ -198,49 +201,40 @@ export const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="h-48">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={getSleepData}>
+              <BarChart data={getSleepData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                 <XAxis
-                  dataKey={sleepTimeRange === 'weekly' ? 'dayName' : 'date'}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <YAxis
+                  type="number"
                   domain={[0, 12]}
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickFormatter={(v) => `${v}h`}
                 />
+                <YAxis
+                  type="category"
+                  dataKey={sleepTimeRange === 'weekly' ? 'dayName' : 'date'}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  width={40}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 <ReferenceLine
-                  y={minSleepHours}
+                  x={minSleepHours}
                   stroke="hsl(var(--destructive))"
                   strokeDasharray="5 5"
                   strokeOpacity={0.7}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="hsl(210 90% 60%)"
-                  strokeWidth={2}
-                  dot={(props: any) => {
-                    const { cx, cy, payload } = props;
-                    if (payload.hours === null) return null;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={4}
-                        fill={payload.isBelowMin ? 'hsl(0 80% 55%)' : 'hsl(210 90% 60%)'}
-                        stroke="none"
-                      />
-                    );
-                  }}
-                  connectNulls
-                />
-              </LineChart>
+                <Bar dataKey="hours" radius={[0, 4, 4, 0]}>
+                  {getSleepData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.isBelowMin ? 'hsl(0 80% 55%)' : 'hsl(210 90% 60%)'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -281,49 +275,40 @@ export const AnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="h-48">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={getPhoneData}>
+              <BarChart data={getPhoneData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
                 <XAxis
-                  dataKey={phoneTimeRange === 'weekly' ? 'dayName' : 'date'}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <YAxis
+                  type="number"
                   domain={[0, 12]}
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickFormatter={(v) => `${v}h`}
                 />
+                <YAxis
+                  type="category"
+                  dataKey={phoneTimeRange === 'weekly' ? 'dayName' : 'date'}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  width={40}
+                />
                 <Tooltip content={<CustomTooltip />} />
                 <ReferenceLine
-                  y={maxPhoneHours}
+                  x={maxPhoneHours}
                   stroke="hsl(var(--destructive))"
                   strokeDasharray="5 5"
                   strokeOpacity={0.7}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="hsl(25 95% 55%)"
-                  strokeWidth={2}
-                  dot={(props: any) => {
-                    const { cx, cy, payload } = props;
-                    if (payload.hours === null) return null;
-                    return (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={4}
-                        fill={payload.isAboveMax ? 'hsl(0 80% 55%)' : 'hsl(25 95% 55%)'}
-                        stroke="none"
-                      />
-                    );
-                  }}
-                  connectNulls
-                />
-              </LineChart>
+                <Bar dataKey="hours" radius={[0, 4, 4, 0]}>
+                  {getPhoneData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.isAboveMax ? 'hsl(0 80% 55%)' : 'hsl(25 95% 55%)'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
