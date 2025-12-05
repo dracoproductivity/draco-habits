@@ -1239,24 +1239,37 @@ export const GoalsPage = () => {
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Período</label>
                   {editingPeriod !== null ? (
-                    <select
-                      value={selectedGoal.period}
-                      onChange={(e) => handlePeriodChange(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                    >
-                      {getPeriodOptions(selectedGoal.type).map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-2">
+                      <select
+                        value={selectedGoal.period}
+                        onChange={(e) => handlePeriodChange(e.target.value)}
+                        className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                      >
+                        {getPeriodOptions(selectedGoal.type).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => setEditingPeriod(null)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   ) : (
-                    <button
-                      onClick={() => setEditingPeriod(selectedGoal.period)}
-                      className="px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm hover:bg-muted/50 transition-colors"
-                    >
-                      {selectedGoal.period}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm">
+                        {selectedGoal.period}
+                      </span>
+                      <button
+                        onClick={() => setEditingPeriod(selectedGoal.period)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                      >
+                        Trocar
+                      </button>
+                    </div>
                   )}
                 </div>
 

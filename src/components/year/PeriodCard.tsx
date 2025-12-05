@@ -19,8 +19,8 @@ const MONTH_NAMES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-// Check if a period has started
-const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): boolean => {
+// Check if a period has started or is in the past
+const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 'started' | 'not_started' | 'past' => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -28,24 +28,33 @@ const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): 
   
   const yearToCheck = displayYear || currentYear;
   
-  if (yearToCheck > currentYear) return false;
-  if (yearToCheck < currentYear) return true;
+  // Future year - not started
+  if (yearToCheck > currentYear) return 'not_started';
+  
+  // Past year - past
+  if (yearToCheck < currentYear) return 'past';
   
   // Same year - check period
-  if (type === 'yearly') return true;
+  if (type === 'yearly') return 'started';
   
   if (type === 'quarterly') {
     const quarterMatch = period.match(/(\d+)º Tri/);
     if (quarterMatch) {
       const quarter = parseInt(quarterMatch[1]);
-      return quarter <= currentQuarter;
+      if (quarter < currentQuarter) return 'past';
+      if (quarter === currentQuarter) return 'started';
+      return 'not_started';
     }
   }
   
   if (type === 'monthly') {
     const monthName = period.split(' ')[0];
     const monthIndex = MONTH_NAMES.indexOf(monthName);
-    return monthIndex !== -1 && monthIndex <= currentMonth;
+    if (monthIndex !== -1) {
+      if (monthIndex < currentMonth) return 'past';
+      if (monthIndex === currentMonth) return 'started';
+      return 'not_started';
+    }
   }
   
   if (type === 'weekly') {
@@ -55,17 +64,25 @@ const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): 
       const week = parseInt(weekMatch[1]);
       const periodYear = yearMatch ? parseInt(yearMatch[1]) : currentYear;
       
-      if (periodYear > currentYear) return false;
-      if (periodYear < currentYear) return true;
+      if (periodYear > currentYear) return 'not_started';
+      if (periodYear < currentYear) return 'past';
       
       const currentWeek = Math.ceil(
         (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
       );
-      return week <= currentWeek;
+      if (week < currentWeek) return 'past';
+      if (week === currentWeek) return 'started';
+      return 'not_started';
     }
   }
   
-  return true;
+  return 'started';
+};
+
+// Helper for backward compatibility
+const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): boolean => {
+  const status = getPeriodStatus(type, period, displayYear);
+  return status === 'started' || status === 'past';
 };
 
 const ProgressCircle = ({ progress }: { progress: number }) => {
@@ -109,7 +126,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
     : 0;
 
   const isCircular = settings.progressDisplayMode === 'circular';
-  const hasStarted = isPeriodStarted(type, period, displayYear);
+  const periodStatus = getPeriodStatus(type, period, displayYear);
   
   // Get first 3 goals for preview
   const previewGoals = periodGoals.slice(0, 3);
@@ -120,10 +137,11 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
     const year = displayYear || new Date().getFullYear();
     const monthPeriod = `${monthName} ${year}`;
     const monthGoals = goals.filter((g) => g.type === 'monthly' && g.period === monthPeriod);
-    if (monthGoals.length === 0) return { progress: 0, hasStarted: isPeriodStarted('monthly', monthPeriod, year) };
+    const status = getPeriodStatus('monthly', monthPeriod, year);
+    if (monthGoals.length === 0) return { progress: 0, status };
     return { 
       progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
-      hasStarted: isPeriodStarted('monthly', monthPeriod, year)
+      status
     };
   };
 
@@ -161,7 +179,9 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
           
           <div className="flex items-center gap-2">
-            {!hasStarted && averageProgress === 0 ? (
+            {periodStatus === 'past' ? (
+              <span className="text-sm font-medium text-muted-foreground/70">Passado</span>
+            ) : periodStatus === 'not_started' && averageProgress === 0 ? (
               <span className="text-sm font-medium text-muted-foreground">Não iniciado</span>
             ) : isCircular ? (
               <div className="relative flex items-center justify-center">
@@ -189,11 +209,13 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
         {quarterMonths && quarterMonths.length > 0 && (
           <div className="space-y-2 mt-3 pt-3 border-t border-border/20">
             {quarterMonths.map((month) => {
-              const { progress: monthProgress, hasStarted: monthHasStarted } = getMonthProgress(month);
+              const { progress: monthProgress, status: monthStatus } = getMonthProgress(month);
               return (
                 <div key={month} className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground flex-1">{month}</span>
-                  {!monthHasStarted && monthProgress === 0 ? (
+                  {monthStatus === 'past' ? (
+                    <span className="text-xs text-muted-foreground/70">Passado</span>
+                  ) : monthStatus === 'not_started' && monthProgress === 0 ? (
                     <span className="text-xs text-muted-foreground/70">Não iniciado</span>
                   ) : (
                     <>

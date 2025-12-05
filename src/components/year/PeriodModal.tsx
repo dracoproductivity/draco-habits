@@ -78,27 +78,32 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  // Check if a month has started
-  const isMonthStarted = (monthName: string) => {
+  // Check if a month has started or is past
+  const getMonthStatus = (monthName: string): 'started' | 'not_started' | 'past' => {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
     
-    if (displayYear > currentYear) return false;
-    if (displayYear < currentYear) return true;
+    if (displayYear > currentYear) return 'not_started';
+    if (displayYear < currentYear) return 'past';
     
     const monthIndex = MONTH_NAMES.indexOf(monthName);
-    return monthIndex !== -1 && monthIndex <= currentMonth;
+    if (monthIndex !== -1) {
+      if (monthIndex < currentMonth) return 'past';
+      if (monthIndex === currentMonth) return 'started';
+      return 'not_started';
+    }
+    return 'started';
   };
 
   // Calculate monthly progress
   const getMonthProgress = (monthName: string) => {
     const monthGoals = getMonthlyGoals(monthName);
-    const hasStarted = isMonthStarted(monthName);
-    if (monthGoals.length === 0) return { progress: 0, hasStarted };
+    const status = getMonthStatus(monthName);
+    if (monthGoals.length === 0) return { progress: 0, status };
     return { 
       progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
-      hasStarted
+      status
     };
   };
 
@@ -207,7 +212,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
               <div className="space-y-3 mb-6">
                 <h3 className="text-sm font-semibold text-muted-foreground">Progresso Mensal</h3>
               {quarterMonths.map((month) => {
-                  const { progress: monthProgress, hasStarted: monthHasStarted } = getMonthProgress(month);
+                  const { progress: monthProgress, status: monthStatus } = getMonthProgress(month);
                   const monthGoals = getMonthlyGoals(month);
                   const isExpanded = expandedMonths.includes(month);
 
@@ -224,7 +229,9 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          {!monthHasStarted && monthProgress === 0 ? (
+                          {monthStatus === 'past' ? (
+                            <span className="text-xs text-muted-foreground/70">Passado</span>
+                          ) : monthStatus === 'not_started' && monthProgress === 0 ? (
                             <span className="text-xs text-muted-foreground">Não iniciado</span>
                           ) : (
                             <>
