@@ -20,6 +20,7 @@ import {
 
 type TimeRange = 'weekly' | 'monthly';
 type ProgressFilter = 'habits' | 'goals';
+type ProgressTimeRange = 'week' | 'month';
 
 export const AnalyticsPage = () => {
   const { settings, dailyLogs, habits, goals, habitChecks } = useAppStore();
@@ -28,11 +29,19 @@ export const AnalyticsPage = () => {
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('habits');
+  const [progressTimeRange, setProgressTimeRange] = useState<ProgressTimeRange>('month');
   const [selectedHabitId, setSelectedHabitId] = useState<string>('all');
   const [selectedGoalId, setSelectedGoalId] = useState<string>('all');
 
   const minSleepHours = settings.minSleepHours || 7;
   const maxPhoneHours = settings.maxPhoneHours || 2;
+
+  // Find the earliest habit creation date as account start
+  const accountStartDate = useMemo(() => {
+    if (habits.length === 0) return new Date();
+    const dates = habits.map(h => new Date(h.createdAt));
+    return new Date(Math.min(...dates.map(d => d.getTime())));
+  }, [habits]);
 
   const getDateRange = (range: TimeRange) => {
     const today = new Date();
@@ -83,10 +92,19 @@ export const AnalyticsPage = () => {
 
   const getProgressData = useMemo(() => {
     const today = new Date();
-    const days = eachDayOfInterval({
-      start: subDays(today, 30),
-      end: today,
-    });
+    let days;
+    
+    if (progressTimeRange === 'week') {
+      days = eachDayOfInterval({
+        start: startOfWeek(today, { weekStartsOn: 1 }),
+        end: endOfWeek(today, { weekStartsOn: 1 }),
+      });
+    } else {
+      days = eachDayOfInterval({
+        start: subDays(today, 30),
+        end: today,
+      });
+    }
 
     if (progressFilter === 'habits') {
       const filteredHabits = selectedHabitId === 'all' 
@@ -95,8 +113,16 @@ export const AnalyticsPage = () => {
 
       return days.map((day) => {
         const dateStr = format(day, 'yyyy-MM-dd');
+        const isBeforeAccount = day < accountStartDate;
         const totalHabits = filteredHabits.length;
-        if (totalHabits === 0) return { date: format(day, 'dd/MM'), progress: 0 };
+        
+        if (isBeforeAccount || totalHabits === 0) {
+          return { 
+            date: format(day, 'dd/MM'), 
+            progress: isBeforeAccount ? null : 0,
+            isBeforeAccount 
+          };
+        }
 
         const completed = habitChecks.filter(
           (hc) => hc.date === dateStr && hc.completed && filteredHabits.some((h) => h.id === hc.habitId)
@@ -105,6 +131,7 @@ export const AnalyticsPage = () => {
         return {
           date: format(day, 'dd/MM'),
           progress: Math.round((completed / totalHabits) * 100),
+          isBeforeAccount: false,
         };
       });
     } else {
@@ -114,17 +141,25 @@ export const AnalyticsPage = () => {
         : goals.filter((g) => g.id === selectedGoalId);
 
       if (filteredGoals.length === 0) {
-        return days.map((day) => ({ date: format(day, 'dd/MM'), progress: 0 }));
+        return days.map((day) => ({ 
+          date: format(day, 'dd/MM'), 
+          progress: day < accountStartDate ? null : 0,
+          isBeforeAccount: day < accountStartDate 
+        }));
       }
 
       const avgProgress = filteredGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / filteredGoals.length;
 
-      return days.map((day) => ({
-        date: format(day, 'dd/MM'),
-        progress: Math.round(avgProgress),
-      }));
+      return days.map((day) => {
+        const isBeforeAccount = day < accountStartDate;
+        return {
+          date: format(day, 'dd/MM'),
+          progress: isBeforeAccount ? null : Math.round(avgProgress),
+          isBeforeAccount,
+        };
+      });
     }
-  }, [progressFilter, selectedHabitId, selectedGoalId, habits, goals, habitChecks]);
+  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -324,9 +359,36 @@ export const AnalyticsPage = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Progresso</h3>
-                <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+                <p className="text-xs text-muted-foreground">
+                  {progressTimeRange === 'week' ? 'Semana atual' : 'Últimos 30 dias'}
+                </p>
               </div>
             </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setProgressTimeRange('week')}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                  progressTimeRange === 'week'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => setProgressTimeRange('month')}
+                className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                  progressTimeRange === 'month'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                }`}
+              >
+                30 dias
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <div className="flex gap-1">
               <button
                 onClick={() => {
@@ -366,7 +428,7 @@ export const AnalyticsPage = () => {
               <select
                 value={selectedHabitId}
                 onChange={(e) => setSelectedHabitId(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="flex-1 px-3 py-2 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               >
                 <option value="all">Todos os hábitos</option>
                 {habits.map((habit) => (
@@ -379,7 +441,7 @@ export const AnalyticsPage = () => {
               <select
                 value={selectedGoalId}
                 onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="flex-1 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="flex-1 px-3 py-2 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               >
                 <option value="all">Todos os objetivos</option>
                 {goals.map((goal) => (
@@ -400,7 +462,7 @@ export const AnalyticsPage = () => {
                 dataKey="date"
                 tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                interval={sleepTimeRange === 'monthly' ? 6 : 0}
+                interval={progressTimeRange === 'month' ? 6 : 0}
               />
               <YAxis
                 domain={[0, 100]}
@@ -414,7 +476,29 @@ export const AnalyticsPage = () => {
                 dataKey="progress"
                 stroke="hsl(var(--primary))"
                 strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+                dot={(props: any) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.isBeforeAccount) {
+                    return (
+                      <circle
+                        cx={cx}
+                        cy={cy || props.height / 2}
+                        r={4}
+                        fill="hsl(var(--muted))"
+                        stroke="hsl(var(--muted))"
+                      />
+                    );
+                  }
+                  return (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={3}
+                      fill="hsl(var(--primary))"
+                    />
+                  );
+                }}
+                connectNulls={false}
               />
             </LineChart>
           </ResponsiveContainer>

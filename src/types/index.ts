@@ -17,6 +17,7 @@ export interface Habit {
   notificationTime?: string;
   weekDays?: number[]; // 0=Sunday, 1=Monday, etc. Days the habit repeats
   isOneTime?: boolean; // If true, it's a single event without repetition
+  repeatFrequency?: 1 | 2 | 3 | 4; // Repeats every X weeks (1=every week, 2=every 2 weeks, etc.)
   createdAt: string;
 }
 
