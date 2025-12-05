@@ -62,10 +62,10 @@ export const AnalyticsPage = () => {
         date: format(date, sleepViewMode === 'weekly' ? 'EEE' : 'dd', { locale: ptBR }),
         fullDate: dateStr,
         value: tracking?.sleepHours || null,
-        belowMin: tracking?.sleepHours !== undefined && tracking.sleepHours < settings.minSleepHours,
+        belowMin: tracking?.sleepHours !== undefined && tracking.sleepHours < (settings?.minSleepHours || 7),
       };
     });
-  }, [dailyTracking, sleepViewMode, sleepOffset, settings.minSleepHours]);
+  }, [dailyTracking, sleepViewMode, sleepOffset, settings?.minSleepHours]);
 
   // Prepare phone chart data
   const phoneChartData = useMemo(() => {
@@ -77,10 +77,10 @@ export const AnalyticsPage = () => {
         date: format(date, phoneViewMode === 'weekly' ? 'EEE' : 'dd', { locale: ptBR }),
         fullDate: dateStr,
         value: tracking?.phoneHours || null,
-        aboveMax: tracking?.phoneHours !== undefined && tracking.phoneHours > settings.maxPhoneHours,
+        aboveMax: tracking?.phoneHours !== undefined && tracking.phoneHours > (settings?.maxPhoneHours || 3),
       };
     });
-  }, [dailyTracking, phoneViewMode, phoneOffset, settings.maxPhoneHours]);
+  }, [dailyTracking, phoneViewMode, phoneOffset, settings?.maxPhoneHours]);
 
   // Prepare progress chart data
   const progressChartData = useMemo(() => {
@@ -117,167 +117,8 @@ export const AnalyticsPage = () => {
     }
   };
 
-  // Custom dot renderer for sleep chart
-  const renderSleepDot = (props: any): React.ReactElement<SVGElement> | null => {
-    const { cx, cy, payload } = props;
-    if (payload.value === null) return null;
-    return (
-      <circle 
-        cx={cx} 
-        cy={cy} 
-        r={4} 
-        fill={payload.belowMin ? 'hsl(0 80% 55%)' : 'hsl(var(--primary))'} 
-      />
-    );
-  };
-
-  // Custom dot renderer for phone chart
-  const renderPhoneDot = (props: any): React.ReactElement<SVGElement> | null => {
-    const { cx, cy, payload } = props;
-    if (payload.value === null) return null;
-    return (
-      <circle 
-        cx={cx} 
-        cy={cy} 
-        r={4} 
-        fill={payload.aboveMax ? 'hsl(0 80% 55%)' : 'hsl(var(--primary))'} 
-      />
-    );
-  };
-
-  const ChartSection = ({ 
-    title, 
-    icon: Icon, 
-    data, 
-    viewMode, 
-    setViewMode, 
-    offset, 
-    setOffset,
-    minLine,
-    maxLine,
-    renderDot,
-    yDomain = [0, 12]
-  }: {
-    title: string;
-    icon: typeof Moon;
-    data: any[];
-    viewMode: ViewMode;
-    setViewMode: (v: ViewMode) => void;
-    offset: number;
-    setOffset: (v: number) => void;
-    minLine?: number;
-    maxLine?: number;
-    renderDot: (props: any) => React.ReactElement<SVGElement> | null;
-    yDomain?: [number, number];
-  }) => (
-    <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-            <Icon className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <h3 className="font-semibold text-foreground">{title}</h3>
-        </div>
-        
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setViewMode('weekly')}
-            className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-              viewMode === 'weekly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
-            )}
-          >
-            Semana
-          </button>
-          <button
-            onClick={() => setViewMode('monthly')}
-            className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-              viewMode === 'monthly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
-            )}
-          >
-            Mês
-          </button>
-        </div>
-      </div>
-
-      {/* Period navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => setOffset(offset - 1)}
-          className="p-2 rounded-lg hover:bg-muted/30 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-        </button>
-        <span className="text-sm text-muted-foreground capitalize">
-          {getPeriodLabel(viewMode, offset)}
-        </span>
-        <button
-          onClick={() => setOffset(Math.min(0, offset + 1))}
-          disabled={offset >= 0}
-          className={cn(
-            'p-2 rounded-lg transition-colors',
-            offset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted/30'
-          )}
-        >
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </button>
-      </div>
-
-      {/* Chart */}
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis 
-              dataKey="date" 
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-            />
-            <YAxis 
-              domain={yDomain}
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-              tickFormatter={(v) => `${v}h`}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: 'hsl(var(--card))', 
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-                color: 'hsl(var(--foreground))'
-              }}
-              formatter={(value: any) => [`${value}h`, 'Horas']}
-            />
-            {minLine !== undefined && (
-              <ReferenceLine 
-                y={minLine} 
-                stroke="hsl(0 80% 55%)" 
-                strokeDasharray="5 5" 
-                label={{ value: `Mín: ${minLine}h`, fill: 'hsl(0 80% 55%)', fontSize: 10 }}
-              />
-            )}
-            {maxLine !== undefined && (
-              <ReferenceLine 
-                y={maxLine} 
-                stroke="hsl(0 80% 55%)" 
-                strokeDasharray="5 5" 
-                label={{ value: `Máx: ${maxLine}h`, fill: 'hsl(0 80% 55%)', fontSize: 10 }}
-              />
-            )}
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="hsl(var(--primary))" 
-              strokeWidth={2}
-              dot={renderDot}
-              connectNulls
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
+  const minSleepHours = settings?.minSleepHours || 7;
+  const maxPhoneHours = settings?.maxPhoneHours || 3;
 
   return (
     <motion.div
@@ -292,30 +133,199 @@ export const AnalyticsPage = () => {
 
       {/* Sleep & Phone Charts */}
       <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-4'} mb-6`}>
-        <ChartSection
-          title="Horas de Sono"
-          icon={Moon}
-          data={sleepChartData}
-          viewMode={sleepViewMode}
-          setViewMode={setSleepViewMode}
-          offset={sleepOffset}
-          setOffset={setSleepOffset}
-          minLine={settings.minSleepHours}
-          renderDot={renderSleepDot}
-        />
+        {/* Sleep Chart */}
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                <Moon className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground">Horas de Sono</h3>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setSleepViewMode('weekly')}
+                className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                  sleepViewMode === 'weekly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
+                )}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => setSleepViewMode('monthly')}
+                className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                  sleepViewMode === 'monthly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
+                )}
+              >
+                Mês
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setSleepOffset(sleepOffset - 1)}
+              className="p-2 rounded-lg hover:bg-muted/30 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <span className="text-sm text-muted-foreground capitalize">
+              {getPeriodLabel(sleepViewMode, sleepOffset)}
+            </span>
+            <button
+              onClick={() => setSleepOffset(Math.min(0, sleepOffset + 1))}
+              disabled={sleepOffset >= 0}
+              className={cn(
+                'p-2 rounded-lg transition-colors',
+                sleepOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted/30'
+              )}
+            >
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sleepChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  domain={[0, 12]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickFormatter={(v) => `${v}h`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  formatter={(value: any) => [`${value}h`, 'Horas']}
+                />
+                <ReferenceLine 
+                  y={minSleepHours} 
+                  stroke="hsl(0 80% 55%)" 
+                  strokeDasharray="5 5" 
+                  label={{ value: `Mín: ${minSleepHours}h`, fill: 'hsl(0 80% 55%)', fontSize: 10 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
         
-        <ChartSection
-          title="Tempo de Celular (inútil)"
-          icon={Smartphone}
-          data={phoneChartData}
-          viewMode={phoneViewMode}
-          setViewMode={setPhoneViewMode}
-          offset={phoneOffset}
-          setOffset={setPhoneOffset}
-          maxLine={settings.maxPhoneHours}
-          renderDot={renderPhoneDot}
-          yDomain={[0, 10]}
-        />
+        {/* Phone Chart */}
+        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                <Smartphone className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <h3 className="font-semibold text-foreground">Tempo de Celular</h3>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPhoneViewMode('weekly')}
+                className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                  phoneViewMode === 'weekly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
+                )}
+              >
+                Semana
+              </button>
+              <button
+                onClick={() => setPhoneViewMode('monthly')}
+                className={cn(
+                  'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                  phoneViewMode === 'monthly' ? 'gradient-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground'
+                )}
+              >
+                Mês
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setPhoneOffset(phoneOffset - 1)}
+              className="p-2 rounded-lg hover:bg-muted/30 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <span className="text-sm text-muted-foreground capitalize">
+              {getPeriodLabel(phoneViewMode, phoneOffset)}
+            </span>
+            <button
+              onClick={() => setPhoneOffset(Math.min(0, phoneOffset + 1))}
+              disabled={phoneOffset >= 0}
+              className={cn(
+                'p-2 rounded-lg transition-colors',
+                phoneOffset >= 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-muted/30'
+              )}
+            >
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={phoneChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                />
+                <YAxis 
+                  domain={[0, 10]}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} 
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickFormatter={(v) => `${v}h`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  formatter={(value: any) => [`${value}h`, 'Horas']}
+                />
+                <ReferenceLine 
+                  y={maxPhoneHours} 
+                  stroke="hsl(0 80% 55%)" 
+                  strokeDasharray="5 5" 
+                  label={{ value: `Máx: ${maxPhoneHours}h`, fill: 'hsl(0 80% 55%)', fontSize: 10 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
 
       {/* Progress Chart */}
