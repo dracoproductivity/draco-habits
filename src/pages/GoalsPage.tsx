@@ -127,6 +127,8 @@ export const GoalsPage = () => {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [editingType, setEditingType] = useState<GoalType | null>(null);
+  const [showTypeChangeWarning, setShowTypeChangeWarning] = useState(false);
+  const [pendingTypeChange, setPendingTypeChange] = useState<GoalType | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<string | null>(null);
   const [editingParent, setEditingParent] = useState<boolean>(false);
   const [showNewGoalModal, setShowNewGoalModal] = useState(false);
@@ -199,14 +201,30 @@ export const GoalsPage = () => {
     }
   };
 
-  const handleTypeChange = (newType: GoalType) => {
-    if (selectedGoal) {
-      const periodOptions = getPeriodOptions(newType);
-      const newPeriod = periodOptions[0]?.value || '';
-      updateGoal(selectedGoal.id, { type: newType, period: newPeriod });
-      setSelectedGoal({ ...selectedGoal, type: newType, period: newPeriod });
+  const handleTypeChangeRequest = (newType: GoalType) => {
+    if (selectedGoal && newType !== selectedGoal.type) {
+      setPendingTypeChange(newType);
+      setShowTypeChangeWarning(true);
+    } else {
       setEditingType(null);
     }
+  };
+
+  const confirmTypeChange = () => {
+    if (selectedGoal && pendingTypeChange) {
+      const periodOptions = getPeriodOptions(pendingTypeChange);
+      const newPeriod = periodOptions[0]?.value || '';
+      updateGoal(selectedGoal.id, { type: pendingTypeChange, period: newPeriod, parentGoalId: undefined });
+      setSelectedGoal({ ...selectedGoal, type: pendingTypeChange, period: newPeriod, parentGoalId: undefined });
+      setEditingType(null);
+      setShowTypeChangeWarning(false);
+      setPendingTypeChange(null);
+    }
+  };
+
+  const cancelTypeChange = () => {
+    setShowTypeChangeWarning(false);
+    setPendingTypeChange(null);
   };
 
   const handlePeriodChange = (newPeriod: string) => {
@@ -982,19 +1000,27 @@ export const GoalsPage = () => {
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
                   {editingType !== null ? (
-                    <div className="flex flex-wrap gap-2">
-                      {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => handleTypeChange(type)}
-                          className={cn(
-                            'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
-                            selectedGoal.type === type ? typeColors[type] : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                          )}
-                        >
-                          {typeLabels[type]}
-                        </button>
-                      ))}
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => handleTypeChangeRequest(type)}
+                            className={cn(
+                              'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
+                              selectedGoal.type === type ? typeColors[type] : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            {typeLabels[type]}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setEditingType(null)}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Cancelar
+                      </button>
                     </div>
                   ) : (
                     <button
@@ -1170,6 +1196,64 @@ export const GoalsPage = () => {
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Excluir objetivo</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Type Change Warning Modal */}
+      <AnimatePresence>
+        {showTypeChangeWarning && pendingTypeChange && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={cancelTypeChange}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-destructive" />
+                </div>
+                <h3 className="text-lg font-bold">Alterar tipo do objetivo</h3>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <p className="text-sm text-muted-foreground">
+                  Você está alterando de <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[selectedGoal?.type || 'weekly'])}>{typeLabels[selectedGoal?.type || 'weekly']}</span> para <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[pendingTypeChange])}>{typeLabels[pendingTypeChange]}</span>.
+                </p>
+                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive font-medium mb-1">⚠️ Atenção</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ao alterar o tipo, você precisará reorganizar os objetivos vinculados na linha do tempo (semanal → mensal → trimestral → anual) para manter a consistência do progresso em porcentagem.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Os vínculos com objetivos pai serão removidos e você precisará reconfigurar manualmente.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={cancelTypeChange}
+                  className="flex-1 py-3 bg-muted/50 text-foreground rounded-xl font-semibold hover:bg-muted/70 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={confirmTypeChange}
+                  className="flex-1 py-3 bg-destructive text-destructive-foreground rounded-xl font-semibold hover:bg-destructive/90 transition-colors"
+                >
+                  Confirmar
                 </button>
               </div>
             </motion.div>
