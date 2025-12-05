@@ -12,14 +12,6 @@ interface PeriodCardProps {
   onClick?: () => void;
 }
 
-const themeGradients: Record<string, string> = {
-  fire: 'linear-gradient(135deg, hsl(32 95% 25% / 0.8), hsl(15 90% 20% / 0.6), hsl(32 70% 15% / 0.4))',
-  purple: 'linear-gradient(135deg, hsl(270 80% 30% / 0.8), hsl(280 70% 25% / 0.6), hsl(260 60% 15% / 0.4))',
-  emerald: 'linear-gradient(135deg, hsl(160 80% 25% / 0.8), hsl(140 70% 20% / 0.6), hsl(150 60% 15% / 0.4))',
-  ocean: 'linear-gradient(135deg, hsl(200 80% 30% / 0.8), hsl(220 70% 25% / 0.6), hsl(210 60% 15% / 0.4))',
-  rose: 'linear-gradient(135deg, hsl(340 80% 35% / 0.8), hsl(320 70% 30% / 0.6), hsl(330 60% 20% / 0.4))',
-};
-
 const ProgressCircle = ({ progress }: { progress: number }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -60,29 +52,34 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick }
     ? Math.round(periodGoals.reduce((acc, g) => acc + g.progress, 0) / periodGoals.length)
     : 0;
 
-  const currentGradient = themeGradients[settings.themeColor] || themeGradients.fire;
   const isCircular = settings.progressDisplayMode === 'circular';
+  
+  // Get first 3 goals for preview
+  const previewGoals = periodGoals.slice(0, 3);
+  const remainingCount = periodGoals.length - 3;
 
   return (
     <motion.div
       layout
       className={cn(
-        'overflow-hidden relative group rounded-2xl cursor-pointer glass-hover',
-        'bg-card/30 backdrop-blur-sm border border-border/30',
+        'overflow-hidden relative group rounded-2xl cursor-pointer glass-hover w-full',
+        'bg-muted/20 backdrop-blur-sm border border-border/30',
         className
       )}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onClick}
     >
-      {/* Theme gradient background */}
+      {/* Neutral gradient background */}
       <div 
         className="absolute inset-0"
-        style={{ background: currentGradient }}
+        style={{ 
+          background: 'linear-gradient(135deg, hsl(var(--muted) / 0.4), hsl(var(--card) / 0.6), hsl(var(--muted) / 0.3))'
+        }}
       />
       
       {/* Additional overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/30 to-transparent" />
 
       <div className="relative z-10 p-4">
         {/* Header */}
@@ -117,10 +114,30 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick }
           </div>
         )}
 
-        {/* Summary */}
-        {periodGoals.length > 0 && (
-          <p className="text-sm text-muted-foreground">
-            {periodGoals.length} objetivo{periodGoals.length !== 1 ? 's' : ''}
+        {/* Goals Preview (sub-subtitles) */}
+        {previewGoals.length > 0 && (
+          <div className="space-y-1.5 mt-3 pt-3 border-t border-border/20">
+            {previewGoals.map((goal) => (
+              <div key={goal.id} className="flex items-center gap-2 text-sm">
+                {settings.showEmojis && goal.emoji && (
+                  <span className="text-xs">{goal.emoji}</span>
+                )}
+                <span className="text-muted-foreground truncate flex-1">{goal.name}</span>
+                <span className="text-xs font-medium text-primary">{goal.progress}%</span>
+              </div>
+            ))}
+            {remainingCount > 0 && (
+              <p className="text-xs text-muted-foreground/70">
+                +{remainingCount} objetivo{remainingCount !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Summary if no goals */}
+        {periodGoals.length === 0 && (
+          <p className="text-sm text-muted-foreground/60 mt-2">
+            Nenhum objetivo
           </p>
         )}
       </div>

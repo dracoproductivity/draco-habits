@@ -366,38 +366,36 @@ export const GoalsPage = () => {
       </div>
 
       {viewMode === 'progress' ? (
-        /* Year Progress View */
-        <div className="space-y-4">
-          {/* Week and Month */}
-          <div className="grid grid-cols-2 gap-3">
-            <PeriodCard
-              title="Semana"
-              type="weekly"
-              period={`Semana ${weekNumber}`}
-              onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`)}
-            />
-            <PeriodCard
-              title={month.charAt(0).toUpperCase() + month.slice(1)}
-              type="monthly"
-              period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
-              onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
-            />
-          </div>
+        /* Year Progress View - Single Column */
+        <div className="space-y-3">
+          {/* Week */}
+          <PeriodCard
+            title="Semana"
+            type="weekly"
+            period={`Semana ${weekNumber}`}
+            onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`)}
+          />
+          
+          {/* Month */}
+          <PeriodCard
+            title={month.charAt(0).toUpperCase() + month.slice(1)}
+            type="monthly"
+            period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
+            onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
+          />
 
           {/* Quarters */}
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((q) => (
-              <PeriodCard
-                key={q}
-                title={`${q}º Trimestre`}
-                subtitle={QUARTER_MONTHS[q]}
-                type="quarterly"
-                period={`${q}º Tri - ${year}`}
-                className={q !== quarter ? 'opacity-60' : ''}
-                onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
-              />
-            ))}
-          </div>
+          {[1, 2, 3, 4].map((q) => (
+            <PeriodCard
+              key={q}
+              title={`${q}º Trimestre`}
+              subtitle={QUARTER_MONTHS[q]}
+              type="quarterly"
+              period={`${q}º Tri - ${year}`}
+              className={q !== quarter ? 'opacity-60' : ''}
+              onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
+            />
+          ))}
 
           {/* Year */}
           <PeriodCard
@@ -411,22 +409,55 @@ export const GoalsPage = () => {
         /* Goals List View */
         <>
           {/* Filters */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
-            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                className={cn(
-                  'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
-                  filter === option.value
-                    ? 'gradient-fire text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
-                )}
+          <div className="space-y-3 mb-4">
+            {/* Type Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
+              <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              {filterOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setFilter(option.value)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
+                    filter === option.value
+                      ? 'gradient-fire text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Habit Filter */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1.5 block">Filtrar por hábito</label>
+              <select
+                className="w-full p-2.5 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                onChange={(e) => {
+                  const habitId = e.target.value;
+                  if (habitId === 'all') {
+                    setFilter('all');
+                  } else {
+                    const habit = habits.find(h => h.id === habitId);
+                    if (habit?.goalId) {
+                      const goal = goals.find(g => g.id === habit.goalId);
+                      if (goal) {
+                        setSelectedGoal(goal);
+                      }
+                    }
+                  }
+                }}
+                defaultValue="all"
               >
-                {option.label}
-              </button>
-            ))}
+                <option value="all">Todos os hábitos</option>
+                {habits.map((habit) => (
+                  <option key={habit.id} value={habit.id}>
+                    {habit.emoji ? `${habit.emoji} ` : ''}{habit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Goals list */}
@@ -968,6 +999,31 @@ export const GoalsPage = () => {
                         <span>{cat.name}</span>
                       </button>
                     ))}
+                    {customCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => {
+                          updateGoal(selectedGoal.id, { category: 'custom', customCategoryId: cat.id });
+                          setSelectedGoal({ ...selectedGoal, category: 'custom', customCategoryId: cat.id });
+                        }}
+                        className={cn(
+                          'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                          selectedGoal.category === 'custom' && selectedGoal.customCategoryId === cat.id
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        <span>{cat.emoji || '🎯'}</span>
+                        <span>{cat.name}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowNewCategoryModal(true)}
+                      className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Criar</span>
+                    </button>
                   </div>
                 </div>
 
