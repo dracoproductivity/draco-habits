@@ -12,14 +12,15 @@ import { useAppStore } from "@/store/useAppStore";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isAuthenticated, checkAndShowDailyCheckIn, initializeDefaultCategories } = useAppStore();
+  const isAuthenticated = useAppStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     if (isAuthenticated) {
+      const { initializeDefaultCategories, checkAndShowDailyCheckIn } = useAppStore.getState();
       initializeDefaultCategories();
       checkAndShowDailyCheckIn();
     }
-  }, [isAuthenticated, initializeDefaultCategories, checkAndShowDailyCheckIn]);
+  }, [isAuthenticated]);
 
   return (
     <>
