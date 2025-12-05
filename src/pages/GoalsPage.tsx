@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, ChevronLeft, ChevronRight, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell, Lightbulb } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, ChevronLeft, ChevronRight, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell, Lightbulb, Pencil } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { PeriodCard } from '@/components/year/PeriodCard';
@@ -222,6 +222,14 @@ export const GoalsPage = () => {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
   const [newCategoryXP, setNewCategoryXP] = useState<number>(20);
+  const [newCategoryHasEmoji, setNewCategoryHasEmoji] = useState(true);
+  
+  // Edit category state
+  const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryEmoji, setEditCategoryEmoji] = useState('');
+  const [editCategoryHasEmoji, setEditCategoryHasEmoji] = useState(true);
+  const [editCategoryXP, setEditCategoryXP] = useState<number>(20);
   
   // Year view state
   const [selectedPeriod, setSelectedPeriod] = useState<{
@@ -334,7 +342,7 @@ export const GoalsPage = () => {
   };
 
   const handleAddGoalClick = () => {
-    if (filter === 'all') {
+    if (filter === 'all' || filter === 'habits') {
       setShowTypeSelector(true);
     } else {
       openNewGoalModal(filter as GoalType);
@@ -349,6 +357,25 @@ export const GoalsPage = () => {
     setNewGoalCategoryXP(20);
     setShowTypeSelector(false);
     setShowNewGoalModal(true);
+  };
+
+  const openEditCategoryModal = (category: CustomCategory) => {
+    setEditingCategory(category);
+    setEditCategoryName(category.name);
+    setEditCategoryEmoji(category.emoji || '🎯');
+    setEditCategoryHasEmoji(!!category.emoji);
+    setEditCategoryXP(category.xpReward);
+  };
+
+  const handleUpdateCategory = () => {
+    if (!editingCategory || !editCategoryName.trim()) return;
+    const { updateCustomCategory } = useAppStore.getState();
+    updateCustomCategory(editingCategory.id, {
+      name: editCategoryName.trim(),
+      emoji: editCategoryHasEmoji ? editCategoryEmoji : undefined,
+      xpReward: editCategoryXP,
+    });
+    setEditingCategory(null);
   };
 
   const handleCreateGoal = () => {
@@ -413,13 +440,14 @@ export const GoalsPage = () => {
     if (!newCategoryName.trim()) return;
     addCustomCategory({
       name: newCategoryName.trim(),
-      emoji: newCategoryEmoji,
+      emoji: newCategoryHasEmoji ? newCategoryEmoji : undefined,
       xpReward: newCategoryXP,
     });
     setShowNewCategoryModal(false);
     setNewCategoryName('');
     setNewCategoryEmoji('🎯');
     setNewCategoryXP(20);
+    setNewCategoryHasEmoji(true);
   };
 
   const openPeriodModal = (title: string, type: GoalType, period: string, subtitle?: string, quarterMonths?: string[]) => {
@@ -720,56 +748,49 @@ export const GoalsPage = () => {
           ) : (
             /* Goals list */
             <div className="space-y-3">
-              {filteredGoals.length === 0 ? (
+              {filteredGoals.length === 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
                       <Lightbulb className="w-5 h-5 text-primary-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">Nenhum objetivo ainda!</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Crie hábitos na aba <strong>Diário</strong> e vincule-os a objetivos. 
-                        Seus objetivos semanais, mensais, trimestrais e anuais aparecerão aqui automaticamente!
+                      <h3 className="font-semibold text-foreground mb-1">
+                        {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Clique no botão abaixo para criar seu primeiro objetivo 
+                        {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
                       </p>
-                      <button
-                        onClick={() => {
-                          const { setActiveTab } = useAppStore.getState();
-                          setActiveTab('daily');
-                        }}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        Ir para o Diário →
-                      </button>
                     </div>
                   </div>
                 </motion.div>
-              ) : (
-                <>
-                  {filteredGoals.map((goal, index) => (
-                    <GoalCard
-                      key={goal.id}
-                      goal={goal}
-                      index={index}
-                      onClick={() => setSelectedGoal(goal)}
-                    />
-                  ))}
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleAddGoalClick}
-                    className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span className="font-medium">Adicionar Objetivo</span>
-                  </motion.button>
-                </>
               )}
+              
+              {filteredGoals.map((goal, index) => (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  index={index}
+                  onClick={() => setSelectedGoal(goal)}
+                />
+              ))}
+              
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleAddGoalClick}
+                className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="font-medium">
+                  Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
+                </span>
+              </motion.button>
             </div>
           )}
         </>
@@ -983,14 +1004,29 @@ export const GoalsPage = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Emoji</label>
-                  <input
-                    type="text"
-                    value={newCategoryEmoji}
-                    onChange={(e) => setNewCategoryEmoji(e.target.value.slice(-2))}
-                    placeholder="🎯"
-                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-muted-foreground">Emoji</label>
+                    <button
+                      onClick={() => setNewCategoryHasEmoji(!newCategoryHasEmoji)}
+                      className={cn(
+                        'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                        newCategoryHasEmoji
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-muted/30 text-muted-foreground'
+                      )}
+                    >
+                      {newCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
+                    </button>
+                  </div>
+                  {newCategoryHasEmoji && (
+                    <input
+                      type="text"
+                      value={newCategoryEmoji}
+                      onChange={(e) => setNewCategoryEmoji(e.target.value.slice(-2))}
+                      placeholder="🎯"
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -1020,6 +1056,113 @@ export const GoalsPage = () => {
                 >
                   Criar Categoria
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Category Modal */}
+      <AnimatePresence>
+        {editingCategory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setEditingCategory(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Editar Categoria</h3>
+                <button onClick={() => setEditingCategory(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
+                  <input
+                    type="text"
+                    value={editCategoryName}
+                    onChange={(e) => setEditCategoryName(e.target.value)}
+                    placeholder="Ex: Finanças"
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-muted-foreground">Emoji</label>
+                    <button
+                      onClick={() => setEditCategoryHasEmoji(!editCategoryHasEmoji)}
+                      className={cn(
+                        'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                        editCategoryHasEmoji
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-muted/30 text-muted-foreground'
+                      )}
+                    >
+                      {editCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
+                    </button>
+                  </div>
+                  {editCategoryHasEmoji && (
+                    <input
+                      type="text"
+                      value={editCategoryEmoji}
+                      onChange={(e) => setEditCategoryEmoji(e.target.value.slice(-2))}
+                      placeholder="🎯"
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito</label>
+                  <div className="flex gap-2">
+                    {XP_OPTIONS.map((xp) => (
+                      <button
+                        key={xp}
+                        onClick={() => setEditCategoryXP(xp)}
+                        className={cn(
+                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                          editCategoryXP === xp
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        {xp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const { removeCustomCategory } = useAppStore.getState();
+                      removeCustomCategory(editingCategory.id);
+                      setEditingCategory(null);
+                    }}
+                    className="flex-1 py-3 bg-destructive/10 text-destructive rounded-xl font-semibold hover:bg-destructive/20 transition-colors"
+                  >
+                    Excluir
+                  </button>
+                  <button
+                    onClick={handleUpdateCategory}
+                    disabled={!editCategoryName.trim()}
+                    className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Salvar
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -1293,22 +1436,32 @@ export const GoalsPage = () => {
                       </button>
                     ))}
                     {customCategories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          updateGoal(selectedGoal.id, { category: 'custom', customCategoryId: cat.id });
-                          setSelectedGoal({ ...selectedGoal, category: 'custom', customCategoryId: cat.id });
-                        }}
-                        className={cn(
-                          'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
-                          selectedGoal.category === 'custom' && selectedGoal.customCategoryId === cat.id
-                            ? 'gradient-fire text-primary-foreground'
-                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                        )}
-                      >
-                        <span>{cat.emoji || '🎯'}</span>
-                        <span>{cat.name}</span>
-                      </button>
+                      <div key={cat.id} className="relative group">
+                        <button
+                          onClick={() => {
+                            updateGoal(selectedGoal.id, { category: 'custom', customCategoryId: cat.id });
+                            setSelectedGoal({ ...selectedGoal, category: 'custom', customCategoryId: cat.id });
+                          }}
+                          className={cn(
+                            'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                            selectedGoal.category === 'custom' && selectedGoal.customCategoryId === cat.id
+                              ? 'gradient-fire text-primary-foreground'
+                              : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                          )}
+                        >
+                          {cat.emoji && <span>{cat.emoji}</span>}
+                          <span>{cat.name}</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditCategoryModal(cat);
+                          }}
+                          className="absolute -top-1 -right-1 p-1 rounded-full bg-muted/80 border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Pencil className="w-2.5 h-2.5 text-muted-foreground" />
+                        </button>
+                      </div>
                     ))}
                     <button
                       onClick={() => setShowNewCategoryModal(true)}
