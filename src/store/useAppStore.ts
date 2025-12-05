@@ -82,19 +82,10 @@ const defaultSettings: AppSettings = {
   darkMode: true,
 };
 
-const defaultHabits: Habit[] = [
-  { id: '1', name: 'Meditar', emoji: '🧘', xpReward: 25, createdAt: new Date().toISOString() },
-  { id: '2', name: 'Exercício', emoji: '💪', xpReward: 30, createdAt: new Date().toISOString() },
-  { id: '3', name: 'Leitura', emoji: '📚', xpReward: 20, createdAt: new Date().toISOString() },
-  { id: '4', name: 'Água', emoji: '💧', xpReward: 15, createdAt: new Date().toISOString() },
-  { id: '5', name: 'Sono 8h', emoji: '😴', xpReward: 25, createdAt: new Date().toISOString() },
-];
+// Empty defaults for first-time users
+const defaultHabits: Habit[] = [];
 
-const defaultGoals: Goal[] = [
-  { id: '1', name: 'Ler 12 livros', emoji: '📖', type: 'yearly', period: '2025', progress: 25, createdAt: new Date().toISOString() },
-  { id: '2', name: 'Perder 5kg', emoji: '⚖️', type: 'quarterly', period: '1º Tri - 2025', progress: 40, createdAt: new Date().toISOString() },
-  { id: '3', name: 'Completar curso', emoji: '🎓', type: 'monthly', period: 'Dezembro 2025', progress: 60, createdAt: new Date().toISOString() },
-];
+const defaultGoals: Goal[] = [];
 
 export const useAppStore = create<AppStore>()(
   persist(

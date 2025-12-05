@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, ChevronLeft, ChevronRight, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell, Lightbulb } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { PeriodCard } from '@/components/year/PeriodCard';
@@ -60,12 +60,18 @@ const QUARTER_MONTH_ARRAYS: Record<number, string[]> = {
   4: ['Outubro', 'Novembro', 'Dezembro'],
 };
 
-const generateWeekOptions = () => {
+// Generate period options - only current and future periods
+const generateWeekOptions = (includeNextYear = false) => {
   const options: { value: string; label: string }[] = [];
-  const year = new Date().getFullYear();
-  const yearStart = startOfYear(new Date(year, 0, 1));
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentWeek = Math.ceil(
+    (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
   
-  for (let i = 1; i <= 52; i++) {
+  // Current year weeks (from current week onwards)
+  const yearStart = startOfYear(new Date(currentYear, 0, 1));
+  for (let i = currentWeek; i <= 52; i++) {
     const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
     const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
     
@@ -79,36 +85,98 @@ const generateWeekOptions = () => {
       : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
     
     options.push({ 
-      value: `Semana ${i}`, 
-      label: `Semana ${i} - ${dateRange}` 
+      value: `Semana ${i} - ${currentYear}`, 
+      label: `Semana ${i} - ${dateRange} (${currentYear})` 
     });
   }
+  
+  // Next year weeks (all 52)
+  if (includeNextYear) {
+    const nextYear = currentYear + 1;
+    const nextYearStart = startOfYear(new Date(nextYear, 0, 1));
+    for (let i = 1; i <= 52; i++) {
+      const weekStart = startOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
+      
+      const startDay = format(weekStart, 'd', { locale: ptBR });
+      const endDay = format(weekEnd, 'd', { locale: ptBR });
+      const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
+      const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
+      
+      const dateRange = startMonth === endMonth 
+        ? `${startDay}-${endDay} de ${startMonth}`
+        : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
+      
+      options.push({ 
+        value: `Semana ${i} - ${nextYear}`, 
+        label: `Semana ${i} - ${dateRange} (${nextYear})` 
+      });
+    }
+  }
+  
   return options;
 };
 
-const generateMonthOptions = () => {
+const generateMonthOptions = (includeNextYear = false) => {
   const months = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
-  const year = new Date().getFullYear();
-  return months.map(m => ({ value: `${m} ${year}`, label: `${m} ${year}` }));
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  
+  const options: { value: string; label: string }[] = [];
+  
+  // Current year months (from current month onwards)
+  for (let i = currentMonth; i < 12; i++) {
+    options.push({ value: `${months[i]} ${currentYear}`, label: `${months[i]} ${currentYear}` });
+  }
+  
+  // Next year months
+  if (includeNextYear) {
+    const nextYear = currentYear + 1;
+    months.forEach(m => {
+      options.push({ value: `${m} ${nextYear}`, label: `${m} ${nextYear}` });
+    });
+  }
+  
+  return options;
 };
 
-const generateQuarterOptions = () => {
-  const year = new Date().getFullYear();
-  return [
-    { value: `1º Tri - ${year}`, label: `1º Tri - ${year} (Jan-Mar)` },
-    { value: `2º Tri - ${year}`, label: `2º Tri - ${year} (Abr-Jun)` },
-    { value: `3º Tri - ${year}`, label: `3º Tri - ${year} (Jul-Set)` },
-    { value: `4º Tri - ${year}`, label: `4º Tri - ${year} (Out-Dez)` },
-  ];
+const generateQuarterOptions = (includeNextYear = false) => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+  
+  const options: { value: string; label: string }[] = [];
+  
+  // Current year quarters (from current quarter onwards)
+  const quarterLabels = ['Jan-Mar', 'Abr-Jun', 'Jul-Set', 'Out-Dez'];
+  for (let q = currentQuarter; q <= 4; q++) {
+    options.push({ 
+      value: `${q}º Tri - ${currentYear}`, 
+      label: `${q}º Tri - ${currentYear} (${quarterLabels[q - 1]})` 
+    });
+  }
+  
+  // Next year quarters
+  if (includeNextYear) {
+    const nextYear = currentYear + 1;
+    for (let q = 1; q <= 4; q++) {
+      options.push({ 
+        value: `${q}º Tri - ${nextYear}`, 
+        label: `${q}º Tri - ${nextYear} (${quarterLabels[q - 1]})` 
+      });
+    }
+  }
+  
+  return options;
 };
 
 const generateYearOptions = () => {
   const currentYear = new Date().getFullYear();
   return [
-    { value: (currentYear - 1).toString(), label: (currentYear - 1).toString() },
     { value: currentYear.toString(), label: currentYear.toString() },
     { value: (currentYear + 1).toString(), label: (currentYear + 1).toString() },
   ];
@@ -116,9 +184,9 @@ const generateYearOptions = () => {
 
 const getPeriodOptions = (type: GoalType) => {
   switch (type) {
-    case 'weekly': return generateWeekOptions();
-    case 'monthly': return generateMonthOptions();
-    case 'quarterly': return generateQuarterOptions();
+    case 'weekly': return generateWeekOptions(true);
+    case 'monthly': return generateMonthOptions(true);
+    case 'quarterly': return generateQuarterOptions(true);
     case 'yearly': return generateYearOptions();
   }
 };
@@ -128,6 +196,11 @@ export const GoalsPage = () => {
   
   // View mode toggle
   const [viewMode, setViewMode] = useState<ViewMode>('progress');
+  
+  // Year navigation for progress view
+  const currentYear = new Date().getFullYear();
+  const [displayYear, setDisplayYear] = useState(currentYear);
+  const isViewingNextYear = displayYear === currentYear + 1;
   
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
@@ -168,12 +241,15 @@ export const GoalsPage = () => {
   const [parentGoalForWeekly, setParentGoalForWeekly] = useState<Goal | null>(null);
 
   const today = new Date();
-  const year = today.getFullYear();
+  const year = displayYear;
   const month = today.toLocaleDateString('pt-BR', { month: 'long' });
   const weekNumber = Math.ceil(
-    (today.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
+    (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
   const quarter = Math.ceil((today.getMonth() + 1) / 3);
+  
+  // Check if user has no goals/habits (first time)
+  const isFirstTimeUser = goals.length === 0 && habits.length === 0;
 
   const getParentGoalOptions = (type: GoalType): Goal[] => {
     const parentType = parentTypeMap[type];
@@ -400,46 +476,115 @@ export const GoalsPage = () => {
 
       {viewMode === 'progress' ? (
         /* Year Progress View - Grid on desktop */
-        <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-3'}`}>
-          {/* Week */}
-          <PeriodCard
-            title="Semana"
-            subtitle="Semana atual"
-            type="weekly"
-            period={`Semana ${weekNumber}`}
-            onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`, 'Semana atual')}
-          />
+        <>
+          {/* Onboarding box for first-time users */}
+          {isFirstTimeUser && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">Comece sua jornada!</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Para começar, vá até a aba <strong>Diário</strong> e crie seu primeiro hábito. 
+                    Ao criar um hábito, você pode vinculá-lo a objetivos que serão criados automaticamente 
+                    (semanal, mensal, trimestral e anual). Seus objetivos aparecerão aqui!
+                  </p>
+                  <button
+                    onClick={() => {
+                      const { setActiveTab } = useAppStore.getState();
+                      setActiveTab('daily');
+                    }}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Ir para o Diário →
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
           
-          {/* Month */}
-          <PeriodCard
-            title={month.charAt(0).toUpperCase() + month.slice(1)}
-            subtitle="Mês atual"
-            type="monthly"
-            period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
-            onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`, 'Mês atual')}
-          />
+          {/* Year navigation header */}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-lg text-foreground">{displayYear}</h2>
+            {isViewingNextYear && (
+              <button
+                onClick={() => setDisplayYear(currentYear)}
+                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Voltar para {currentYear}
+              </button>
+            )}
+          </div>
+          
+          <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-3'}`}>
+            {/* Week - only show for current year */}
+            {!isViewingNextYear && (
+              <PeriodCard
+                title="Semana"
+                subtitle="Semana atual"
+                type="weekly"
+                period={`Semana ${weekNumber} - ${currentYear}`}
+                displayYear={currentYear}
+                onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber} - ${currentYear}`, 'Semana atual')}
+              />
+            )}
+            
+            {/* Month - only show for current year */}
+            {!isViewingNextYear && (
+              <PeriodCard
+                title={month.charAt(0).toUpperCase() + month.slice(1)}
+                subtitle="Mês atual"
+                type="monthly"
+                period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`}
+                displayYear={currentYear}
+                onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`, 'Mês atual')}
+              />
+            )}
 
-          {/* Quarters */}
-          {[1, 2, 3, 4].map((q) => (
+            {/* Quarters */}
+            {[1, 2, 3, 4].map((q) => (
+              <PeriodCard
+                key={q}
+                title={`${q}º Trimestre`}
+                subtitle={QUARTER_MONTHS[q]}
+                type="quarterly"
+                period={`${q}º Tri - ${year}`}
+                quarterMonths={QUARTER_MONTH_ARRAYS[q]}
+                displayYear={year}
+                onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
+              />
+            ))}
+
+            {/* Year */}
             <PeriodCard
-              key={q}
-              title={`${q}º Trimestre`}
-              subtitle={QUARTER_MONTHS[q]}
-              type="quarterly"
-              period={`${q}º Tri - ${year}`}
-              quarterMonths={QUARTER_MONTH_ARRAYS[q]}
-              onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
+              title={`Ano ${year}`}
+              type="yearly"
+              period={year.toString()}
+              displayYear={year}
+              onClick={() => openPeriodModal(`Ano ${year}`, 'yearly', year.toString())}
             />
-          ))}
-
-          {/* Year */}
-          <PeriodCard
-            title={`Ano ${year}`}
-            type="yearly"
-            period={year.toString()}
-            onClick={() => openPeriodModal(`Ano ${year}`, 'yearly', year.toString())}
-          />
-        </div>
+          </div>
+          
+          {/* Button to view next year */}
+          {!isViewingNextYear && (
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => setDisplayYear(currentYear + 1)}
+              className="w-full mt-4 py-3 px-4 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2"
+            >
+              <span>Ver objetivos de {currentYear + 1}</span>
+              <ChevronRight className="w-4 h-4" />
+            </motion.button>
+          )}
+        </>
       ) : (
         /* Goals List View */
         <>
@@ -467,10 +612,33 @@ export const GoalsPage = () => {
             /* Habits List View - Same as Daily */
             <div className="space-y-2">
               {habits.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <p className="text-muted-foreground mb-4">Nenhum hábito encontrado</p>
-                  <p className="text-sm text-muted-foreground/70">Crie hábitos na aba Daily</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                      <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
+                        Cada hábito pode ser vinculado a objetivos de diferentes períodos.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const { setActiveTab } = useAppStore.getState();
+                          setActiveTab('daily');
+                        }}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        Ir para o Diário →
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               ) : (
                 habits.map((habit, index) => {
                   const todayStr = new Date().toISOString().split('T')[0];
@@ -553,18 +721,33 @@ export const GoalsPage = () => {
             /* Goals list */
             <div className="space-y-3">
               {filteredGoals.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleAddGoalClick}
-                    className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Adicionar Objetivo
-                  </motion.button>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                      <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground mb-1">Nenhum objetivo ainda!</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Crie hábitos na aba <strong>Diário</strong> e vincule-os a objetivos. 
+                        Seus objetivos semanais, mensais, trimestrais e anuais aparecerão aqui automaticamente!
+                      </p>
+                      <button
+                        onClick={() => {
+                          const { setActiveTab } = useAppStore.getState();
+                          setActiveTab('daily');
+                        }}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        Ir para o Diário →
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               ) : (
                 <>
                   {filteredGoals.map((goal, index) => (
