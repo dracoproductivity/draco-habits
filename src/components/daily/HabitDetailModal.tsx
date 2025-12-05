@@ -41,25 +41,31 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
 
-  // Calculate habit progress history
+  // Calculate habit progress history from creation date
   const progressHistory = useMemo(() => {
-    const last30Days: { date: string; completed: boolean }[] = [];
+    const history: { date: string; completed: boolean }[] = [];
     const today = new Date();
+    const createdDate = new Date(habit.createdAt);
     
-    for (let i = 29; i >= 0; i--) {
+    // Calculate days since creation (max 30)
+    const daysSinceCreation = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysToShow = Math.min(daysSinceCreation + 1, 30);
+    
+    for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
       const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
-      last30Days.push({ date: dateStr, completed: check?.completed || false });
+      history.push({ date: dateStr, completed: check?.completed || false });
     }
     
-    return last30Days;
-  }, [habit.id, habitChecks]);
+    return history;
+  }, [habit.id, habit.createdAt, habitChecks]);
 
   const completionRate = useMemo(() => {
+    if (progressHistory.length === 0) return 0;
     const completedCount = progressHistory.filter(d => d.completed).length;
-    return Math.round((completedCount / 30) * 100);
+    return Math.round((completedCount / progressHistory.length) * 100);
   }, [progressHistory]);
 
   // Get linked goals hierarchy
@@ -226,7 +232,12 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   />
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Últimos 30 dias</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {progressHistory.length < 30 
+                  ? `${progressHistory.length} dia${progressHistory.length > 1 ? 's' : ''} desde o início`
+                  : 'Últimos 30 dias'
+                }
+              </p>
             </div>
 
             {/* Linked Goals Progress */}
@@ -346,15 +357,18 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               </div>
               
               <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isOneTime}
-                    onChange={(e) => setIsOneTime(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-foreground">Evento único (sem repetição)</span>
-                </label>
+                <button
+                  onClick={() => setIsOneTime(!isOneTime)}
+                  className={cn(
+                    'w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
+                    isOneTime
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
+                  )}
+                >
+                  <Calendar className="w-4 h-4" />
+                  Evento único (sem repetição)
+                </button>
                 
                 {!isOneTime && (
                   <div className="flex gap-1">
@@ -385,24 +399,30 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 <h3 className="font-medium text-foreground">Notificação</h3>
               </div>
               
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-3 cursor-pointer flex-1">
-                  <input
-                    type="checkbox"
-                    checked={notificationEnabled}
-                    onChange={(e) => setNotificationEnabled(e.target.checked)}
-                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-foreground">Ativar lembrete</span>
-                </label>
+              <div className="space-y-3">
+                <button
+                  onClick={() => setNotificationEnabled(!notificationEnabled)}
+                  className={cn(
+                    'w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
+                    notificationEnabled
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
+                  )}
+                >
+                  <Bell className="w-4 h-4" />
+                  Ativar lembrete
+                </button>
                 
                 {notificationEnabled && (
-                  <input
-                    type="time"
-                    value={notificationTime}
-                    onChange={(e) => setNotificationTime(e.target.value)}
-                    className="bg-muted/50 border border-border/50 rounded-lg px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Horário:</span>
+                    <input
+                      type="time"
+                      value={notificationTime}
+                      onChange={(e) => setNotificationTime(e.target.value)}
+                      className="flex-1 bg-muted/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                  </div>
                 )}
               </div>
             </div>
