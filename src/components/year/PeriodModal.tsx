@@ -169,14 +169,15 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period }: 
                     </button>
                   </div>
                   <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={goal.progress}
-                      onChange={(e) => handleProgressChange(goal.id, parseInt(e.target.value))}
-                      className="flex-1 accent-primary"
-                    />
+                    <div className="flex-1 h-2 rounded-full bg-muted/50 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: 'var(--gradient-progress)' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${goal.progress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
                     <span className="text-sm font-medium w-12 text-right">{goal.progress}%</span>
                   </div>
                 </div>
