@@ -6,10 +6,9 @@ import { DracoIcon } from '@/components/icons/DracoIcon';
 export const WelcomeModal = () => {
   const { showWelcomeModal, closeWelcomeModal, setActiveTab } = useAppStore();
 
-  const handlePeriodSelect = (period: 'year' | 'quarter' | 'month') => {
+  const handlePeriodSelect = () => {
     closeWelcomeModal();
-    setActiveTab('year');
-    // The Year tab will handle showing the appropriate section
+    setActiveTab('goals');
   };
 
   return (
@@ -90,19 +89,19 @@ export const WelcomeModal = () => {
               </p>
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  onClick={() => handlePeriodSelect('year')}
+                  onClick={handlePeriodSelect}
                   className="btn-ghost text-sm py-2"
                 >
                   Ano
                 </button>
                 <button
-                  onClick={() => handlePeriodSelect('quarter')}
+                  onClick={handlePeriodSelect}
                   className="btn-ghost text-sm py-2"
                 >
                   Trimestre
                 </button>
                 <button
-                  onClick={() => handlePeriodSelect('month')}
+                  onClick={handlePeriodSelect}
                   className="btn-ghost text-sm py-2"
                 >
                   Mês

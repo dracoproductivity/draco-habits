@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Eye } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
-import { Goal, GoalType } from '@/types';
+import { PeriodCard } from '@/components/year/PeriodCard';
+import { PeriodModal } from '@/components/year/PeriodModal';
+import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 type FilterType = 'all' | Goal['type'];
+type ViewMode = 'progress' | 'goals';
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -32,7 +35,6 @@ const typeColors: Record<GoalType, string> = {
   yearly: 'gradient-fire text-primary-foreground',
 };
 
-// Hierarchy: weekly → monthly → quarterly → yearly
 const parentTypeMap: Record<GoalType, GoalType | null> = {
   weekly: 'monthly',
   monthly: 'quarterly',
@@ -41,6 +43,13 @@ const parentTypeMap: Record<GoalType, GoalType | null> = {
 };
 
 const weekDayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+const QUARTER_MONTHS: Record<number, string> = {
+  1: 'Janeiro, Fevereiro, Março',
+  2: 'Abril, Maio, Junho',
+  3: 'Julho, Agosto, Setembro',
+  4: 'Outubro, Novembro, Dezembro',
+};
 
 const generateWeekOptions = () => {
   const options: { value: string; label: string }[] = [];
@@ -106,7 +115,12 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, addGoal, updateGoal, removeGoal, settings } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, habits, customCategories, addCustomCategory } = useAppStore();
+  
+  // View mode toggle
+  const [viewMode, setViewMode] = useState<ViewMode>('progress');
+  
+  // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [editingType, setEditingType] = useState<GoalType | null>(null);
@@ -117,16 +131,37 @@ export const GoalsPage = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalType, setNewGoalType] = useState<GoalType>('weekly');
   const [newGoalPeriod, setNewGoalPeriod] = useState('');
+  const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory | ''>('');
+  const [newGoalCategoryXP, setNewGoalCategoryXP] = useState<number>(20);
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
+  const [newCategoryXP, setNewCategoryXP] = useState<number>(20);
+  
+  // Year view state
+  const [selectedPeriod, setSelectedPeriod] = useState<{
+    title: string;
+    subtitle?: string;
+    type: GoalType;
+    period: string;
+  } | null>(null);
   
   // Weekly goal creation from parent
   const [showWeeklyGoalPrompt, setShowWeeklyGoalPrompt] = useState(false);
   const [weeklyGoalName, setWeeklyGoalName] = useState('');
-  const [weeklyGoalDays, setWeeklyGoalDays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri default
+  const [weeklyGoalDays, setWeeklyGoalDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [weeklyGoalRepeat, setWeeklyGoalRepeat] = useState(true);
   const [weeklyGoalPeriod, setWeeklyGoalPeriod] = useState('');
   const [parentGoalForWeekly, setParentGoalForWeekly] = useState<Goal | null>(null);
 
-  // Get potential parent goals for a given goal type
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.toLocaleDateString('pt-BR', { month: 'long' });
+  const weekNumber = Math.ceil(
+    (today.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  const quarter = Math.ceil((today.getMonth() + 1) / 3);
+
   const getParentGoalOptions = (type: GoalType): Goal[] => {
     const parentType = parentTypeMap[type];
     if (!parentType) return [];
@@ -144,6 +179,10 @@ export const GoalsPage = () => {
   const getParentGoal = (parentId?: string): Goal | undefined => {
     if (!parentId) return undefined;
     return goals.find(g => g.id === parentId);
+  };
+
+  const getLinkedHabits = (goalId: string) => {
+    return habits.filter(h => h.goalId === goalId);
   };
 
   const filteredGoals = filter === 'all'
@@ -175,6 +214,20 @@ export const GoalsPage = () => {
     }
   };
 
+  const handleCategoryChange = (category: GoalCategory) => {
+    if (selectedGoal) {
+      updateGoal(selectedGoal.id, { category });
+      setSelectedGoal({ ...selectedGoal, category });
+    }
+  };
+
+  const handleCategoryXPChange = (xp: number) => {
+    if (selectedGoal) {
+      updateGoal(selectedGoal.id, { categoryXP: xp });
+      setSelectedGoal({ ...selectedGoal, categoryXP: xp });
+    }
+  };
+
   const handleAddGoalClick = () => {
     if (filter === 'all') {
       setShowTypeSelector(true);
@@ -187,6 +240,8 @@ export const GoalsPage = () => {
     setNewGoalType(type);
     setNewGoalPeriod(getPeriodOptions(type)[0]?.value || '');
     setNewGoalName('');
+    setNewGoalCategory('');
+    setNewGoalCategoryXP(20);
     setShowTypeSelector(false);
     setShowNewGoalModal(true);
   };
@@ -198,11 +253,12 @@ export const GoalsPage = () => {
       type: newGoalType,
       period: newGoalPeriod,
       progress: 0,
+      category: newGoalCategory || undefined,
+      categoryXP: newGoalCategoryXP,
     });
     setShowNewGoalModal(false);
     setNewGoalName('');
     
-    // Show weekly goal prompt for non-weekly goals
     if (newGoalType !== 'weekly' && newGoal) {
       setParentGoalForWeekly(newGoal);
       setWeeklyGoalName('');
@@ -216,12 +272,10 @@ export const GoalsPage = () => {
   const handleCreateWeeklyGoal = () => {
     if (!weeklyGoalName.trim() || !parentGoalForWeekly) return;
     
-    // Find the monthly goal to link to (need to traverse hierarchy)
     let parentId: string | undefined;
     if (parentGoalForWeekly.type === 'monthly') {
       parentId = parentGoalForWeekly.id;
     } else {
-      // For quarterly/yearly, try to find a monthly goal linked to it
       const monthlyGoals = goals.filter(g => g.type === 'monthly' && g.parentGoalId === parentGoalForWeekly.id);
       if (monthlyGoals.length > 0) {
         parentId = monthlyGoals[0].id;
@@ -250,77 +304,185 @@ export const GoalsPage = () => {
     }
   };
 
+  const handleCreateCustomCategory = () => {
+    if (!newCategoryName.trim()) return;
+    addCustomCategory({
+      name: newCategoryName.trim(),
+      emoji: newCategoryEmoji,
+      xpReward: newCategoryXP,
+    });
+    setShowNewCategoryModal(false);
+    setNewCategoryName('');
+    setNewCategoryEmoji('🎯');
+    setNewCategoryXP(20);
+  };
+
+  const openPeriodModal = (title: string, type: GoalType, period: string, subtitle?: string) => {
+    setSelectedPeriod({ title, subtitle, type, period });
+  };
+
+  const allCategories = [
+    ...DEFAULT_CATEGORIES,
+    ...customCategories.map(c => ({ id: 'custom' as GoalCategory, name: c.name, emoji: c.emoji || '🎯', customId: c.id }))
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="min-h-screen pb-20 p-4"
     >
-      <header className="mb-6">
+      <header className="mb-4">
         <h1 className="text-2xl font-bold text-gradient-primary">Objetivos</h1>
         <p className="text-muted-foreground">Acompanhe seu progresso</p>
       </header>
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto hide-scrollbar pb-2">
-        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        {filterOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setFilter(option.value)}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
-              filter === option.value
-                ? 'gradient-fire text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+      {/* View Mode Toggle */}
+      <div className="flex gap-2 mb-4 p-1 bg-muted/30 rounded-xl">
+        <button
+          onClick={() => setViewMode('progress')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all',
+            viewMode === 'progress'
+              ? 'gradient-fire text-primary-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Eye className="w-4 h-4" />
+          <span className="text-sm font-medium">Progresso Anual</span>
+        </button>
+        <button
+          onClick={() => setViewMode('goals')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all',
+            viewMode === 'goals'
+              ? 'gradient-fire text-primary-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Target className="w-4 h-4" />
+          <span className="text-sm font-medium">Objetivos</span>
+        </button>
       </div>
 
-      {/* Goals list */}
-      <div className="space-y-3">
-        {filteredGoals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleAddGoalClick}
-              className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Adicionar Objetivo
-            </motion.button>
+      {viewMode === 'progress' ? (
+        /* Year Progress View */
+        <div className="space-y-4">
+          {/* Week and Month */}
+          <div className="grid grid-cols-2 gap-3">
+            <PeriodCard
+              title="Semana"
+              type="weekly"
+              period={`Semana ${weekNumber}`}
+              onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`)}
+            />
+            <PeriodCard
+              title={month.charAt(0).toUpperCase() + month.slice(1)}
+              type="monthly"
+              period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`}
+              onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`)}
+            />
           </div>
-        ) : (
-          <>
-            {filteredGoals.map((goal, index) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                index={index}
-                onClick={() => setSelectedGoal(goal)}
+
+          {/* Quarters */}
+          <div className="grid grid-cols-2 gap-3">
+            {[1, 2, 3, 4].map((q) => (
+              <PeriodCard
+                key={q}
+                title={`${q}º Trimestre`}
+                subtitle={QUARTER_MONTHS[q]}
+                type="quarterly"
+                period={`${q}º Tri - ${year}`}
+                className={q !== quarter ? 'opacity-60' : ''}
+                onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
               />
             ))}
-            
-            {/* Add button below list */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleAddGoalClick}
-              className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="font-medium">Adicionar Objetivo</span>
-            </motion.button>
-          </>
-        )}
-      </div>
+          </div>
 
-      {/* Type Selector Modal (when filter is 'all') */}
+          {/* Year */}
+          <PeriodCard
+            title={`Ano ${year}`}
+            type="yearly"
+            period={year.toString()}
+            onClick={() => openPeriodModal(`Ano ${year}`, 'yearly', year.toString())}
+          />
+        </div>
+      ) : (
+        /* Goals List View */
+        <>
+          {/* Filters */}
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
+            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setFilter(option.value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
+                  filter === option.value
+                    ? 'gradient-fire text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Goals list */}
+          <div className="space-y-3">
+            {filteredGoals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleAddGoalClick}
+                  className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Adicionar Objetivo
+                </motion.button>
+              </div>
+            ) : (
+              <>
+                {filteredGoals.map((goal, index) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    index={index}
+                    onClick={() => setSelectedGoal(goal)}
+                  />
+                ))}
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleAddGoalClick}
+                  className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="font-medium">Adicionar Objetivo</span>
+                </motion.button>
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Period Modal */}
+      {selectedPeriod && (
+        <PeriodModal
+          isOpen={!!selectedPeriod}
+          onClose={() => setSelectedPeriod(null)}
+          title={selectedPeriod.title}
+          subtitle={selectedPeriod.subtitle}
+          type={selectedPeriod.type}
+          period={selectedPeriod.period}
+        />
+      )}
+
+      {/* Type Selector Modal */}
       <AnimatePresence>
         {showTypeSelector && (
           <motion.div
@@ -374,7 +536,7 @@ export const GoalsPage = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl"
+              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold">Novo Objetivo</h3>
@@ -417,12 +579,140 @@ export const GoalsPage = () => {
                   </select>
                 </div>
 
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DEFAULT_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setNewGoalCategory(cat.id)}
+                        className={cn(
+                          'px-3 py-2 rounded-xl text-sm transition-all flex items-center gap-1',
+                          newGoalCategory === cat.id
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        <span>{cat.emoji}</span>
+                        <span>{cat.name}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowNewCategoryModal(true)}
+                      className="px-3 py-2 rounded-xl text-sm bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Criar</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito concluído</label>
+                  <div className="flex gap-2">
+                    {XP_OPTIONS.map((xp) => (
+                      <button
+                        key={xp}
+                        onClick={() => setNewGoalCategoryXP(xp)}
+                        className={cn(
+                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                          newGoalCategoryXP === xp
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        {xp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <button
                   onClick={handleCreateGoal}
                   disabled={!newGoalName.trim()}
                   className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Criar Objetivo
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Category Modal */}
+      <AnimatePresence>
+        {showNewCategoryModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowNewCategoryModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Nova Categoria</h3>
+                <button onClick={() => setShowNewCategoryModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Ex: Finanças"
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Emoji</label>
+                  <input
+                    type="text"
+                    value={newCategoryEmoji}
+                    onChange={(e) => setNewCategoryEmoji(e.target.value.slice(-2))}
+                    placeholder="🎯"
+                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito</label>
+                  <div className="flex gap-2">
+                    {XP_OPTIONS.map((xp) => (
+                      <button
+                        key={xp}
+                        onClick={() => setNewCategoryXP(xp)}
+                        className={cn(
+                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                          newCategoryXP === xp
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        {xp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreateCustomCategory}
+                  disabled={!newCategoryName.trim()}
+                  className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Criar Categoria
                 </button>
               </div>
             </motion.div>
@@ -456,7 +746,7 @@ export const GoalsPage = () => {
 
               <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 mb-4">
                 <p className="text-sm text-muted-foreground">
-                  💡 Crie um hábito semanal vinculado ao objetivo "{parentGoalForWeekly.name}" para acompanhar seu progresso de forma mais granular.
+                  Vinculado a: <span className="font-semibold text-foreground">{parentGoalForWeekly.name}</span>
                 </p>
               </div>
 
@@ -467,23 +757,20 @@ export const GoalsPage = () => {
                     type="text"
                     value={weeklyGoalName}
                     onChange={(e) => setWeeklyGoalName(e.target.value)}
-                    placeholder="Ex: Ler 30 minutos por dia"
+                    placeholder="Ex: Ler 30 minutos"
                     className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Dias da semana
-                  </label>
-                  <div className="flex gap-2 flex-wrap">
+                  <label className="text-sm text-muted-foreground mb-2 block">Dias da semana</label>
+                  <div className="flex gap-1.5">
                     {weekDayLabels.map((label, index) => (
                       <button
                         key={index}
                         onClick={() => toggleWeekDay(index)}
                         className={cn(
-                          'w-10 h-10 rounded-full text-sm font-medium transition-all',
+                          'flex-1 py-2 rounded-lg text-xs font-medium transition-all',
                           weeklyGoalDays.includes(index)
                             ? 'gradient-fire text-primary-foreground'
                             : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
@@ -495,35 +782,25 @@ export const GoalsPage = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
-                    <Repeat className="w-4 h-4" />
-                    Repetição
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setWeeklyGoalRepeat(true)}
-                      className={cn(
-                        'flex-1 p-3 rounded-xl text-sm font-medium transition-all border',
-                        weeklyGoalRepeat
-                          ? 'gradient-fire text-primary-foreground border-transparent'
-                          : 'bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50'
-                      )}
-                    >
-                      Toda semana
-                    </button>
-                    <button
-                      onClick={() => setWeeklyGoalRepeat(false)}
-                      className={cn(
-                        'flex-1 p-3 rounded-xl text-sm font-medium transition-all border',
-                        !weeklyGoalRepeat
-                          ? 'gradient-fire text-primary-foreground border-transparent'
-                          : 'bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/50'
-                      )}
-                    >
-                      Apenas uma semana
-                    </button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm">Repetir toda semana</span>
                   </div>
+                  <button
+                    onClick={() => setWeeklyGoalRepeat(!weeklyGoalRepeat)}
+                    className={cn(
+                      'w-10 h-5 rounded-full transition-all relative',
+                      weeklyGoalRepeat ? 'bg-primary' : 'bg-muted'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                        weeklyGoalRepeat ? 'right-0.5' : 'left-0.5'
+                      )}
+                    />
+                  </button>
                 </div>
 
                 {!weeklyGoalRepeat && (
@@ -532,7 +809,7 @@ export const GoalsPage = () => {
                     <select
                       value={weeklyGoalPeriod}
                       onChange={(e) => setWeeklyGoalPeriod(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
                     >
                       {generateWeekOptions().map((option) => (
                         <option key={option.value} value={option.value}>
@@ -543,19 +820,19 @@ export const GoalsPage = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2">
                   <button
                     onClick={() => setShowWeeklyGoalPrompt(false)}
-                    className="flex-1 py-3 border border-border text-muted-foreground rounded-xl hover:bg-muted/50 transition-colors"
+                    className="flex-1 py-3 bg-muted/50 text-foreground rounded-xl font-semibold hover:bg-muted/70 transition-colors"
                   >
                     Pular
                   </button>
                   <button
                     onClick={handleCreateWeeklyGoal}
-                    disabled={!weeklyGoalName.trim() || weeklyGoalDays.length === 0}
+                    disabled={!weeklyGoalName.trim()}
                     className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Criar Hábito
+                    Criar
                   </button>
                 </div>
               </div>
@@ -564,7 +841,7 @@ export const GoalsPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Goal detail modal */}
+      {/* Goal Detail Modal */}
       <AnimatePresence>
         {selectedGoal && (
           <motion.div
@@ -578,233 +855,214 @@ export const GoalsPage = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 25 }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
                   {settings.showEmojis && selectedGoal.emoji && (
-                    <span className="text-4xl">{selectedGoal.emoji}</span>
+                    <span className="text-2xl">{selectedGoal.emoji}</span>
                   )}
-                  <div>
-                    <h2 className="text-xl font-bold">{selectedGoal.name}</h2>
-                    <p className="text-muted-foreground">{selectedGoal.period}</p>
-                  </div>
+                  <h3 className="text-lg font-bold">{selectedGoal.name}</h3>
                 </div>
-                <button
-                  onClick={() => setSelectedGoal(null)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-6 h-6" />
+                <button onClick={() => setSelectedGoal(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-6">
-                {/* Progress section */}
+              <div className="space-y-4">
+                {/* Progress */}
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-muted-foreground">Progresso</span>
-                    <span className="text-2xl font-bold text-gradient-primary">
-                      {selectedGoal.progress}%
-                    </span>
+                  <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={selectedGoal.progress}
+                      onChange={(e) => handleProgressChange(parseInt(e.target.value))}
+                      className="w-full accent-primary"
+                    />
+                    <div className="h-3 rounded-full bg-muted/50 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: 'var(--gradient-progress)' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${selectedGoal.progress}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                    <p className="text-center font-bold text-lg">{selectedGoal.progress}%</p>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={selectedGoal.progress}
-                    onChange={(e) => handleProgressChange(parseInt(e.target.value))}
-                    className="w-full accent-primary h-2"
-                  />
                 </div>
 
-                {/* Week days display for weekly goals */}
-                {selectedGoal.type === 'weekly' && selectedGoal.weekDays && (
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Dias da semana</label>
-                    <div className="flex gap-2 flex-wrap">
-                      {weekDayLabels.map((label, index) => (
-                        <span
-                          key={index}
+                {/* Type */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
+                  {editingType !== null ? (
+                    <div className="flex flex-wrap gap-2">
+                      {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => handleTypeChange(type)}
                           className={cn(
-                            'w-10 h-10 rounded-full text-sm font-medium flex items-center justify-center',
-                            selectedGoal.weekDays?.includes(index)
-                              ? 'gradient-fire text-primary-foreground'
-                              : 'bg-muted/20 text-muted-foreground/50'
+                            'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
+                            selectedGoal.type === type ? typeColors[type] : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
                           )}
                         >
-                          {label}
-                        </span>
+                          {typeLabels[type]}
+                        </button>
                       ))}
                     </div>
-                    {selectedGoal.repeatWeekly !== undefined && (
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {selectedGoal.repeatWeekly ? '🔄 Repete toda semana' : '📅 Apenas esta semana'}
-                      </p>
+                  ) : (
+                    <button
+                      onClick={() => setEditingType(selectedGoal.type)}
+                      className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}
+                    >
+                      {typeLabels[selectedGoal.type]}
+                    </button>
+                  )}
+                </div>
+
+                {/* Period */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+                  {editingPeriod !== null ? (
+                    <select
+                      value={selectedGoal.period}
+                      onChange={(e) => handlePeriodChange(e.target.value)}
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                    >
+                      {getPeriodOptions(selectedGoal.type).map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={() => setEditingPeriod(selectedGoal.period)}
+                      className="px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm hover:bg-muted/50 transition-colors"
+                    >
+                      {selectedGoal.period}
+                    </button>
+                  )}
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DEFAULT_CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => handleCategoryChange(cat.id)}
+                        className={cn(
+                          'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                          selectedGoal.category === cat.id
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        <span>{cat.emoji}</span>
+                        <span>{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* XP per habit */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito concluído</label>
+                  <div className="flex gap-2">
+                    {XP_OPTIONS.map((xp) => (
+                      <button
+                        key={xp}
+                        onClick={() => handleCategoryXPChange(xp)}
+                        className={cn(
+                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                          selectedGoal.categoryXP === xp
+                            ? 'gradient-fire text-primary-foreground'
+                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                        )}
+                      >
+                        {xp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Linked Habits */}
+                <div>
+                  <label className="text-sm text-muted-foreground mb-2 block">Hábitos vinculados</label>
+                  {getLinkedHabits(selectedGoal.id).length > 0 ? (
+                    <div className="space-y-2">
+                      {getLinkedHabits(selectedGoal.id).map((habit) => (
+                        <div key={habit.id} className="p-2 rounded-xl bg-muted/30 text-sm flex items-center gap-2">
+                          {habit.emoji && <span>{habit.emoji}</span>}
+                          <span>{habit.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhum hábito vinculado</p>
+                  )}
+                </div>
+
+                {/* Parent Goal */}
+                {selectedGoal.type !== 'yearly' && (
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Objetivo pai</label>
+                    {editingParent ? (
+                      <div className="space-y-2">
+                        {getParentGoalOptions(selectedGoal.type).map((goal) => (
+                          <button
+                            key={goal.id}
+                            onClick={() => handleParentChange(goal.id)}
+                            className={cn(
+                              'w-full p-2 rounded-xl text-left text-sm transition-colors flex items-center gap-2',
+                              selectedGoal.parentGoalId === goal.id ? 'bg-primary/20 border-primary/30' : 'bg-muted/30 hover:bg-muted/50'
+                            )}
+                          >
+                            {goal.emoji && settings.showEmojis && <span>{goal.emoji}</span>}
+                            <span>{goal.name}</span>
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => handleParentChange(null)}
+                          className="w-full p-2 rounded-xl text-left text-sm bg-muted/30 hover:bg-muted/50 transition-colors text-muted-foreground"
+                        >
+                          Sem objetivo pai
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setEditingParent(true)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm hover:bg-muted/50 transition-colors"
+                      >
+                        {selectedGoal.parentGoalId ? (
+                          <>
+                            <Link2 className="w-4 h-4" />
+                            <span>{getParentGoal(selectedGoal.parentGoalId)?.name}</span>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">Vincular a objetivo</span>
+                        )}
+                      </button>
                     )}
                   </div>
                 )}
 
-                {/* Type selector */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
-                  <div className="relative">
-                    <button
-                      onClick={() => setEditingType(editingType ? null : selectedGoal.type)}
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
-                    >
-                      <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}>
-                        {typeLabels[selectedGoal.type]}
-                      </span>
-                      <ChevronDown className={cn('w-4 h-4 transition-transform', editingType && 'rotate-180')} />
-                    </button>
-                    <AnimatePresence>
-                      {editingType && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg"
-                        >
-                          {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
-                            <button
-                              key={type}
-                              onClick={() => handleTypeChange(type)}
-                              className={cn(
-                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors',
-                                selectedGoal.type === type && 'bg-muted/30'
-                              )}
-                            >
-                              <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[type])}>
-                                {typeLabels[type]}
-                              </span>
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Period selector */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Período</label>
-                  <div className="relative">
-                    <button
-                      onClick={() => setEditingPeriod(editingPeriod ? null : selectedGoal.period)}
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
-                    >
-                      <span className="font-medium">{selectedGoal.period}</span>
-                      <ChevronDown className={cn('w-4 h-4 transition-transform', editingPeriod && 'rotate-180')} />
-                    </button>
-                    <AnimatePresence>
-                      {editingPeriod && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg max-h-48 overflow-y-auto"
-                        >
-                          {getPeriodOptions(selectedGoal.type).map((option) => (
-                            <button
-                              key={option.value}
-                              onClick={() => handlePeriodChange(option.value)}
-                              className={cn(
-                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm',
-                                selectedGoal.period === option.value && 'bg-muted/30'
-                              )}
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Parent Goal selector */}
-                {parentTypeMap[selectedGoal.type] && (
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block flex items-center gap-2">
-                      <Link2 className="w-4 h-4" />
-                      Vincular a objetivo {typeLabels[parentTypeMap[selectedGoal.type]!]}
-                    </label>
-                    <div className="relative">
-                      <button
-                        onClick={() => setEditingParent(!editingParent)}
-                        className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 flex items-center justify-between"
-                      >
-                        <span className="font-medium">
-                          {selectedGoal.parentGoalId 
-                            ? (getParentGoal(selectedGoal.parentGoalId)?.name || 'Objetivo removido')
-                            : 'Nenhum (independente)'}
-                        </span>
-                        <ChevronDown className={cn('w-4 h-4 transition-transform', editingParent && 'rotate-180')} />
-                      </button>
-                      <AnimatePresence>
-                        {editingParent && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl p-2 z-10 shadow-lg max-h-48 overflow-y-auto"
-                          >
-                            <button
-                              onClick={() => handleParentChange(null)}
-                              className={cn(
-                                'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm',
-                                !selectedGoal.parentGoalId && 'bg-muted/30'
-                              )}
-                            >
-                              Nenhum (independente)
-                            </button>
-                            {getParentGoalOptions(selectedGoal.type).map((goal) => (
-                              <button
-                                key={goal.id}
-                                onClick={() => handleParentChange(goal.id)}
-                                className={cn(
-                                  'w-full p-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-sm flex items-center gap-2',
-                                  selectedGoal.parentGoalId === goal.id && 'bg-muted/30'
-                                )}
-                              >
-                                {settings.showEmojis && goal.emoji && <span>{goal.emoji}</span>}
-                                <span>{goal.name}</span>
-                                <span className="text-xs text-muted-foreground ml-auto">{goal.progress}%</span>
-                              </button>
-                            ))}
-                            {getParentGoalOptions(selectedGoal.type).length === 0 && (
-                              <p className="p-2 text-sm text-muted-foreground text-center">
-                                Nenhum objetivo {typeLabels[parentTypeMap[selectedGoal.type]!].toLowerCase()} disponível
-                              </p>
-                            )}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Vincule este objetivo a um objetivo de nível superior para acompanhar o progresso em cascata.
-                    </p>
-                  </div>
-                )}
-
-                {/* Meta info */}
-                <div className="p-3 rounded-xl bg-muted/20 border border-border/30">
-                  <p className="text-xs text-muted-foreground">
-                    Criado em {new Date(selectedGoal.createdAt).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-
+                {/* Delete */}
                 <button
                   onClick={() => {
                     removeGoal(selectedGoal.id);
                     setSelectedGoal(null);
                   }}
-                  className="w-full py-3 border border-destructive text-destructive rounded-xl hover:bg-destructive/10 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Excluir objetivo
+                  <span>Excluir objetivo</span>
                 </button>
               </div>
             </motion.div>
