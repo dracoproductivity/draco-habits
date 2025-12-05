@@ -347,14 +347,18 @@ export const GoalsPage = () => {
     ...customCategories.map(c => ({ id: 'custom' as GoalCategory, name: c.name, emoji: c.emoji || '🎯', customId: c.id }))
   ];
 
+  // Check for desktop/tablet
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen pb-20 p-4"
+      className={`min-h-screen p-4 ${isDesktop ? 'pb-8 pt-6' : 'pb-20'}`}
     >
       <header className="mb-4">
-        <h1 className="text-2xl font-bold text-gradient-primary">Objetivos</h1>
+        <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
         <p className="text-muted-foreground">Acompanhe seu progresso</p>
       </header>
 
@@ -387,8 +391,8 @@ export const GoalsPage = () => {
       </div>
 
       {viewMode === 'progress' ? (
-        /* Year Progress View - Single Column */
-        <div className="space-y-3">
+        /* Year Progress View - Grid on desktop */
+        <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-3'}`}>
           {/* Week */}
           <PeriodCard
             title="Semana"
