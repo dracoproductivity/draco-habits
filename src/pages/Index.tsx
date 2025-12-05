@@ -2,9 +2,8 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
-import { YearPage } from './YearPage';
 import { GoalsPage } from './GoalsPage';
-import { ProfilePage } from './ProfilePage';
+import { AnalyticsPage } from './AnalyticsPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
@@ -25,12 +24,10 @@ const Index = () => {
     switch (activeTab) {
       case 'daily':
         return <DailyPage />;
-      case 'year':
-        return <YearPage />;
       case 'goals':
         return <GoalsPage />;
-      case 'profile':
-        return <ProfilePage />;
+      case 'analytics':
+        return <AnalyticsPage />;
       case 'settings':
         return <SettingsPage />;
       default:

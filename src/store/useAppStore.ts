@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, GoalType, NotificationReminder } from '@/types';
+import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory } from '@/types';
 
 interface AppStore {
   // Auth
@@ -17,6 +17,7 @@ interface AppStore {
   
   // Goals
   goals: Goal[];
+  customCategories: CustomCategory[];
   
   // Settings
   settings: AppSettings;
@@ -40,10 +41,15 @@ interface AppStore {
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
   
+  addCustomCategory: (category: Omit<CustomCategory, 'id'>) => CustomCategory;
+  updateCustomCategory: (id: string, updates: Partial<CustomCategory>) => void;
+  removeCustomCategory: (id: string) => void;
+  
   updateSettings: (settings: Partial<AppSettings>) => void;
   setActiveTab: (tab: TabType) => void;
   closeWelcomeModal: () => void;
   
+  updateDraco: (updates: Partial<DracoState>) => void;
   addXP: (amount: number) => void;
   
   getHabitCheckForDate: (habitId: string, date: string) => HabitCheck | undefined;
@@ -61,6 +67,8 @@ const defaultDraco: DracoState = {
   currentXP: 0,
   xpToNextLevel: 100,
   totalXP: 0,
+  name: 'Draco',
+  color: 'blue',
 };
 
 const defaultSettings: AppSettings = {
@@ -84,7 +92,7 @@ const defaultHabits: Habit[] = [
 
 const defaultGoals: Goal[] = [
   { id: '1', name: 'Ler 12 livros', emoji: '📖', type: 'yearly', period: '2025', progress: 25, createdAt: new Date().toISOString() },
-  { id: '2', name: 'Perder 5kg', emoji: '⚖️', type: 'quarterly', period: 'Q1-2025', progress: 40, createdAt: new Date().toISOString() },
+  { id: '2', name: 'Perder 5kg', emoji: '⚖️', type: 'quarterly', period: '1º Tri - 2025', progress: 40, createdAt: new Date().toISOString() },
   { id: '3', name: 'Completar curso', emoji: '🎓', type: 'monthly', period: 'Dezembro 2025', progress: 60, createdAt: new Date().toISOString() },
 ];
 
@@ -98,6 +106,7 @@ export const useAppStore = create<AppStore>()(
       habits: defaultHabits,
       habitChecks: [],
       goals: defaultGoals,
+      customCategories: [],
       settings: defaultSettings,
       activeTab: 'daily',
       showWelcomeModal: false,
@@ -111,7 +120,7 @@ export const useAppStore = create<AppStore>()(
               email,
               firstName: 'Usuário',
               lastName: 'Demo',
-              age: 25,
+              birthDate: '1999-01-01',
               photo: '',
             }
           });
@@ -177,17 +186,23 @@ export const useAppStore = create<AppStore>()(
       },
 
       toggleHabitCheck: (habitId, date) => {
-        const { habitChecks, habits, addXP } = get();
+        const { habitChecks, habits, goals, addXP } = get();
         const existing = habitChecks.find(
           (hc) => hc.habitId === habitId && hc.date === date
         );
         
         const habit = habits.find((h) => h.id === habitId);
         
-        if (existing) {
-          if (existing.completed && habit) {
-            // Remove XP when unchecking
+        // Get XP from linked goal's category if exists
+        let xpToAdd = habit?.xpReward || 0;
+        if (habit?.goalId) {
+          const linkedGoal = goals.find(g => g.id === habit.goalId);
+          if (linkedGoal?.categoryXP !== undefined) {
+            xpToAdd = linkedGoal.categoryXP;
           }
+        }
+        
+        if (existing) {
           set({
             habitChecks: habitChecks.map((hc) =>
               hc.habitId === habitId && hc.date === date
@@ -195,15 +210,15 @@ export const useAppStore = create<AppStore>()(
                 : hc
             ),
           });
-          if (!existing.completed && habit) {
-            addXP(habit.xpReward);
+          if (!existing.completed && xpToAdd > 0) {
+            addXP(xpToAdd);
           }
         } else {
           set({
             habitChecks: [...habitChecks, { habitId, date, completed: true }],
           });
-          if (habit) {
-            addXP(habit.xpReward);
+          if (xpToAdd > 0) {
+            addXP(xpToAdd);
           }
         }
       },
@@ -232,6 +247,29 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
+      addCustomCategory: (category) => {
+        const newCategory: CustomCategory = {
+          ...category,
+          id: Date.now().toString(),
+        };
+        set((state) => ({ customCategories: [...state.customCategories, newCategory] }));
+        return newCategory;
+      },
+
+      updateCustomCategory: (id, updates) => {
+        set((state) => ({
+          customCategories: state.customCategories.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
+        }));
+      },
+
+      removeCustomCategory: (id) => {
+        set((state) => ({
+          customCategories: state.customCategories.filter((c) => c.id !== id),
+        }));
+      },
+
       updateSettings: (updates) => {
         set((state) => ({
           settings: { ...state.settings, ...updates },
@@ -244,6 +282,12 @@ export const useAppStore = create<AppStore>()(
 
       closeWelcomeModal: () => {
         set({ showWelcomeModal: false, isFirstTime: false });
+      },
+
+      updateDraco: (updates) => {
+        set((state) => ({
+          draco: { ...state.draco, ...updates },
+        }));
       },
 
       addXP: (amount) => {
@@ -260,6 +304,7 @@ export const useAppStore = create<AppStore>()(
         
         set({
           draco: {
+            ...draco,
             level: newLevel,
             currentXP: newXP,
             xpToNextLevel: xpToNext,

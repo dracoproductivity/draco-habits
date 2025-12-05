@@ -47,7 +47,6 @@ export const SignupForm = () => {
       email,
       firstName,
       lastName,
-      age: 0,
       photo: '',
     }, password);
 

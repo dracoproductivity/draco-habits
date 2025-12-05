@@ -1,14 +1,13 @@
 import { motion } from 'framer-motion';
-import { Calendar, Target, User, Settings, Flame } from 'lucide-react';
+import { Target, Settings, Flame, BarChart3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { TabType } from '@/types';
 import { cn } from '@/lib/utils';
 
-const tabs: { id: TabType; label: string; icon: typeof Calendar }[] = [
+const tabs: { id: TabType; label: string; icon: typeof Flame }[] = [
   { id: 'daily', label: 'Daily', icon: Flame },
-  { id: 'year', label: 'Ano', icon: Calendar },
   { id: 'goals', label: 'Objetivos', icon: Target },
-  { id: 'profile', label: 'Perfil', icon: User },
+  { id: 'analytics', label: 'Análises', icon: BarChart3 },
   { id: 'settings', label: 'Config', icon: Settings },
 ];
 

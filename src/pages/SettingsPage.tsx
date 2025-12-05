@@ -14,12 +14,18 @@ import {
   Plus,
   X,
   Clock,
-  Moon
+  Moon,
+  Camera,
+  Save,
+  Calendar
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ThemeColor, ProgressDisplayMode, NotificationReminder } from '@/types';
+import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } from '@/types';
+import { DracoIcon } from '@/components/icons/DracoIcon';
+import { XPBar } from '@/components/ui/XPBar';
+import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
   { id: 'blue', name: 'Azul', color: '200 90% 50%' },
@@ -32,6 +38,15 @@ const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
   { id: 'orange', name: 'Laranja', color: '25 95% 55%' },
   { id: 'lilac', name: 'Lilás', color: '280 65% 70%' },
   { id: 'gray', name: 'Cinza', color: '220 15% 55%' },
+];
+
+const DRACO_COLORS: { id: DracoState['color']; name: string; color: string }[] = [
+  { id: 'blue', name: 'Azul', color: '200 90% 50%' },
+  { id: 'green', name: 'Verde', color: '160 80% 45%' },
+  { id: 'red', name: 'Vermelho', color: '0 80% 55%' },
+  { id: 'purple', name: 'Roxo', color: '270 80% 60%' },
+  { id: 'orange', name: 'Laranja', color: '25 95% 55%' },
+  { id: 'pink', name: 'Rosa', color: '350 80% 55%' },
 ];
 
 const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
@@ -51,15 +66,33 @@ const FRIENDLY_MESSAGES = [
 ];
 
 export const SettingsPage = () => {
-  const { settings, updateSettings, logout, user } = useAppStore();
+  const { settings, updateSettings, logout, user, updateUser, draco, updateDraco } = useAppStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [newReminderTime, setNewReminderTime] = useState('09:00');
+  
+  // Profile state
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [birthDate, setBirthDate] = useState(user?.birthDate || '');
+  const [photoPreview, setPhotoPreview] = useState(user?.photo || '');
+  const [dracoName, setDracoName] = useState(draco.name || 'Draco');
+  const [dracoNameError, setDracoNameError] = useState('');
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
+
+  const calculateAge = (birthDateStr: string): number => {
+    if (!birthDateStr) return 0;
+    try {
+      const birth = new Date(birthDateStr);
+      return differenceInYears(new Date(), birth);
+    } catch {
+      return 0;
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -74,6 +107,46 @@ export const SettingsPage = () => {
     toast({
       title: 'Conta excluída',
       description: 'Sua conta foi removida',
+    });
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPhotoPreview(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDracoNameChange = (value: string) => {
+    // Only allow letters and spaces
+    const sanitized = value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '').slice(0, 32);
+    setDracoName(sanitized);
+    
+    if (value !== sanitized && value.length > 0) {
+      setDracoNameError('Apenas letras são permitidas');
+    } else if (sanitized.length >= 32) {
+      setDracoNameError('Máximo de 32 caracteres');
+    } else {
+      setDracoNameError('');
+    }
+  };
+
+  const handleSaveProfile = () => {
+    updateUser({
+      firstName,
+      lastName,
+      birthDate,
+      photo: photoPreview,
+    });
+    updateDraco({ name: dracoName });
+    toast({
+      title: 'Perfil atualizado!',
+      description: 'Suas informações foram salvas',
     });
   };
 
@@ -122,6 +195,8 @@ export const SettingsPage = () => {
     });
   };
 
+  const age = calculateAge(birthDate);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -134,6 +209,146 @@ export const SettingsPage = () => {
       </header>
 
       <div className="space-y-4">
+        {/* Profile Section */}
+        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <User className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h2 className="font-semibold text-foreground">Perfil</h2>
+          </div>
+
+          {/* Draco Stats */}
+          <div className="p-4 rounded-xl bg-muted/30 border border-border/30 mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 animate-float">
+                <DracoIcon level={draco.level} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-lg">{dracoName} - Nível {draco.level}</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {draco.totalXP} XP total
+                </p>
+                <XPBar
+                  currentXP={draco.currentXP}
+                  xpToNextLevel={draco.xpToNextLevel}
+                  level={draco.level}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Photo */}
+          <div className="flex flex-col items-center mb-4">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-primary/30">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-8 h-8 text-muted-foreground" />
+                )}
+              </div>
+              <label className="absolute bottom-0 right-0 w-7 h-7 rounded-full gradient-fire flex items-center justify-center cursor-pointer">
+                <Camera className="w-3.5 h-3.5 text-primary-foreground" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Form fields */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Nome</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="input-dark w-full text-sm py-2"
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Sobrenome</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="input-dark w-full text-sm py-2"
+                  placeholder="Seu sobrenome"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-2">
+                <Calendar className="w-3 h-3" />
+                Data de Nascimento {age > 0 && <span className="text-primary">({age} anos)</span>}
+              </label>
+              <input
+                type="date"
+                value={birthDate}
+                onChange={(e) => setBirthDate(e.target.value)}
+                className="input-dark w-full text-sm py-2"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Nome do seu Draco</label>
+              <input
+                type="text"
+                value={dracoName}
+                onChange={(e) => handleDracoNameChange(e.target.value)}
+                className="input-dark w-full text-sm py-2"
+                placeholder="Nome do Draco"
+                maxLength={32}
+              />
+              {dracoNameError && (
+                <p className="text-xs text-destructive">{dracoNameError}</p>
+              )}
+              <p className="text-xs text-muted-foreground">{dracoName.length}/32 caracteres</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Cor do Draco</label>
+              <div className="grid grid-cols-6 gap-2">
+                {DRACO_COLORS.map((color) => (
+                  <button
+                    key={color.id}
+                    onClick={() => updateDraco({ color: color.id })}
+                    className={cn(
+                      'relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all',
+                      draco.color === color.id 
+                        ? 'border-primary bg-primary/10' 
+                        : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                    )}
+                  >
+                    <div 
+                      className="w-6 h-6 rounded-full"
+                      style={{ backgroundColor: `hsl(${color.color})` }}
+                    />
+                    {draco.color === color.id && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={handleSaveProfile} className="btn-fire w-full flex items-center justify-center gap-2 py-2">
+              <Save className="w-4 h-4" />
+              Salvar perfil
+            </button>
+          </div>
+        </section>
+
         {/* Theme */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
@@ -202,7 +417,7 @@ export const SettingsPage = () => {
             </div>
 
             <div className="pt-4 border-t border-border/30">
-              <p className="text-sm text-muted-foreground mb-3">Exibição do progresso (Aba Ano)</p>
+              <p className="text-sm text-muted-foreground mb-3">Exibição do progresso</p>
               <div className="grid grid-cols-2 gap-2">
                 {PROGRESS_DISPLAY_OPTIONS.map((option) => (
                   <button
@@ -286,7 +501,6 @@ export const SettingsPage = () => {
                 >
                   <p className="text-sm text-muted-foreground">Seus lembretes:</p>
                   
-                  {/* Reminder List */}
                   <div className="space-y-2">
                     {(settings.notificationReminders || []).map((reminder) => (
                       <motion.div
@@ -340,7 +554,6 @@ export const SettingsPage = () => {
                     ))}
                   </div>
 
-                  {/* Add Reminder */}
                   <AnimatePresence>
                     {showAddReminder ? (
                       <motion.div
