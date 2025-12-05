@@ -39,9 +39,7 @@ export interface CustomCategory {
   id: string;
   name: string;
   emoji?: string;
-  hasEmoji?: boolean;
   xpReward: number; // 0, 10, 20, 30, 40, 50
-  isDefault?: boolean; // Marks if it's a default category that was converted
 }
 
 export interface Goal {
@@ -55,7 +53,7 @@ export interface Goal {
   parentGoalId?: string; // Reference to parent goal (weekly→monthly→quarterly→yearly)
   weekDays?: number[]; // 0=Sunday, 1=Monday, etc. (for weekly goals)
   repeatWeekly?: boolean; // If true, repeats every week; if false, only for selected period
-  category?: string; // Category ID (can be default or custom)
+  category?: GoalCategory;
   customCategoryId?: string;
   categoryXP?: number; // XP reward for habits linked to this goal (0, 10, 20, 30, 40, 50)
   createdAt: string;
@@ -80,13 +78,6 @@ export interface NotificationReminder {
   enabled: boolean;
 }
 
-// Daily tracking for sleep and phone usage
-export interface DailyTracking {
-  date: string; // ISO date string (YYYY-MM-DD)
-  sleepHours: number;
-  phoneHours: number;
-}
-
 export interface AppSettings {
   themeColor: ThemeColor;
   progressDisplayMode: ProgressDisplayMode;
@@ -94,19 +85,15 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   notificationReminders: NotificationReminder[];
   darkMode: boolean;
-  // Sleep and phone tracking settings
-  minSleepHours: number; // Minimum recommended sleep hours
-  maxPhoneHours: number; // Maximum recommended phone hours
 }
 
 export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';
 
-// Default categories are now just initial values - they become editable once added
-export const DEFAULT_CATEGORIES: { id: string; name: string; emoji: string; isDefault: boolean }[] = [
-  { id: 'physical_health', name: 'Saúde Física', emoji: '💪', isDefault: true },
-  { id: 'study', name: 'Estudo', emoji: '📚', isDefault: true },
-  { id: 'mental_health', name: 'Saúde Mental', emoji: '🧠', isDefault: true },
-  { id: 'work', name: 'Trabalho', emoji: '💼', isDefault: true },
+export const DEFAULT_CATEGORIES: { id: GoalCategory; name: string; emoji: string }[] = [
+  { id: 'physical_health', name: 'Saúde Física', emoji: '💪' },
+  { id: 'study', name: 'Estudo', emoji: '📚' },
+  { id: 'mental_health', name: 'Saúde Mental', emoji: '🧠' },
+  { id: 'work', name: 'Trabalho', emoji: '💼' },
 ];
 
 export const XP_OPTIONS = [0, 10, 20, 30, 40, 50];

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory, DailyTracking, DEFAULT_CATEGORIES } from '@/types';
+import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory } from '@/types';
 
 interface AppStore {
   // Auth
@@ -19,17 +19,12 @@ interface AppStore {
   goals: Goal[];
   customCategories: CustomCategory[];
   
-  // Daily Tracking (sleep/phone)
-  dailyTracking: DailyTracking[];
-  lastCheckInDate: string | null; // Last date the daily check-in was shown
-  
   // Settings
   settings: AppSettings;
   
   // UI
   activeTab: TabType;
   showWelcomeModal: boolean;
-  showDailyCheckIn: boolean;
   
   // Actions
   login: (email: string, password: string) => boolean;
@@ -49,13 +44,6 @@ interface AppStore {
   addCustomCategory: (category: Omit<CustomCategory, 'id'>) => CustomCategory;
   updateCustomCategory: (id: string, updates: Partial<CustomCategory>) => void;
   removeCustomCategory: (id: string) => void;
-  initializeDefaultCategories: () => void;
-  
-  // Daily tracking
-  addDailyTracking: (tracking: DailyTracking) => void;
-  getDailyTrackingForDate: (date: string) => DailyTracking | undefined;
-  closeDailyCheckIn: () => void;
-  checkAndShowDailyCheckIn: () => boolean;
   
   updateSettings: (settings: Partial<AppSettings>) => void;
   setActiveTab: (tab: TabType) => void;
@@ -92,8 +80,6 @@ const defaultSettings: AppSettings = {
     { id: '1', time: '09:00', message: 'Bom dia! 🌞 Hora de começar seus hábitos!', enabled: true },
   ],
   darkMode: true,
-  minSleepHours: 7,
-  maxPhoneHours: 3,
 };
 
 // Empty defaults for first-time users
@@ -112,12 +98,9 @@ export const useAppStore = create<AppStore>()(
       habitChecks: [],
       goals: defaultGoals,
       customCategories: [],
-      dailyTracking: [],
-      lastCheckInDate: null,
       settings: defaultSettings,
       activeTab: 'daily',
       showWelcomeModal: false,
-      showDailyCheckIn: false,
 
       login: (email, password) => {
         if (email && password) {
@@ -132,10 +115,6 @@ export const useAppStore = create<AppStore>()(
               photo: '',
             }
           });
-          // Initialize default categories on login
-          get().initializeDefaultCategories();
-          // Check if should show daily check-in
-          get().checkAndShowDailyCheckIn();
           return true;
         }
         return false;
@@ -152,8 +131,6 @@ export const useAppStore = create<AppStore>()(
               id: Date.now().toString(),
             }
           });
-          // Initialize default categories on signup
-          get().initializeDefaultCategories();
           return true;
         }
         return false;
@@ -261,22 +238,6 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
-      initializeDefaultCategories: () => {
-        const { customCategories } = get();
-        // Only initialize if no categories exist
-        if (customCategories.length === 0) {
-          const defaultCats: CustomCategory[] = DEFAULT_CATEGORIES.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            emoji: cat.emoji,
-            hasEmoji: true,
-            xpReward: 10,
-            isDefault: true,
-          }));
-          set({ customCategories: defaultCats });
-        }
-      },
-
       addCustomCategory: (category) => {
         const newCategory: CustomCategory = {
           ...category,
@@ -298,42 +259,6 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({
           customCategories: state.customCategories.filter((c) => c.id !== id),
         }));
-      },
-
-      addDailyTracking: (tracking) => {
-        set((state) => {
-          const existing = state.dailyTracking.findIndex(t => t.date === tracking.date);
-          if (existing >= 0) {
-            const updated = [...state.dailyTracking];
-            updated[existing] = tracking;
-            return { dailyTracking: updated };
-          }
-          return { dailyTracking: [...state.dailyTracking, tracking] };
-        });
-      },
-
-      getDailyTrackingForDate: (date) => {
-        const { dailyTracking } = get();
-        return dailyTracking.find(t => t.date === date);
-      },
-
-      closeDailyCheckIn: () => {
-        const today = new Date().toISOString().split('T')[0];
-        set({ showDailyCheckIn: false, lastCheckInDate: today });
-      },
-
-      checkAndShowDailyCheckIn: () => {
-        const now = new Date();
-        const currentHour = now.getHours();
-        const today = now.toISOString().split('T')[0];
-        const { lastCheckInDate, isAuthenticated } = get();
-        
-        // Only show after 5am and if not already shown today
-        if (isAuthenticated && currentHour >= 5 && lastCheckInDate !== today) {
-          set({ showDailyCheckIn: true });
-          return true;
-        }
-        return false;
       },
 
       updateSettings: (updates) => {
@@ -435,21 +360,6 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'draco-habits-storage',
-      version: 2, // Increment to reset old incompatible data
-      partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-        isFirstTime: state.isFirstTime,
-        user: state.user,
-        draco: state.draco,
-        habits: state.habits,
-        habitChecks: state.habitChecks,
-        goals: state.goals,
-        customCategories: state.customCategories,
-        dailyTracking: state.dailyTracking,
-        lastCheckInDate: state.lastCheckInDate,
-        settings: state.settings,
-        activeTab: state.activeTab,
-      }),
     }
   )
 );

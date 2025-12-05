@@ -216,7 +216,7 @@ export const GoalsPage = () => {
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalType, setNewGoalType] = useState<GoalType>('weekly');
   const [newGoalPeriod, setNewGoalPeriod] = useState('');
-  const [newGoalCategory, setNewGoalCategory] = useState<string>('');
+  const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory | ''>('');
   const [newGoalCategoryXP, setNewGoalCategoryXP] = useState<number>(20);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -327,9 +327,9 @@ export const GoalsPage = () => {
     }
   };
 
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = (category: GoalCategory) => {
     if (selectedGoal) {
-      updateGoal(selectedGoal.id, { category: category as GoalCategory });
+      updateGoal(selectedGoal.id, { category });
       setSelectedGoal({ ...selectedGoal, category });
     }
   };

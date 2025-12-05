@@ -17,9 +17,7 @@ import {
   Moon,
   Camera,
   Save,
-  Calendar,
-  Bed,
-  Smartphone
+  Calendar
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { toast } from '@/hooks/use-toast';
@@ -458,65 +456,6 @@ export const SettingsPage = () => {
                   )}
                 />
               </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Sleep & Phone Settings */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Bed className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <h2 className="font-semibold text-foreground">Sono & Celular</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Moon className="w-4 h-4 text-primary" />
-                <label className="text-sm text-foreground">Mínimo de horas de sono por dia</label>
-              </div>
-              <div className="flex gap-2">
-                {[5, 6, 7, 8, 9, 10].map((hours) => (
-                  <button
-                    key={hours}
-                    onClick={() => updateSettings({ minSleepHours: hours })}
-                    className={cn(
-                      'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                      settings.minSleepHours === hours
-                        ? 'gradient-primary text-primary-foreground'
-                        : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                    )}
-                  >
-                    {hours}h
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-primary" />
-                <label className="text-sm text-foreground">Máximo de horas de celular (inútil) por dia</label>
-              </div>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5, 6].map((hours) => (
-                  <button
-                    key={hours}
-                    onClick={() => updateSettings({ maxPhoneHours: hours })}
-                    className={cn(
-                      'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                      settings.maxPhoneHours === hours
-                        ? 'gradient-primary text-primary-foreground'
-                        : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                    )}
-                  >
-                    {hours}h
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">Não inclui tempo de trabalho/produtivo</p>
             </div>
           </div>
         </section>
