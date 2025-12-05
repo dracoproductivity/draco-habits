@@ -471,47 +471,45 @@ export const SettingsPage = () => {
 
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground">Mínimo de sono diário</p>
                   <p className="text-sm text-muted-foreground">Horas recomendadas de sono</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-foreground">{settings.minSleepHours || 7}</span>
-                  <span className="text-sm text-muted-foreground ml-1">h</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    step="0.5"
+                    value={settings.minSleepHours || 7}
+                    onChange={(e) => updateSettings({ minSleepHours: parseFloat(e.target.value) || 7 })}
+                    className="w-20 px-3 py-2 rounded-lg bg-muted/50 border border-border/50 text-foreground text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <span className="text-sm text-muted-foreground">horas</span>
                 </div>
               </div>
-              <input
-                type="range"
-                min="4"
-                max="12"
-                step="0.5"
-                value={settings.minSleepHours || 7}
-                onChange={(e) => updateSettings({ minSleepHours: parseFloat(e.target.value) })}
-                className="w-full accent-primary"
-              />
             </div>
 
             <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-foreground">Máximo de celular inútil</p>
                   <p className="text-sm text-muted-foreground">Tempo máximo de uso improdutivo</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-foreground">{settings.maxPhoneHours || 2}</span>
-                  <span className="text-sm text-muted-foreground ml-1">h</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="24"
+                    step="0.5"
+                    value={settings.maxPhoneHours || 2}
+                    onChange={(e) => updateSettings({ maxPhoneHours: parseFloat(e.target.value) || 2 })}
+                    className="w-20 px-3 py-2 rounded-lg bg-muted/50 border border-border/50 text-foreground text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <span className="text-sm text-muted-foreground">horas</span>
                 </div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="8"
-                step="0.5"
-                value={settings.maxPhoneHours || 2}
-                onChange={(e) => updateSettings({ maxPhoneHours: parseFloat(e.target.value) })}
-                className="w-full accent-primary"
-              />
             </div>
           </div>
         </section>
