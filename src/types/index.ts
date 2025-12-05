@@ -65,10 +65,10 @@ export interface DracoState {
   xpToNextLevel: number;
   totalXP: number;
   name: string;
-  color: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'pink';
+  color: 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint';
 }
 
-export type ThemeColor = 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'pink';
+export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint';
 export type ProgressDisplayMode = 'linear' | 'circular';
 
 export interface NotificationReminder {
