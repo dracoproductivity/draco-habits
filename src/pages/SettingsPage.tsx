@@ -460,6 +460,62 @@ export const SettingsPage = () => {
           </div>
         </section>
 
+        {/* Health Settings */}
+        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+              <Moon className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h2 className="font-semibold text-foreground">Saúde & Bem-estar</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-medium text-foreground">Mínimo de sono diário</p>
+                  <p className="text-sm text-muted-foreground">Horas recomendadas de sono</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-foreground">{settings.minSleepHours || 7}</span>
+                  <span className="text-sm text-muted-foreground ml-1">h</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min="4"
+                max="12"
+                step="0.5"
+                value={settings.minSleepHours || 7}
+                onChange={(e) => updateSettings({ minSleepHours: parseFloat(e.target.value) })}
+                className="w-full accent-primary"
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-medium text-foreground">Máximo de celular inútil</p>
+                  <p className="text-sm text-muted-foreground">Tempo máximo de uso improdutivo</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-foreground">{settings.maxPhoneHours || 2}</span>
+                  <span className="text-sm text-muted-foreground ml-1">h</span>
+                </div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="0.5"
+                value={settings.maxPhoneHours || 2}
+                onChange={(e) => updateSettings({ maxPhoneHours: parseFloat(e.target.value) })}
+                className="w-full accent-primary"
+              />
+            </div>
+          </div>
+        </section>
+
         {/* Notifications */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">

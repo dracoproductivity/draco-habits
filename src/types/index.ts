@@ -78,6 +78,12 @@ export interface NotificationReminder {
   enabled: boolean;
 }
 
+export interface DailyLog {
+  date: string; // YYYY-MM-DD
+  sleepHours: number;
+  phoneUsageHours: number;
+}
+
 export interface AppSettings {
   themeColor: ThemeColor;
   progressDisplayMode: ProgressDisplayMode;
@@ -85,6 +91,9 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   notificationReminders: NotificationReminder[];
   darkMode: boolean;
+  minSleepHours: number; // minimum recommended sleep hours
+  maxPhoneHours: number; // maximum recommended phone usage hours
+  lastDailyLogDate?: string; // last date user filled the morning check-in
 }
 
 export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';
