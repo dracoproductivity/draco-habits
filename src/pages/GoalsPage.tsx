@@ -964,8 +964,8 @@ export const GoalsPage = () => {
                 {/* Progress */}
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
-                  <div className="space-y-2">
-                    <div className="h-3 rounded-full bg-muted/50 overflow-hidden">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full"
                         style={{ background: 'var(--gradient-progress)' }}
@@ -974,17 +974,7 @@ export const GoalsPage = () => {
                         transition={{ duration: 0.3 }}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={selectedGoal.progress}
-                        onChange={(e) => handleProgressChange(parseInt(e.target.value))}
-                        className="flex-1 accent-primary"
-                      />
-                      <span className="ml-3 font-bold text-lg w-12 text-right">{selectedGoal.progress}%</span>
-                    </div>
+                    <span className="font-bold text-lg">{selectedGoal.progress}%</span>
                   </div>
                 </div>
 
