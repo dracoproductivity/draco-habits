@@ -53,6 +53,13 @@ const QUARTER_MONTHS: Record<number, string> = {
   4: 'Outubro, Novembro, Dezembro',
 };
 
+const QUARTER_MONTH_ARRAYS: Record<number, string[]> = {
+  1: ['Janeiro', 'Fevereiro', 'Março'],
+  2: ['Abril', 'Maio', 'Junho'],
+  3: ['Julho', 'Agosto', 'Setembro'],
+  4: ['Outubro', 'Novembro', 'Dezembro'],
+};
+
 const generateWeekOptions = () => {
   const options: { value: string; label: string }[] = [];
   const year = new Date().getFullYear();
@@ -396,9 +403,10 @@ export const GoalsPage = () => {
           {/* Week */}
           <PeriodCard
             title="Semana"
+            subtitle="Semana atual"
             type="weekly"
             period={`Semana ${weekNumber}`}
-            onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`)}
+            onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber}`, 'Semana atual')}
           />
           
           {/* Month */}
@@ -418,6 +426,7 @@ export const GoalsPage = () => {
               subtitle={QUARTER_MONTHS[q]}
               type="quarterly"
               period={`${q}º Tri - ${year}`}
+              quarterMonths={QUARTER_MONTH_ARRAYS[q]}
               onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q])}
             />
           ))}
