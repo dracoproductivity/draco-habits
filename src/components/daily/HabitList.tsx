@@ -280,7 +280,7 @@ export const HabitList = () => {
           <h3 className="font-semibold text-foreground text-lg mb-3">Hábitos do dia</h3>
           
           {/* Day navigation and Add button */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col items-center gap-3 mb-4">
             <div className="flex items-center gap-1 bg-muted/20 rounded-xl px-2 py-1">
               <button
                 onClick={() => navigateDay(-1)}
