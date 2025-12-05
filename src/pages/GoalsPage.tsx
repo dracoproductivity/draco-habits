@@ -10,11 +10,12 @@ import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-type FilterType = 'all' | Goal['type'];
+type FilterType = 'all' | 'habits' | Goal['type'];
 type ViewMode = 'progress' | 'goals';
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'Todos' },
+  { value: 'habits', label: 'Hábitos' },
   { value: 'weekly', label: 'Semanal' },
   { value: 'monthly', label: 'Mensal' },
   { value: 'quarterly', label: 'Trimestral' },
@@ -185,7 +186,7 @@ export const GoalsPage = () => {
     return habits.filter(h => h.goalId === goalId);
   };
 
-  const filteredGoals = filter === 'all'
+  const filteredGoals = filter === 'all' || filter === 'habits'
     ? goals
     : goals.filter((g) => g.type === filter);
 
@@ -409,95 +410,120 @@ export const GoalsPage = () => {
         /* Goals List View */
         <>
           {/* Filters */}
-          <div className="space-y-3 mb-4">
-            {/* Type Filter */}
-            <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
-              <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              {filterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setFilter(option.value)}
-                  className={cn(
-                    'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
-                    filter === option.value
-                      ? 'gradient-fire text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            
-            {/* Habit Filter */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1.5 block">Filtrar por hábito</label>
-              <select
-                className="w-full p-2.5 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
-                onChange={(e) => {
-                  const habitId = e.target.value;
-                  if (habitId === 'all') {
-                    setFilter('all');
-                  } else {
-                    const habit = habits.find(h => h.id === habitId);
-                    if (habit?.goalId) {
-                      const goal = goals.find(g => g.id === habit.goalId);
-                      if (goal) {
-                        setSelectedGoal(goal);
-                      }
-                    }
-                  }
-                }}
-                defaultValue="all"
+          <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
+            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setFilter(option.value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
+                  filter === option.value
+                    ? 'gradient-fire text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                )}
               >
-                <option value="all">Todos os hábitos</option>
-                {habits.map((habit) => (
-                  <option key={habit.id} value={habit.id}>
-                    {habit.emoji ? `${habit.emoji} ` : ''}{habit.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                {option.label}
+              </button>
+            ))}
           </div>
 
-          {/* Goals list */}
-          <div className="space-y-3">
-            {filteredGoals.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleAddGoalClick}
-                  className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  Adicionar Objetivo
-                </motion.button>
-              </div>
-            ) : (
-              <>
-                {filteredGoals.map((goal, index) => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    index={index}
-                    onClick={() => setSelectedGoal(goal)}
-                  />
-                ))}
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddGoalClick}
-                  className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="font-medium">Adicionar Objetivo</span>
-                </motion.button>
-              </>
-            )}
-          </div>
+          {/* Content based on filter */}
+          {filter === 'habits' ? (
+            /* Habits List View */
+            <div className="space-y-3">
+              {habits.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <p className="text-muted-foreground mb-4">Nenhum hábito encontrado</p>
+                  <p className="text-sm text-muted-foreground/70">Crie hábitos na aba Daily</p>
+                </div>
+              ) : (
+                habits.map((habit) => {
+                  const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+                  const weekDayNames = habit.weekDays?.map(d => weekDayLabels[d]).join(', ');
+                  
+                  return (
+                    <motion.div
+                      key={habit.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 rounded-2xl bg-muted/20 border border-border/30 glass-hover"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          {settings.showEmojis && habit.emoji && (
+                            <span className="text-2xl">{habit.emoji}</span>
+                          )}
+                          <div>
+                            <h4 className="font-semibold">{habit.name}</h4>
+                            {habit.isOneTime ? (
+                              <p className="text-xs text-muted-foreground">Evento único</p>
+                            ) : weekDayNames ? (
+                              <p className="text-xs text-muted-foreground">{weekDayNames}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-primary">+{habit.xpReward} XP</span>
+                        </div>
+                      </div>
+                      
+                      {linkedGoal && (
+                        <div className="mt-3 pt-3 border-t border-border/20">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Link2 className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span className="text-muted-foreground">Vinculado a:</span>
+                            <span className="font-medium">
+                              {linkedGoal.emoji && settings.showEmojis ? `${linkedGoal.emoji} ` : ''}{linkedGoal.name}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })
+              )}
+            </div>
+          ) : (
+            /* Goals list */
+            <div className="space-y-3">
+              {filteredGoals.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <p className="text-muted-foreground mb-4">Nenhum objetivo encontrado</p>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleAddGoalClick}
+                    className="px-6 py-3 rounded-xl gradient-fire text-primary-foreground font-semibold flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Adicionar Objetivo
+                  </motion.button>
+                </div>
+              ) : (
+                <>
+                  {filteredGoals.map((goal, index) => (
+                    <GoalCard
+                      key={goal.id}
+                      goal={goal}
+                      index={index}
+                      onClick={() => setSelectedGoal(goal)}
+                    />
+                  ))}
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddGoalClick}
+                    className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="font-medium">Adicionar Objetivo</span>
+                  </motion.button>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
 
