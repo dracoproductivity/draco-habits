@@ -298,7 +298,7 @@ export const HabitList = () => {
             </div>
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="p-2 rounded-xl text-primary-foreground gradient-primary hover:opacity-90 transition-colors"
+              className="p-2 rounded-xl text-foreground bg-muted/50 border border-border/50 hover:bg-muted/70 transition-colors"
             >
               <Plus className="w-5 h-5" />
             </button>
