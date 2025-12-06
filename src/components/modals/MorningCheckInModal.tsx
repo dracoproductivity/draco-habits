@@ -4,6 +4,7 @@ import { Sun, Moon, Smartphone, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
 
 interface MorningCheckInModalProps {
   isOpen: boolean;
@@ -12,18 +13,21 @@ interface MorningCheckInModalProps {
 
 export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProps) => {
   const { user, addDailyLog, updateSettings } = useAppStore();
-  const [sleepHours, setSleepHours] = useState<number>(7);
-  const [phoneHours, setPhoneHours] = useState<number>(2);
+  const [sleepHours, setSleepHours] = useState<string>('7');
+  const [phoneHours, setPhoneHours] = useState<string>('2');
 
   const firstName = user?.firstName || 'usuário';
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
   const handleSubmit = () => {
+    const sleep = parseFloat(sleepHours) || 0;
+    const phone = parseFloat(phoneHours) || 0;
+    
     addDailyLog({
       date: yesterday,
-      sleepHours,
-      phoneUsageHours: phoneHours,
+      sleepHours: sleep,
+      phoneUsageHours: phone,
     });
     updateSettings({ lastDailyLogDate: today });
     onClose();
@@ -75,20 +79,18 @@ export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProp
                     <p className="text-xs text-muted-foreground">Na noite passada</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
                     min="0"
-                    max="12"
+                    max="24"
                     step="0.5"
                     value={sleepHours}
-                    onChange={(e) => setSleepHours(parseFloat(e.target.value))}
-                    className="flex-1 accent-primary"
+                    onChange={(e) => setSleepHours(e.target.value)}
+                    className="flex-1 text-center text-lg font-semibold"
+                    placeholder="0"
                   />
-                  <div className="w-16 text-center">
-                    <span className="text-2xl font-bold text-foreground">{sleepHours}</span>
-                    <span className="text-sm text-muted-foreground ml-1">h</span>
-                  </div>
+                  <span className="text-sm text-muted-foreground">horas</span>
                 </div>
               </div>
 
@@ -98,24 +100,22 @@ export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProp
                     <Smartphone className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">Tempo de celular inútil?</p>
+                    <p className="font-medium text-foreground">Tempo de celular inútil ontem?</p>
                     <p className="text-xs text-muted-foreground">Excluindo trabalho/estudo</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
                     min="0"
-                    max="12"
+                    max="24"
                     step="0.5"
                     value={phoneHours}
-                    onChange={(e) => setPhoneHours(parseFloat(e.target.value))}
-                    className="flex-1 accent-primary"
+                    onChange={(e) => setPhoneHours(e.target.value)}
+                    className="flex-1 text-center text-lg font-semibold"
+                    placeholder="0"
                   />
-                  <div className="w-16 text-center">
-                    <span className="text-2xl font-bold text-foreground">{phoneHours}</span>
-                    <span className="text-sm text-muted-foreground ml-1">h</span>
-                  </div>
+                  <span className="text-sm text-muted-foreground">horas</span>
                 </div>
               </div>
             </div>

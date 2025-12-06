@@ -131,15 +131,20 @@ export const useAppStore = create<AppStore>()(
 
       signup: (userData, password) => {
         if (userData.email && password) {
-          set({ 
+          const today = new Date().toISOString().split('T')[0];
+          set((state) => ({ 
             isAuthenticated: true,
             isFirstTime: true,
             showWelcomeModal: true,
             user: {
               ...userData,
               id: Date.now().toString(),
+            },
+            settings: {
+              ...state.settings,
+              accountCreatedAt: today,
             }
-          });
+          }));
           return true;
         }
         return false;
