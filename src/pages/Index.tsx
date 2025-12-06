@@ -29,12 +29,18 @@ const Index = () => {
     
     const currentHour = new Date().getHours();
     const today = format(new Date(), 'yyyy-MM-dd');
+    const accountCreatedAt = settings.accountCreatedAt;
+    
+    // Don't show on the same day the account was created
+    if (accountCreatedAt === today) {
+      return;
+    }
     
     // Only show after 5am and if not already filled today
     if (currentHour >= 5 && settings.lastDailyLogDate !== today) {
       setShowMorningCheckIn(true);
     }
-  }, [isAuthenticated, settings.lastDailyLogDate]);
+  }, [isAuthenticated, settings.lastDailyLogDate, settings.accountCreatedAt]);
 
   if (!isAuthenticated) {
     return <AuthPage />;

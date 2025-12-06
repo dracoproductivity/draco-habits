@@ -95,6 +95,7 @@ export interface AppSettings {
   minSleepHours: number; // minimum recommended sleep hours
   maxPhoneHours: number; // maximum recommended phone usage hours
   lastDailyLogDate?: string; // last date user filled the morning check-in
+  accountCreatedAt?: string; // ISO date string of when the account was created
 }
 
 export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';
