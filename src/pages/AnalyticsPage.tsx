@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Target, ListTodo } from 'lucide-react';
+import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -16,16 +16,23 @@ import {
   Cell,
   LineChart,
   Line,
+  Area,
+  ComposedChart,
+  ReferenceArea,
 } from 'recharts';
+import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
+import { cn } from '@/lib/utils';
 
 type TimeRange = 'weekly' | 'monthly';
 type ProgressFilter = 'habits' | 'goals';
 type ProgressTimeRange = 'week' | 'month';
+type AnalyticsView = 'progress' | 'charts';
 
 export const AnalyticsPage = () => {
   const { settings, dailyLogs, habits, goals, habitChecks } = useAppStore();
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
+  const [analyticsView, setAnalyticsView] = useState<AnalyticsView>('progress');
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('habits');
@@ -195,10 +202,42 @@ export const AnalyticsPage = () => {
     >
       <header className="mb-6">
         <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Análises</h1>
-        <p className="text-muted-foreground">Acompanhe seus dados de saúde</p>
+        <p className="text-muted-foreground">Acompanhe seu progresso e métricas</p>
       </header>
 
-      {/* Sleep & Phone Charts - Side by Side */}
+      {/* View Toggle */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setAnalyticsView('progress')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all',
+            analyticsView === 'progress'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+          )}
+        >
+          <CalendarDays className="w-4 h-4" />
+          Progresso Anual
+        </button>
+        <button
+          onClick={() => setAnalyticsView('charts')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all',
+            analyticsView === 'charts'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+          )}
+        >
+          <BarChart3 className="w-4 h-4" />
+          Gráficos
+        </button>
+      </div>
+
+      {analyticsView === 'progress' ? (
+        <AnnualProgressView />
+      ) : (
+        <>
+          {/* Sleep & Phone Charts - Side by Side */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Sleep Chart */}
         <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
@@ -504,6 +543,8 @@ export const AnalyticsPage = () => {
           </ResponsiveContainer>
         </div>
       </div>
+        </>
+      )}
     </motion.div>
   );
 };
