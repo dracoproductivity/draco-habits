@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, ChevronLeft, ChevronRight, Link2, Plus, Calendar, Repeat, Target, Eye, Check, Bell, Lightbulb, Pencil } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
-import { PeriodCard } from '@/components/year/PeriodCard';
-import { PeriodModal } from '@/components/year/PeriodModal';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
 import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
 import { cn } from '@/lib/utils';
@@ -12,7 +10,6 @@ import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale';
 
 type FilterType = 'all' | 'habits' | Goal['type'];
-type ViewMode = 'progress' | 'goals';
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -194,14 +191,6 @@ const getPeriodOptions = (type: GoalType) => {
 export const GoalsPage = () => {
   const { goals, addGoal, updateGoal, removeGoal, settings, habits, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
   
-  // View mode toggle
-  const [viewMode, setViewMode] = useState<ViewMode>('progress');
-  
-  // Year navigation for progress view
-  const currentYear = new Date().getFullYear();
-  const [displayYear, setDisplayYear] = useState(currentYear);
-  const isViewingNextYear = displayYear === currentYear + 1;
-  
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -231,15 +220,6 @@ export const GoalsPage = () => {
   const [editCategoryHasEmoji, setEditCategoryHasEmoji] = useState(true);
   const [editCategoryXP, setEditCategoryXP] = useState<number>(20);
   
-  // Year view state
-  const [selectedPeriod, setSelectedPeriod] = useState<{
-    title: string;
-    subtitle?: string;
-    type: GoalType;
-    period: string;
-    quarterMonths?: string[];
-  } | null>(null);
-  
   // Weekly goal creation from parent
   const [showWeeklyGoalPrompt, setShowWeeklyGoalPrompt] = useState(false);
   const [weeklyGoalName, setWeeklyGoalName] = useState('');
@@ -247,14 +227,6 @@ export const GoalsPage = () => {
   const [weeklyGoalRepeat, setWeeklyGoalRepeat] = useState(true);
   const [weeklyGoalPeriod, setWeeklyGoalPeriod] = useState('');
   const [parentGoalForWeekly, setParentGoalForWeekly] = useState<Goal | null>(null);
-
-  const today = new Date();
-  const year = displayYear;
-  const month = today.toLocaleDateString('pt-BR', { month: 'long' });
-  const weekNumber = Math.ceil(
-    (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
-  );
-  const quarter = Math.ceil((today.getMonth() + 1) / 3);
   
   // Check if user has no goals/habits (first time)
   const isFirstTimeUser = goals.length === 0 && habits.length === 0;
@@ -450,9 +422,6 @@ export const GoalsPage = () => {
     setNewCategoryHasEmoji(true);
   };
 
-  const openPeriodModal = (title: string, type: GoalType, period: string, subtitle?: string, quarterMonths?: string[]) => {
-    setSelectedPeriod({ title, subtitle, type, period, quarterMonths });
-  };
 
   const allCategories = [
     ...DEFAULT_CATEGORIES,
@@ -471,57 +440,47 @@ export const GoalsPage = () => {
     >
       <header className="mb-4">
         <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
-        <p className="text-muted-foreground">Acompanhe seu progresso</p>
+        <p className="text-muted-foreground">Gerencie seus objetivos</p>
       </header>
 
-      {/* View Mode Toggle */}
-      <div className="flex gap-2 mb-4 p-1 bg-muted/30 rounded-xl">
-        <button
-          onClick={() => setViewMode('progress')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all',
-            viewMode === 'progress'
-              ? 'gradient-fire text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <Eye className="w-4 h-4" />
-          <span className="text-sm font-medium">Progresso Anual</span>
-        </button>
-        <button
-          onClick={() => setViewMode('goals')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all',
-            viewMode === 'goals'
-              ? 'gradient-fire text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <Target className="w-4 h-4" />
-          <span className="text-sm font-medium">Objetivos</span>
-        </button>
+      {/* Filters */}
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
+        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        {filterOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setFilter(option.value)}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
+              filter === option.value
+                ? 'gradient-fire text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
-      {viewMode === 'progress' ? (
-        /* Year Progress View - Grid on desktop */
-        <>
-          {/* Onboarding box for first-time users */}
-          {isFirstTimeUser && (
+      {/* Content based on filter */}
+      {filter === 'habits' ? (
+        /* Habits List View - Same as Daily */
+        <div className="space-y-2">
+          {habits.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
                   <Lightbulb className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Comece sua jornada!</h3>
+                  <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Para começar, vá até a aba <strong>Diário</strong> e crie seu primeiro hábito. 
-                    Ao criar um hábito, você pode vinculá-lo a objetivos que serão criados automaticamente 
-                    (semanal, mensal, trimestral e anual). Seus objetivos aparecerão aqui!
+                    Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
+                    Cada hábito pode ser vinculado a objetivos de diferentes períodos.
                   </p>
                   <button
                     onClick={() => {
@@ -535,279 +494,133 @@ export const GoalsPage = () => {
                 </div>
               </div>
             </motion.div>
-          )}
-          
-          {/* Year navigation header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg text-foreground">{displayYear}</h2>
-            {isViewingNextYear && (
-              <button
-                onClick={() => setDisplayYear(currentYear)}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Voltar para {currentYear}
-              </button>
-            )}
-          </div>
-          
-          <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-3'}`}>
-            {/* Week - only show for current year */}
-            {!isViewingNextYear && (
-              <PeriodCard
-                title="Semana"
-                subtitle="Semana atual"
-                type="weekly"
-                period={`Semana ${weekNumber} - ${currentYear}`}
-                displayYear={currentYear}
-                onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber} - ${currentYear}`, 'Semana atual')}
-              />
-            )}
-            
-            {/* Month - only show for current year */}
-            {!isViewingNextYear && (
-              <PeriodCard
-                title={month.charAt(0).toUpperCase() + month.slice(1)}
-                subtitle="Mês atual"
-                type="monthly"
-                period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`}
-                displayYear={currentYear}
-                onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`, 'Mês atual')}
-              />
-            )}
-
-            {/* Quarters */}
-            {[1, 2, 3, 4].map((q) => (
-              <PeriodCard
-                key={q}
-                title={`${q}º Trimestre`}
-                subtitle={QUARTER_MONTHS[q]}
-                type="quarterly"
-                period={`${q}º Tri - ${year}`}
-                quarterMonths={QUARTER_MONTH_ARRAYS[q]}
-                displayYear={year}
-                onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
-              />
-            ))}
-
-            {/* Year */}
-            <PeriodCard
-              title={`Ano ${year}`}
-              type="yearly"
-              period={year.toString()}
-              displayYear={year}
-              onClick={() => openPeriodModal(`Ano ${year}`, 'yearly', year.toString())}
-            />
-          </div>
-          
-          {/* Button to view next year */}
-          {!isViewingNextYear && (
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => setDisplayYear(currentYear + 1)}
-              className="w-full mt-4 py-3 px-4 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2"
-            >
-              <span>Ver objetivos de {currentYear + 1}</span>
-              <ChevronRight className="w-4 h-4" />
-            </motion.button>
-          )}
-        </>
-      ) : (
-        /* Goals List View */
-        <>
-          {/* Filters */}
-          <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
-            <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setFilter(option.value)}
-                className={cn(
-                  'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
-                  filter === option.value
-                    ? 'gradient-fire text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Content based on filter */}
-          {filter === 'habits' ? (
-            /* Habits List View - Same as Daily */
-            <div className="space-y-2">
-              {habits.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                      <Lightbulb className="w-5 h-5 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
-                        Cada hábito pode ser vinculado a objetivos de diferentes períodos.
-                      </p>
-                      <button
-                        onClick={() => {
-                          const { setActiveTab } = useAppStore.getState();
-                          setActiveTab('daily');
-                        }}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        Ir para o Diário →
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ) : (
-                habits.map((habit, index) => {
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  const check = getHabitCheckForDate(habit.id, todayStr);
-                  const isCompleted = check?.completed ?? false;
-                  const linkedGoal = goals.find(g => g.id === habit.goalId);
-
-                  return (
-                    <motion.div
-                      key={habit.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={cn(
-                        'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
-                        isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
-                      )}
-                      onClick={() => setSelectedHabit(habit)}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleHabitCheck(habit.id, todayStr);
-                        }}
-                        className={cn(
-                          'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
-                          isCompleted 
-                            ? 'bg-primary border-primary' 
-                            : 'border-muted-foreground/50 hover:border-primary'
-                        )}
-                      >
-                        {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
-                      </button>
-
-                      <div className="flex-1 flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
-                          {settings.showEmojis && habit.emoji && (
-                            <span className="text-lg">{habit.emoji}</span>
-                          )}
-                          <span className={cn(
-                            'font-medium transition-all',
-                            isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
-                          )}>
-                            {habit.name}
-                          </span>
-                        </div>
-                        {linkedGoal && (
-                          <span className="text-xs text-muted-foreground">
-                            🎯 {linkedGoal.name}
-                          </span>
-                        )}
-                        {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
-                          <span className="text-xs text-muted-foreground/70">
-                            {habit.weekDays.map(d => weekDayLabels[d]).join(', ')}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {habit.notificationEnabled && (
-                          <Bell className="w-3.5 h-3.5 text-primary" />
-                        )}
-                        <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeHabit(habit.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </div>
           ) : (
-            /* Goals list */
-            <div className="space-y-3">
-              {filteredGoals.length === 0 && (
+            habits.map((habit, index) => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const check = getHabitCheckForDate(habit.id, todayStr);
+              const isCompleted = check?.completed ?? false;
+              const linkedGoal = goals.find(g => g.id === habit.goalId);
+
+              return (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
+                  key={habit.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
+                    isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
+                  )}
+                  onClick={() => setSelectedHabit(habit)}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                      <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleHabitCheck(habit.id, todayStr);
+                    }}
+                    className={cn(
+                      'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
+                      isCompleted 
+                        ? 'bg-primary border-primary' 
+                        : 'border-muted-foreground/50 hover:border-primary'
+                    )}
+                  >
+                    {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
+                  </button>
+
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                      {settings.showEmojis && habit.emoji && (
+                        <span className="text-lg">{habit.emoji}</span>
+                      )}
+                      <span className={cn(
+                        'font-medium transition-all',
+                        isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                      )}>
+                        {habit.name}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground mb-1">
-                        {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Clique no botão abaixo para criar seu primeiro objetivo 
-                        {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
-                      </p>
-                    </div>
+                    {linkedGoal && (
+                      <span className="text-xs text-muted-foreground">
+                        🎯 {linkedGoal.name}
+                      </span>
+                    )}
+                    {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
+                      <span className="text-xs text-muted-foreground/70">
+                        {habit.weekDays.map(d => weekDayLabels[d]).join(', ')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {habit.notificationEnabled && (
+                      <Bell className="w-3.5 h-3.5 text-primary" />
+                    )}
+                    <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeHabit(habit.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </motion.div>
-              )}
-              
-              {filteredGoals.map((goal, index) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  index={index}
-                  onClick={() => setSelectedGoal(goal)}
-                />
-              ))}
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleAddGoalClick}
-                className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="font-medium">
-                  Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
-                </span>
-              </motion.button>
-            </div>
+              );
+            })
           )}
-        </>
+        </div>
+      ) : (
+        /* Goals list */
+        <div className="space-y-3">
+          {filteredGoals.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">
+                    {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Clique no botão abaixo para criar seu primeiro objetivo 
+                    {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          {filteredGoals.map((goal, index) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              index={index}
+              onClick={() => setSelectedGoal(goal)}
+            />
+          ))}
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAddGoalClick}
+            className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">
+              Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
+            </span>
+          </motion.button>
+        </div>
       )}
 
-      {/* Period Modal */}
-      {selectedPeriod && (
-        <PeriodModal
-          isOpen={!!selectedPeriod}
-          onClose={() => setSelectedPeriod(null)}
-          title={selectedPeriod.title}
-          subtitle={selectedPeriod.subtitle}
-          type={selectedPeriod.type}
-          period={selectedPeriod.period}
-          quarterMonths={selectedPeriod.quarterMonths}
-        />
-      )}
 
       {/* Type Selector Modal */}
       <AnimatePresence>
