@@ -245,12 +245,12 @@ export const HabitList = () => {
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   
-  // Store all goal data before creating them at the end
+  // Store all goal data before creating them at the end - periods start empty
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
-    yearly: { name: '', period: getPeriodOptions('yearly')[0]?.value || '' },
-    quarterly: { name: '', period: getPeriodOptions('quarterly')[0]?.value || '' },
-    monthly: { name: '', period: getPeriodOptions('monthly')[0]?.value || '' },
-    weekly: { name: '', period: getPeriodOptions('weekly')[0]?.value || '' },
+    yearly: { name: '', period: '' },
+    quarterly: { name: '', period: '' },
+    monthly: { name: '', period: '' },
+    weekly: { name: '', period: '' },
   });
   
   const [viewDate, setViewDate] = useState(new Date());
@@ -628,7 +628,7 @@ export const HabitList = () => {
                     </button>
                   </>
                 ) : (
-                  <div className="p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
+                <div className="p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-foreground">Criar objetivo - {getStepLabel(goalCreationStep)}</h4>
                       <button
@@ -637,10 +637,10 @@ export const HabitList = () => {
                           setGoalCreationStep('yearly');
                           setNewGoalName('');
                           setGoalCreationData({
-                            yearly: { name: '', period: getPeriodOptions('yearly')[0]?.value || '' },
-                            quarterly: { name: '', period: getPeriodOptions('quarterly')[0]?.value || '' },
-                            monthly: { name: '', period: getPeriodOptions('monthly')[0]?.value || '' },
-                            weekly: { name: '', period: getPeriodOptions('weekly')[0]?.value || '' },
+                            yearly: { name: '', period: '' },
+                            quarterly: { name: '', period: '' },
+                            monthly: { name: '', period: '' },
+                            weekly: { name: '', period: '' },
                           });
                         }}
                         className="p-1 text-muted-foreground hover:text-foreground transition-colors"
@@ -679,6 +679,7 @@ export const HabitList = () => {
                         onChange={(e) => handleGoalPeriodChange(e.target.value)}
                         className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                       >
+                        <option value="">Selecione um período</option>
                         {getPeriodOptions(goalCreationStep).map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
@@ -687,12 +688,28 @@ export const HabitList = () => {
                       </select>
                     </div>
                     
-                    <button
-                      onClick={getNextStep(goalCreationStep) ? handleGoalStepNext : handleFinalizeGoalCreation}
-                      className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
-                    >
-                      {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
-                    </button>
+                    <div className="flex gap-2">
+                      {goalCreationStep !== 'yearly' && (
+                        <button
+                          onClick={() => {
+                            const prevStep = goalCreationStep === 'weekly' ? 'monthly' : 
+                                            goalCreationStep === 'monthly' ? 'quarterly' : 'yearly';
+                            setGoalCreationStep(prevStep);
+                            setNewGoalName(goalCreationData[prevStep].name);
+                          }}
+                          className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                        >
+                          Voltar
+                        </button>
+                      )}
+                      <button
+                        onClick={getNextStep(goalCreationStep) ? handleGoalStepNext : handleFinalizeGoalCreation}
+                        className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                        disabled={!goalCreationData[goalCreationStep].period}
+                      >
+                        {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -705,7 +722,15 @@ export const HabitList = () => {
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDrag}
           >
-            {habits.map((habit, index) => {
+            {habits
+              .filter((habit) => {
+                // Filter habits to show only on scheduled days
+                if (habit.isOneTime) return true; // One-time habits always show
+                if (!habit.weekDays || habit.weekDays.length === 0) return true; // No specific days = show all
+                const dayOfWeek = viewDate.getDay();
+                return habit.weekDays.includes(dayOfWeek);
+              })
+              .map((habit, index) => {
               const check = getHabitCheckForDate(habit.id, viewDateStr);
               const isCompleted = check?.completed ?? false;
               const linkedGoal = goals.find(g => g.id === habit.goalId);
