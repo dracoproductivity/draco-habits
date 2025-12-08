@@ -26,6 +26,7 @@ import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } fro
 import { DracoIcon } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { Switch } from '@/components/ui/switch';
+import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
@@ -211,12 +212,15 @@ export const SettingsPage = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`min-h-screen p-4 ${isDesktop ? 'pb-8 pt-6' : 'pb-20'}`}
+      className={`min-h-screen ${isDesktop ? 'pb-8' : 'pb-20'}`}
     >
-      <header className="mb-6">
-        <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Configurações</h1>
-        <p className="text-muted-foreground">Personalize sua experiência</p>
-      </header>
+      <UniversalHeader />
+
+      <div className="p-4">
+        <header className="mb-6">
+          <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Configurações</h1>
+          <p className="text-muted-foreground">Personalize sua experiência</p>
+        </header>
 
       <div className="space-y-4">
         {/* Profile Section */}
@@ -747,6 +751,7 @@ export const SettingsPage = () => {
             </button>
           </div>
         </section>
+      </div>
       </div>
     </motion.div>
   );

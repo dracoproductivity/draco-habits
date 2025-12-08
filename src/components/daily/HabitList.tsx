@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { GoalType, Habit } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
-import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
+import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const WEEK_DAYS = [
@@ -19,8 +19,138 @@ const WEEK_DAYS = [
   { value: 6, label: 'Sáb' },
 ];
 
+// Calculate total days for a period
+const calculateTotalDaysForPeriod = (type: GoalType, period: string): number => {
+  const now = new Date();
+  
+  switch (type) {
+    case 'yearly': {
+      const year = parseInt(period);
+      const startOfPeriod = new Date(year, 0, 1);
+      const endOfPeriod = new Date(year, 11, 31);
+      
+      // If it's the current year, count from today
+      if (year === now.getFullYear()) {
+        return Math.max(1, differenceInDays(endOfPeriod, now) + 1);
+      }
+      return differenceInDays(endOfPeriod, startOfPeriod) + 1;
+    }
+    case 'quarterly': {
+      // Format: "1º Tri - 2025"
+      const match = period.match(/(\d+)º Tri - (\d+)/);
+      if (!match) return 90;
+      const quarter = parseInt(match[1]);
+      const year = parseInt(match[2]);
+      const quarterStart = startOfQuarter(new Date(year, (quarter - 1) * 3, 1));
+      const quarterEnd = endOfQuarter(quarterStart);
+      
+      // If it's the current quarter, count from today
+      if (year === now.getFullYear() && quarter === Math.ceil((now.getMonth() + 1) / 3)) {
+        return Math.max(1, differenceInDays(quarterEnd, now) + 1);
+      }
+      return differenceInDays(quarterEnd, quarterStart) + 1;
+    }
+    case 'monthly': {
+      // Format: "Janeiro 2025"
+      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const parts = period.split(' ');
+      const monthIndex = months.indexOf(parts[0]);
+      const year = parseInt(parts[1]);
+      
+      if (monthIndex === -1) return 30;
+      
+      const monthStart = startOfMonth(new Date(year, monthIndex, 1));
+      const monthEnd = endOfMonth(monthStart);
+      
+      // If it's the current month, count from today
+      if (year === now.getFullYear() && monthIndex === now.getMonth()) {
+        return Math.max(1, differenceInDays(monthEnd, now) + 1);
+      }
+      return getDaysInMonth(new Date(year, monthIndex, 1));
+    }
+    case 'weekly': {
+      return 7;
+    }
+  }
+};
+
+// Check if a habit should appear on a specific date based on its period
+const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean => {
+  // If no goal linked, check weekdays
+  if (!habit.goalId) {
+    if (habit.isOneTime) return true;
+    if (!habit.weekDays || habit.weekDays.length === 0) return true;
+    return habit.weekDays.includes(date.getDay());
+  }
+  
+  // Get linked goal to determine period
+  const linkedGoal = goals.find(g => g.id === habit.goalId);
+  if (!linkedGoal) {
+    if (habit.isOneTime) return true;
+    if (!habit.weekDays || habit.weekDays.length === 0) return true;
+    return habit.weekDays.includes(date.getDay());
+  }
+  
+  const period = linkedGoal.period;
+  const type = linkedGoal.type;
+  
+  // Check if date is within the goal's period
+  let isWithinPeriod = false;
+  
+  switch (type) {
+    case 'yearly': {
+      const year = parseInt(period);
+      isWithinPeriod = date.getFullYear() === year;
+      break;
+    }
+    case 'quarterly': {
+      const match = period.match(/(\d+)º Tri - (\d+)/);
+      if (match) {
+        const quarter = parseInt(match[1]);
+        const year = parseInt(match[2]);
+        const quarterStart = startOfQuarter(new Date(year, (quarter - 1) * 3, 1));
+        const quarterEnd = endOfQuarter(quarterStart);
+        isWithinPeriod = isWithinInterval(date, { start: quarterStart, end: quarterEnd });
+      }
+      break;
+    }
+    case 'monthly': {
+      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const parts = period.split(' ');
+      const monthIndex = months.indexOf(parts[0]);
+      const year = parseInt(parts[1]);
+      if (monthIndex !== -1) {
+        isWithinPeriod = date.getFullYear() === year && date.getMonth() === monthIndex;
+      }
+      break;
+    }
+    case 'weekly': {
+      // Parse week period "Semana X - YYYY"
+      const match = period.match(/Semana (\d+) - (\d+)/);
+      if (match) {
+        const weekNum = parseInt(match[1]);
+        const year = parseInt(match[2]);
+        const yearStart = startOfYear(new Date(year, 0, 1));
+        const weekStart = startOfWeek(addWeeks(yearStart, weekNum - 1), { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+        isWithinPeriod = isWithinInterval(date, { start: weekStart, end: weekEnd });
+      }
+      break;
+    }
+  }
+  
+  if (!isWithinPeriod) return false;
+  
+  // Now check weekdays
+  if (habit.isOneTime) return true;
+  if (!habit.weekDays || habit.weekDays.length === 0) return true;
+  return habit.weekDays.includes(date.getDay());
+};
+
 // Period generation functions
-const generateWeekOptions = () => {
+const generateWeekOptions = (filterYear?: number, filterMonth?: number) => {
   const options: { value: string; label: string }[] = [];
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -28,53 +158,43 @@ const generateWeekOptions = () => {
     (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
   
-  // Current year weeks (from current week onwards)
-  const yearStart = startOfYear(new Date(currentYear, 0, 1));
-  for (let i = currentWeek; i <= 52; i++) {
-    const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
-    
-    const startDay = format(weekStart, 'd', { locale: ptBR });
-    const endDay = format(weekEnd, 'd', { locale: ptBR });
-    const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
-    const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
-    
-    const dateRange = startMonth === endMonth 
-      ? `${startDay}-${endDay} de ${startMonth}`
-      : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
-    
-    options.push({ 
-      value: `Semana ${i} - ${currentYear}`, 
-      label: `Semana ${i} - ${dateRange} (${currentYear})` 
-    });
-  }
+  const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
   
-  // Next year weeks
-  const nextYear = currentYear + 1;
-  const nextYearStart = startOfYear(new Date(nextYear, 0, 1));
-  for (let i = 1; i <= 52; i++) {
-    const weekStart = startOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
-    const weekEnd = endOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
+  yearsToGenerate.forEach(year => {
+    const yearStart = startOfYear(new Date(year, 0, 1));
+    const startWeek = year === currentYear ? currentWeek : 1;
     
-    const startDay = format(weekStart, 'd', { locale: ptBR });
-    const endDay = format(weekEnd, 'd', { locale: ptBR });
-    const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
-    const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
-    
-    const dateRange = startMonth === endMonth 
-      ? `${startDay}-${endDay} de ${startMonth}`
-      : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
-    
-    options.push({ 
-      value: `Semana ${i} - ${nextYear}`, 
-      label: `Semana ${i} - ${dateRange} (${nextYear})` 
-    });
-  }
+    for (let i = startWeek; i <= 52; i++) {
+      const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
+      
+      // Filter by month if specified
+      if (filterMonth !== undefined) {
+        if (weekStart.getMonth() !== filterMonth && weekEnd.getMonth() !== filterMonth) {
+          continue;
+        }
+      }
+      
+      const startDay = format(weekStart, 'd', { locale: ptBR });
+      const endDay = format(weekEnd, 'd', { locale: ptBR });
+      const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
+      const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
+      
+      const dateRange = startMonth === endMonth 
+        ? `${startDay}-${endDay} de ${startMonth}`
+        : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
+      
+      options.push({ 
+        value: `Semana ${i} - ${year}`, 
+        label: `Semana ${i} - ${dateRange} (${year})` 
+      });
+    }
+  });
   
   return options;
 };
 
-const generateMonthOptions = () => {
+const generateMonthOptions = (filterYear?: number, filterQuarter?: number) => {
   const months = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
@@ -85,21 +205,26 @@ const generateMonthOptions = () => {
   
   const options: { value: string; label: string }[] = [];
   
-  // Current year months (from current month onwards)
-  for (let i = currentMonth; i < 12; i++) {
-    options.push({ value: `${months[i]} ${currentYear}`, label: `${months[i]} ${currentYear}` });
-  }
+  const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
   
-  // Next year months
-  const nextYear = currentYear + 1;
-  months.forEach(m => {
-    options.push({ value: `${m} ${nextYear}`, label: `${m} ${nextYear}` });
+  yearsToGenerate.forEach(year => {
+    const startMonth = year === currentYear ? currentMonth : 0;
+    
+    for (let i = startMonth; i < 12; i++) {
+      // Filter by quarter if specified
+      if (filterQuarter !== undefined) {
+        const monthQuarter = Math.ceil((i + 1) / 3);
+        if (monthQuarter !== filterQuarter) continue;
+      }
+      
+      options.push({ value: `${months[i]} ${year}`, label: `${months[i]} ${year}` });
+    }
   });
   
   return options;
 };
 
-const generateQuarterOptions = () => {
+const generateQuarterOptions = (filterYear?: number) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
@@ -107,22 +232,18 @@ const generateQuarterOptions = () => {
   const options: { value: string; label: string }[] = [];
   const quarterLabels = ['Jan-Mar', 'Abr-Jun', 'Jul-Set', 'Out-Dez'];
   
-  // Current year quarters (from current quarter onwards)
-  for (let q = currentQuarter; q <= 4; q++) {
-    options.push({ 
-      value: `${q}º Tri - ${currentYear}`, 
-      label: `${q}º Tri - ${currentYear} (${quarterLabels[q - 1]})` 
-    });
-  }
+  const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
   
-  // Next year quarters
-  const nextYear = currentYear + 1;
-  for (let q = 1; q <= 4; q++) {
-    options.push({ 
-      value: `${q}º Tri - ${nextYear}`, 
-      label: `${q}º Tri - ${nextYear} (${quarterLabels[q - 1]})` 
-    });
-  }
+  yearsToGenerate.forEach(year => {
+    const startQ = year === currentYear ? currentQuarter : 1;
+    
+    for (let q = startQ; q <= 4; q++) {
+      options.push({ 
+        value: `${q}º Tri - ${year}`, 
+        label: `${q}º Tri - ${year} (${quarterLabels[q - 1]})` 
+      });
+    }
+  });
   
   return options;
 };
@@ -135,19 +256,21 @@ const generateYearOptions = () => {
   ];
 };
 
-const getPeriodOptions = (type: GoalType) => {
+const getPeriodOptions = (type: GoalType, filterYear?: number, filterQuarter?: number, filterMonth?: number) => {
   switch (type) {
-    case 'weekly': return generateWeekOptions();
-    case 'monthly': return generateMonthOptions();
-    case 'quarterly': return generateQuarterOptions();
+    case 'weekly': return generateWeekOptions(filterYear, filterMonth);
+    case 'monthly': return generateMonthOptions(filterYear, filterQuarter);
+    case 'quarterly': return generateQuarterOptions(filterYear);
     case 'yearly': return generateYearOptions();
   }
 };
 
 interface GoalCreationData {
   name: string;
-  period: string;
+  periods: string[]; // Changed to array for multi-select
 }
+
+type CreationMode = 'single' | 'hierarchical';
 
 const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: string; delay?: number }) => {
   const circumference = 2 * Math.PI * 32;
@@ -238,6 +361,12 @@ export const HabitList = () => {
   const [newHabitEmoji, setNewHabitEmoji] = useState('');
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [showGoalCreation, setShowGoalCreation] = useState(false);
+  const [creationMode, setCreationMode] = useState<CreationMode>('single');
+  const [singleGoalType, setSingleGoalType] = useState<GoalType | ''>('');
+  const [singleGoalPeriod, setSingleGoalPeriod] = useState('');
+  const [singleGoalName, setSingleGoalName] = useState('');
+  
+  // Hierarchical creation state
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [newGoalName, setNewGoalName] = useState('');
   const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -245,12 +374,12 @@ export const HabitList = () => {
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   
-  // Store all goal data before creating them at the end - periods start empty
+  // Multi-select periods for hierarchical creation
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
-    yearly: { name: '', period: '' },
-    quarterly: { name: '', period: '' },
-    monthly: { name: '', period: '' },
-    weekly: { name: '', period: '' },
+    yearly: { name: '', periods: [] },
+    quarterly: { name: '', periods: [] },
+    monthly: { name: '', periods: [] },
+    weekly: { name: '', periods: [] },
   });
   
   const [viewDate, setViewDate] = useState(new Date());
@@ -339,18 +468,111 @@ export const HabitList = () => {
     });
   };
 
-  const handleGoalStepNext = () => {
+  // Single goal creation
+  const handleCreateSingleGoal = () => {
+    if (!singleGoalName.trim()) {
+      toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
+      return;
+    }
+    if (!singleGoalType) {
+      toast({ title: 'Erro', description: 'Selecione um tipo de período', variant: 'destructive' });
+      return;
+    }
+    if (!singleGoalPeriod) {
+      toast({ title: 'Erro', description: 'Selecione um período', variant: 'destructive' });
+      return;
+    }
+
+    const totalDays = calculateTotalDaysForPeriod(singleGoalType, singleGoalPeriod);
+    
+    const newGoal = addGoal({
+      name: singleGoalName.trim(),
+      emoji: newHabitEmoji || undefined,
+      type: singleGoalType,
+      period: singleGoalPeriod,
+      progress: 0,
+    });
+    
+    setSelectedGoalId(newGoal.id);
+    resetGoalCreation();
+    toast({ 
+      title: 'Objetivo criado!', 
+      description: `Objetivo "${singleGoalName}" com ${totalDays} dias criado` 
+    });
+  };
+
+  // Hierarchical goal creation helpers
+  const getFilteredOptions = (type: GoalType) => {
+    const yearlyPeriods = goalCreationData.yearly.periods;
+    const quarterlyPeriods = goalCreationData.quarterly.periods;
+    const monthlyPeriods = goalCreationData.monthly.periods;
+    
+    switch (type) {
+      case 'yearly':
+        return getPeriodOptions('yearly');
+      case 'quarterly': {
+        if (yearlyPeriods.length === 1) {
+          return getPeriodOptions('quarterly', parseInt(yearlyPeriods[0]));
+        }
+        return getPeriodOptions('quarterly');
+      }
+      case 'monthly': {
+        if (quarterlyPeriods.length === 1) {
+          const match = quarterlyPeriods[0].match(/(\d+)º Tri - (\d+)/);
+          if (match) {
+            return getPeriodOptions('monthly', parseInt(match[2]), parseInt(match[1]));
+          }
+        }
+        if (yearlyPeriods.length === 1) {
+          return getPeriodOptions('monthly', parseInt(yearlyPeriods[0]));
+        }
+        return getPeriodOptions('monthly');
+      }
+      case 'weekly': {
+        if (monthlyPeriods.length === 1) {
+          const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+          const parts = monthlyPeriods[0].split(' ');
+          const monthIndex = months.indexOf(parts[0]);
+          const year = parseInt(parts[1]);
+          if (monthIndex !== -1) {
+            return getPeriodOptions('weekly', year, undefined, monthIndex);
+          }
+        }
+        return getPeriodOptions('weekly');
+      }
+    }
+  };
+
+  const togglePeriodSelection = (type: GoalType, period: string) => {
+    setGoalCreationData(prev => {
+      const currentPeriods = prev[type].periods;
+      const newPeriods = currentPeriods.includes(period)
+        ? currentPeriods.filter(p => p !== period)
+        : [...currentPeriods, period];
+      
+      return {
+        ...prev,
+        [type]: { ...prev[type], periods: newPeriods }
+      };
+    });
+  };
+
+  const handleHierarchicalStepNext = () => {
     if (!newGoalName.trim()) {
       toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
       return;
     }
+    if (goalCreationData[goalCreationStep].periods.length === 0) {
+      toast({ title: 'Erro', description: 'Selecione pelo menos um período', variant: 'destructive' });
+      return;
+    }
 
-    // Store current step data
     setGoalCreationData(prev => ({
       ...prev,
       [goalCreationStep]: { 
-        name: newGoalName.trim(), 
-        period: prev[goalCreationStep].period 
+        ...prev[goalCreationStep],
+        name: newGoalName.trim()
       }
     }));
 
@@ -361,9 +583,13 @@ export const HabitList = () => {
     }
   };
 
-  const handleFinalizeGoalCreation = () => {
+  const handleFinalizeHierarchicalCreation = () => {
     if (!newGoalName.trim()) {
       toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
+      return;
+    }
+    if (goalCreationData[goalCreationStep].periods.length === 0) {
+      toast({ title: 'Erro', description: 'Selecione pelo menos um período', variant: 'destructive' });
       return;
     }
 
@@ -372,51 +598,51 @@ export const HabitList = () => {
       ...goalCreationData,
       [goalCreationStep]: { 
         name: newGoalName.trim(), 
-        period: goalCreationData[goalCreationStep].period 
+        periods: goalCreationData[goalCreationStep].periods 
       }
     };
 
     // Create all goals in order: yearly -> quarterly -> monthly -> weekly
-    const createdIds: Record<GoalType, string> = {} as Record<GoalType, string>;
     const steps: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    let lastCreatedGoalId: string | null = null;
     
     steps.forEach((step) => {
-      if (finalData[step].name) {
-        const parentType = getParentType(step);
-        const newGoal = addGoal({
-          name: finalData[step].name,
-          emoji: newHabitEmoji || undefined,
-          type: step,
-          period: finalData[step].period,
-          progress: 0,
-          parentGoalId: step !== 'yearly' ? createdIds[parentType] : undefined,
+      if (finalData[step].name && finalData[step].periods.length > 0) {
+        // Create a goal for each selected period
+        finalData[step].periods.forEach((period) => {
+          const totalDays = calculateTotalDaysForPeriod(step, period);
+          const newGoal = addGoal({
+            name: finalData[step].name,
+            emoji: newHabitEmoji || undefined,
+            type: step,
+            period: period,
+            progress: 0,
+          });
+          lastCreatedGoalId = newGoal.id;
         });
-        createdIds[step] = newGoal.id;
       }
     });
 
-    // Set the weekly goal as the linked goal for the habit
-    setSelectedGoalId(createdIds.weekly || createdIds.monthly || createdIds.quarterly || createdIds.yearly || null);
-    
-    // Reset goal creation state
-    setShowGoalCreation(false);
-    setGoalCreationStep('yearly');
-    setNewGoalName('');
-    setGoalCreationData({
-      yearly: { name: '', period: getPeriodOptions('yearly')[0]?.value || '' },
-      quarterly: { name: '', period: getPeriodOptions('quarterly')[0]?.value || '' },
-      monthly: { name: '', period: getPeriodOptions('monthly')[0]?.value || '' },
-      weekly: { name: '', period: getPeriodOptions('weekly')[0]?.value || '' },
-    });
-    
+    // Set the last created goal as the linked goal for the habit
+    setSelectedGoalId(lastCreatedGoalId);
+    resetGoalCreation();
     toast({ title: 'Objetivos criados!', description: 'Agora você pode adicionar o hábito' });
   };
 
-  const handleGoalPeriodChange = (period: string) => {
-    setGoalCreationData(prev => ({
-      ...prev,
-      [goalCreationStep]: { ...prev[goalCreationStep], period }
-    }));
+  const resetGoalCreation = () => {
+    setShowGoalCreation(false);
+    setCreationMode('single');
+    setSingleGoalType('');
+    setSingleGoalPeriod('');
+    setSingleGoalName('');
+    setGoalCreationStep('yearly');
+    setNewGoalName('');
+    setGoalCreationData({
+      yearly: { name: '', periods: [] },
+      quarterly: { name: '', periods: [] },
+      monthly: { name: '', periods: [] },
+      weekly: { name: '', periods: [] },
+    });
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
@@ -425,14 +651,10 @@ export const HabitList = () => {
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
 
-  const getParentType = (current: GoalType): GoalType => {
-    const map: Record<GoalType, GoalType> = {
-      weekly: 'monthly',
-      monthly: 'quarterly',
-      quarterly: 'yearly',
-      yearly: 'yearly',
-    };
-    return map[current];
+  const getPrevStep = (current: GoalType): GoalType | null => {
+    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const idx = sequence.indexOf(current);
+    return idx > 0 ? sequence[idx - 1] : null;
   };
 
   const getStepLabel = (step: GoalType) => {
@@ -446,6 +668,11 @@ export const HabitList = () => {
   };
 
   const isCircular = settings.progressDisplayMode === 'circular';
+
+  // Filter habits to show only on scheduled days
+  const visibleHabits = useMemo(() => {
+    return habits.filter((habit) => isHabitActiveOnDate(habit, viewDate, goals));
+  }, [habits, viewDate, goals]);
 
   return (
     <motion.div 
@@ -537,7 +764,7 @@ export const HabitList = () => {
                       </button>
                     </div>
 
-                {/* Day Selection */}
+                    {/* Day Selection */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -628,88 +855,205 @@ export const HabitList = () => {
                     </button>
                   </>
                 ) : (
-                <div className="p-4 bg-muted/30 rounded-xl border border-border/50 space-y-3">
+                  <div className="p-4 bg-muted/30 rounded-xl border border-border/50 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-foreground">Criar objetivo - {getStepLabel(goalCreationStep)}</h4>
+                      <h4 className="font-medium text-foreground">Criar objetivo</h4>
                       <button
-                        onClick={() => {
-                          setShowGoalCreation(false);
-                          setGoalCreationStep('yearly');
-                          setNewGoalName('');
-                          setGoalCreationData({
-                            yearly: { name: '', period: '' },
-                            quarterly: { name: '', period: '' },
-                            monthly: { name: '', period: '' },
-                            weekly: { name: '', period: '' },
-                          });
-                        }}
+                        onClick={resetGoalCreation}
                         className="p-1 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                    
-                    <div className="flex gap-1 mb-2">
-                      {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
-                        <div
-                          key={step}
-                          className={cn(
-                            'flex-1 h-1 rounded-full transition-colors',
-                            i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
-                              ? 'bg-primary'
-                              : 'bg-muted'
-                          )}
-                        />
-                      ))}
-                    </div>
 
-                    <input
-                      type="text"
-                      placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
-                      value={newGoalName}
-                      onChange={(e) => setNewGoalName(e.target.value)}
-                      className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    />
-
-                    {/* Period selection */}
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">Período</label>
-                      <select
-                        value={goalCreationData[goalCreationStep].period}
-                        onChange={(e) => handleGoalPeriodChange(e.target.value)}
-                        className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                      >
-                        <option value="">Selecione um período</option>
-                        {getPeriodOptions(goalCreationStep).map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
+                    {/* Mode selection */}
                     <div className="flex gap-2">
-                      {goalCreationStep !== 'yearly' && (
-                        <button
-                          onClick={() => {
-                            const prevStep = goalCreationStep === 'weekly' ? 'monthly' : 
-                                            goalCreationStep === 'monthly' ? 'quarterly' : 'yearly';
-                            setGoalCreationStep(prevStep);
-                            setNewGoalName(goalCreationData[prevStep].name);
-                          }}
-                          className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
-                        >
-                          Voltar
-                        </button>
-                      )}
                       <button
-                        onClick={getNextStep(goalCreationStep) ? handleGoalStepNext : handleFinalizeGoalCreation}
-                        className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
-                        disabled={!goalCreationData[goalCreationStep].period}
+                        onClick={() => setCreationMode('single')}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                          creationMode === 'single'
+                            ? 'gradient-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
                       >
-                        {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
+                        Período único
+                      </button>
+                      <button
+                        onClick={() => setCreationMode('hierarchical')}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                          creationMode === 'hierarchical'
+                            ? 'gradient-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                      >
+                        Hierárquico
                       </button>
                     </div>
+
+                    {creationMode === 'single' ? (
+                      <>
+                        {/* Single goal creation */}
+                        <input
+                          type="text"
+                          placeholder="Nome do objetivo"
+                          value={singleGoalName}
+                          onChange={(e) => setSingleGoalName(e.target.value)}
+                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        />
+
+                        {/* Period type selection */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">Tipo de período</label>
+                          <div className="grid grid-cols-4 gap-1">
+                            {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((type) => (
+                              <button
+                                key={type}
+                                onClick={() => {
+                                  setSingleGoalType(type);
+                                  setSingleGoalPeriod('');
+                                }}
+                                className={cn(
+                                  'py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                                  singleGoalType === type
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                {getStepLabel(type)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Period selection */}
+                        {singleGoalType && (
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Período</label>
+                            <select
+                              value={singleGoalPeriod}
+                              onChange={(e) => setSingleGoalPeriod(e.target.value)}
+                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            >
+                              <option value="">Selecione um período</option>
+                              {getPeriodOptions(singleGoalType).map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                            {singleGoalPeriod && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Total: {calculateTotalDaysForPeriod(singleGoalType, singleGoalPeriod)} dias
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={resetGoalCreation}
+                            className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                          >
+                            Voltar
+                          </button>
+                          <button
+                            onClick={handleCreateSingleGoal}
+                            disabled={!singleGoalName.trim() || !singleGoalType || !singleGoalPeriod}
+                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                          >
+                            Criar
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Hierarchical goal creation */}
+                        <div className="flex gap-1 mb-2">
+                          {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
+                            <div
+                              key={step}
+                              className={cn(
+                                'flex-1 h-1 rounded-full transition-colors',
+                                i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
+                                  ? 'bg-primary'
+                                  : 'bg-muted'
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        <h5 className="text-sm font-medium text-foreground">
+                          Objetivo {getStepLabel(goalCreationStep)}
+                        </h5>
+
+                        <input
+                          type="text"
+                          placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
+                          value={newGoalName}
+                          onChange={(e) => setNewGoalName(e.target.value)}
+                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        />
+
+                        {/* Multi-select period */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Períodos (selecione um ou mais)
+                          </label>
+                          <div className="max-h-40 overflow-y-auto space-y-1 bg-muted/20 rounded-xl p-2">
+                            {getFilteredOptions(goalCreationStep).map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => togglePeriodSelection(goalCreationStep, option.value)}
+                                className={cn(
+                                  'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
+                                  goalCreationData[goalCreationStep].periods.includes(option.value)
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {goalCreationData[goalCreationStep].periods.length} selecionado(s)
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          {goalCreationStep !== 'yearly' ? (
+                            <button
+                              onClick={() => {
+                                const prevStep = getPrevStep(goalCreationStep);
+                                if (prevStep) {
+                                  setGoalCreationStep(prevStep);
+                                  setNewGoalName(goalCreationData[prevStep].name);
+                                }
+                              }}
+                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                            >
+                              Voltar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={resetGoalCreation}
+                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                            >
+                              Voltar
+                            </button>
+                          )}
+                          <button
+                            onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleFinalizeHierarchicalCreation}
+                            disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
+                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                          >
+                            {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </motion.div>
@@ -722,15 +1066,7 @@ export const HabitList = () => {
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDrag}
           >
-            {habits
-              .filter((habit) => {
-                // Filter habits to show only on scheduled days
-                if (habit.isOneTime) return true; // One-time habits always show
-                if (!habit.weekDays || habit.weekDays.length === 0) return true; // No specific days = show all
-                const dayOfWeek = viewDate.getDay();
-                return habit.weekDays.includes(dayOfWeek);
-              })
-              .map((habit, index) => {
+            {visibleHabits.map((habit, index) => {
               const check = getHabitCheckForDate(habit.id, viewDateStr);
               const isCompleted = check?.completed ?? false;
               const linkedGoal = goals.find(g => g.id === habit.goalId);
@@ -805,9 +1141,9 @@ export const HabitList = () => {
               );
             })}
 
-            {habits.length === 0 && (
+            {visibleHabits.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <p>Nenhum hábito cadastrado</p>
+                <p>Nenhum hábito para hoje</p>
                 <p className="text-sm">Clique no + para adicionar</p>
               </div>
             )}
