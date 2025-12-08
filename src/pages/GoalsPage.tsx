@@ -4,6 +4,7 @@ import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, 
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
+import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
@@ -436,12 +437,15 @@ export const GoalsPage = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`min-h-screen p-4 ${isDesktop ? 'pb-8 pt-6' : 'pb-20'}`}
+      className={`min-h-screen ${isDesktop ? 'pb-8' : 'pb-20'}`}
     >
-      <header className="mb-4">
-        <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
-        <p className="text-muted-foreground">Gerencie seus objetivos</p>
-      </header>
+      <UniversalHeader />
+
+      <div className="p-4">
+        <header className="mb-4">
+          <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
+          <p className="text-muted-foreground">Gerencie seus objetivos</p>
+        </header>
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
@@ -1451,6 +1455,7 @@ export const GoalsPage = () => {
           onClose={() => setSelectedHabit(null)}
         />
       )}
+      </div>
     </motion.div>
   );
 };
