@@ -23,7 +23,7 @@ const Index = () => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
 
-  // Check if morning check-in should be shown
+  // Check if morning check-in should be shown - only once per day after 5am
   useEffect(() => {
     if (!isAuthenticated) return;
     
@@ -37,10 +37,11 @@ const Index = () => {
     }
     
     // Only show after 5am and if not already filled today
+    // The lastDailyLogDate check ensures it only shows once per day
     if (currentHour >= 5 && settings.lastDailyLogDate !== today) {
       setShowMorningCheckIn(true);
     }
-  }, [isAuthenticated, settings.lastDailyLogDate, settings.accountCreatedAt]);
+  }, [isAuthenticated]); // Only run on mount/auth change, not on every settings change
 
   if (!isAuthenticated) {
     return <AuthPage />;

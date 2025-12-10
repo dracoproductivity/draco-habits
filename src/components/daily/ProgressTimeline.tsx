@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, BarChart3, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
-import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 
 type ViewMode = 'week' | 'month';
-type ChartMode = 'evolution' | 'progress' | 'categories';
+type ChartMode = 'evolution' | 'progress';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -127,18 +126,6 @@ export const ProgressTimeline = () => {
           <BarChart3 className="w-3 h-3" />
           Progresso
         </button>
-        <button
-          onClick={() => setChartMode('categories')}
-          className={cn(
-            'flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1',
-            chartMode === 'categories' 
-              ? 'gradient-primary text-primary-foreground' 
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <Target className="w-3 h-3" />
-          Categorias
-        </button>
       </div>
 
       {chartMode === 'evolution' && (
@@ -249,13 +236,6 @@ export const ProgressTimeline = () => {
 
       {chartMode === 'progress' && (
         <ProgressCharts compact />
-      )}
-
-      {chartMode === 'categories' && (
-        <div>
-          <h3 className="font-semibold text-foreground mb-3">Categorias</h3>
-          <CategoryRadarChart className="h-[180px]" compact />
-        </div>
       )}
     </motion.div>
   );
