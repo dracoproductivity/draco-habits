@@ -25,6 +25,7 @@ export interface HabitCheck {
   habitId: string;
   date: string;
   completed: boolean;
+  xpAwarded?: boolean; // Track if XP was already given for this check
 }
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'yearly';

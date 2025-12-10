@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
+import { CalendarDayModal } from './CalendarDayModal';
 
 type CalendarView = 'week' | 'month';
 
@@ -11,13 +12,6 @@ export const HabitCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const { habits, habitChecks } = useAppStore();
-
-  const getCompletedHabits = (dateStr: string) => {
-    return habits.filter(habit => {
-      const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
-      return check?.completed;
-    });
-  };
 
   const getCompletionPercentage = (dateStr: string) => {
     if (habits.length === 0) return 0;
@@ -89,14 +83,6 @@ export const HabitCalendar = () => {
     setCurrentDate(newDate);
   };
 
-  const getPercentageColor = (percentage: number) => {
-    if (percentage === 0) return 'bg-muted/30 text-muted-foreground';
-    if (percentage <= 25) return 'bg-red-500/80 text-white';
-    if (percentage <= 50) return 'bg-orange-500/80 text-white';
-    if (percentage <= 75) return 'bg-yellow-500/80 text-black';
-    return 'bg-green-500/80 text-white';
-  };
-
   const getIndicatorColor = (percentage: number) => {
     if (percentage === 0) return 'bg-muted/30';
     if (percentage <= 25) return 'bg-red-500';
@@ -105,194 +91,142 @@ export const HabitCalendar = () => {
     return 'bg-green-500';
   };
 
-  const selectedDayHabits = selectedDate ? getCompletedHabits(selectedDate) : [];
-  const selectedDayPercentage = selectedDate ? getCompletionPercentage(selectedDate) : 0;
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass-hover rounded-2xl p-4 space-y-4"
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground">Calendário</h3>
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/30">
-          <button
-            onClick={() => setView('week')}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-              view === 'week' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Semana
-          </button>
-          <button
-            onClick={() => setView('month')}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-              view === 'month' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Mês
-          </button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <span className="font-medium text-foreground capitalize">
-          {currentDate.toLocaleDateString('pt-BR', {
-            month: 'long',
-            year: 'numeric',
-          })}
-        </span>
-        <button
-          onClick={() => navigate(1)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Color legend */}
-      <div className="flex items-center justify-center gap-2 text-xs">
-        <span className="text-muted-foreground">Conclusão:</span>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-red-500" />
-          <span className="text-muted-foreground">0-25%</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-orange-500" />
-          <span className="text-muted-foreground">26-50%</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-yellow-500" />
-          <span className="text-muted-foreground">51-75%</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-green-500" />
-          <span className="text-muted-foreground">76-100%</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1">
-        {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
-          <div key={day} className="text-center text-xs text-muted-foreground py-2 font-medium">
-            {day}
-          </div>
-        ))}
-
-        {days.map((day, index) => {
-          const percentage = getCompletionPercentage(day.dateStr);
-          const isToday = day.dateStr === today;
-          const isSelected = day.dateStr === selectedDate;
-          const hasActivity = percentage > 0;
-
-          return (
-            <motion.button
-              key={day.dateStr}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.01 }}
-              onClick={() => setSelectedDate(isSelected ? null : day.dateStr)}
+    <>
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-hover rounded-2xl p-4 space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-foreground">Calendário</h3>
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/30">
+            <button
+              onClick={() => setView('week')}
               className={cn(
-                'aspect-square flex flex-col items-center justify-center rounded-xl transition-all relative',
-                !day.isCurrentMonth && 'opacity-30',
-                isToday && 'ring-2 ring-primary',
-                isSelected && 'ring-2 ring-primary/50 bg-primary/10'
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                view === 'week' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <span className={cn(
-                'text-sm font-medium',
-                isToday && 'text-primary'
-              )}>
-                {day.date.getDate()}
-              </span>
-              {habits.length > 0 && (
-                <div className={cn(
-                  'w-1.5 h-1.5 rounded-full mt-0.5',
-                  getIndicatorColor(percentage)
-                )} />
+              Semana
+            </button>
+            <button
+              onClick={() => setView('month')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                view === 'month' ? 'gradient-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
-              {hasActivity && (
-                <span className={cn(
-                  'absolute -bottom-0.5 text-[8px] font-bold px-1 rounded',
-                  percentage <= 25 ? 'text-red-500' :
-                  percentage <= 50 ? 'text-orange-500' :
-                  percentage <= 75 ? 'text-yellow-600' :
-                  'text-green-500'
-                )}>
-                  {percentage}%
-                </span>
-              )}
-            </motion.button>
-          );
-        })}
-      </div>
+            >
+              Mês
+            </button>
+          </div>
+        </div>
 
-      {/* Completed Habits List */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <span className="font-medium text-foreground capitalize">
+            {currentDate.toLocaleDateString('pt-BR', {
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+          <button
+            onClick={() => navigate(1)}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Color legend */}
+        <div className="flex items-center justify-center gap-2 text-xs">
+          <span className="text-muted-foreground">Conclusão:</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-red-500" />
+            <span className="text-muted-foreground">0-25%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-orange-500" />
+            <span className="text-muted-foreground">26-50%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-yellow-500" />
+            <span className="text-muted-foreground">51-75%</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-green-500" />
+            <span className="text-muted-foreground">76-100%</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
+            <div key={day} className="text-center text-xs text-muted-foreground py-2 font-medium">
+              {day}
+            </div>
+          ))}
+
+          {days.map((day, index) => {
+            const percentage = getCompletionPercentage(day.dateStr);
+            const isToday = day.dateStr === today;
+            const hasActivity = percentage > 0;
+
+            return (
+              <motion.button
+                key={day.dateStr}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.01 }}
+                onClick={() => setSelectedDate(day.dateStr)}
+                className={cn(
+                  'aspect-square flex flex-col items-center justify-center rounded-xl transition-all relative cursor-pointer hover:bg-muted/30',
+                  !day.isCurrentMonth && 'opacity-30',
+                  isToday && 'ring-2 ring-primary'
+                )}
+              >
+                <span className={cn(
+                  'text-sm font-medium',
+                  isToday && 'text-primary'
+                )}>
+                  {day.date.getDate()}
+                </span>
+                {habits.length > 0 && (
+                  <div className={cn(
+                    'w-1.5 h-1.5 rounded-full mt-0.5',
+                    getIndicatorColor(percentage)
+                  )} />
+                )}
+                {hasActivity && (
+                  <span className={cn(
+                    'absolute -bottom-0.5 text-[8px] font-bold px-1 rounded',
+                    percentage <= 25 ? 'text-red-500' :
+                    percentage <= 50 ? 'text-orange-500' :
+                    percentage <= 75 ? 'text-yellow-600' :
+                    'text-green-500'
+                  )}>
+                    {percentage}%
+                  </span>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Calendar Day Modal */}
       <AnimatePresence>
         {selectedDate && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="pt-4 border-t border-border/30">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-medium text-foreground">
-                    {new Date(selectedDate).toLocaleDateString('pt-BR', { 
-                      weekday: 'long', 
-                      day: 'numeric', 
-                      month: 'short' 
-                    })}
-                  </h4>
-                  <span className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-bold',
-                    getPercentageColor(selectedDayPercentage)
-                  )}>
-                    {selectedDayPercentage}%
-                  </span>
-                </div>
-                <button 
-                  onClick={() => setSelectedDate(null)}
-                  className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              
-              {selectedDayHabits.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedDayHabits.map((habit, i) => (
-                    <motion.div
-                      key={habit.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <div className="w-5 h-5 rounded-md bg-green-500/20 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-green-500" />
-                      </div>
-                      <span className="text-foreground">{habit.emoji && `${habit.emoji} `}{habit.name}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Nenhum hábito concluído neste dia</p>
-              )}
-            </div>
-          </motion.div>
+          <CalendarDayModal 
+            date={selectedDate} 
+            onClose={() => setSelectedDate(null)} 
+          />
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 };

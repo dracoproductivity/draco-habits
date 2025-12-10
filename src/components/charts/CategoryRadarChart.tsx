@@ -1,56 +1,76 @@
 import { useMemo } from 'react';
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAppStore } from '@/store/useAppStore';
 import { DEFAULT_CATEGORIES } from '@/types';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface CategoryRadarChartProps {
   className?: string;
+  compact?: boolean;
 }
 
-export const CategoryRadarChart = ({ className }: CategoryRadarChartProps) => {
+export const CategoryRadarChart = ({ className, compact = false }: CategoryRadarChartProps) => {
   const { goals, habits, customCategories } = useAppStore();
 
   const radarData = useMemo(() => {
-    // Get all categories used in goals
-    const categoryUsage: Record<string, { name: string; count: number; emoji: string }> = {};
+    // Count goals per category (only used categories)
+    const categoryCount: Record<string, { name: string; count: number; emoji?: string }> = {};
 
-    goals.forEach(goal => {
+    goals.forEach((goal) => {
       if (goal.category) {
-        const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === goal.category);
+        const defaultCat = DEFAULT_CATEGORIES.find((c) => c.id === goal.category);
         if (defaultCat) {
-          if (!categoryUsage[goal.category]) {
-            categoryUsage[goal.category] = { name: defaultCat.name, count: 0, emoji: defaultCat.emoji };
+          if (!categoryCount[goal.category]) {
+            categoryCount[goal.category] = { name: defaultCat.name, count: 0, emoji: defaultCat.emoji };
           }
-          categoryUsage[goal.category].count++;
+          categoryCount[goal.category].count++;
         }
       }
       if (goal.customCategoryId) {
-        const customCat = customCategories.find(c => c.id === goal.customCategoryId);
+        const customCat = customCategories.find((c) => c.id === goal.customCategoryId);
         if (customCat) {
-          if (!categoryUsage[goal.customCategoryId]) {
-            categoryUsage[goal.customCategoryId] = { name: customCat.name, count: 0, emoji: customCat.emoji || '📌' };
+          if (!categoryCount[goal.customCategoryId]) {
+            categoryCount[goal.customCategoryId] = { name: customCat.name, count: 0, emoji: customCat.emoji };
           }
-          categoryUsage[goal.customCategoryId].count++;
+          categoryCount[goal.customCategoryId].count++;
         }
       }
     });
 
-    // Convert to array and filter out unused categories
-    const data = Object.entries(categoryUsage)
-      .filter(([_, value]) => value.count > 0)
-      .map(([key, value]) => ({
-        category: `${value.emoji} ${value.name}`,
-        value: value.count,
-        fullMark: Math.max(...Object.values(categoryUsage).map(v => v.count), 5),
-      }));
+    // Also count habits without goals but with categories
+    habits.forEach((habit) => {
+      if (habit.goalId) {
+        const linkedGoal = goals.find((g) => g.id === habit.goalId);
+        if (linkedGoal?.category) {
+          const defaultCat = DEFAULT_CATEGORIES.find((c) => c.id === linkedGoal.category);
+          if (defaultCat && categoryCount[linkedGoal.category]) {
+            // Already counted via goal
+          }
+        }
+      }
+    });
 
-    return data;
-  }, [goals, customCategories]);
+    return Object.entries(categoryCount)
+      .filter(([_, data]) => data.count > 0) // Only categories with usage
+      .map(([_, data]) => ({
+        category: `${data.emoji || ''} ${data.name}`.trim(),
+        value: data.count,
+      }));
+  }, [goals, habits, customCategories]);
 
   if (radarData.length < 3) {
     return (
-      <div className={`flex items-center justify-center h-full text-muted-foreground text-sm ${className}`}>
-        <p className="text-center">Adicione pelo menos 3 categorias<br />para ver o gráfico radar</p>
+      <div className={className}>
+        <p className="text-xs text-muted-foreground text-center py-4">
+          Adicione pelo menos 3 categorias para visualizar o gráfico de radar
+        </p>
       </div>
     );
   }
@@ -58,9 +78,9 @@ export const CategoryRadarChart = ({ className }: CategoryRadarChartProps) => {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
-          <p className="text-sm font-medium text-foreground">{payload[0].payload.category}</p>
-          <p className="text-xs text-muted-foreground">{payload[0].value} objetivos</p>
+        <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
+          <p className="text-xs text-muted-foreground">{payload[0].payload.category}</p>
+          <p className="text-sm font-semibold text-foreground">{payload[0].value} objetivos</p>
         </div>
       );
     }
@@ -69,26 +89,25 @@ export const CategoryRadarChart = ({ className }: CategoryRadarChartProps) => {
 
   return (
     <div className={className}>
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-          <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
+      <ResponsiveContainer width="100%" height={compact ? 150 : 200}>
+        <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
+          <PolarGrid stroke="hsl(var(--border))" />
           <PolarAngleAxis
             dataKey="category"
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+            tick={{ fontSize: compact ? 8 : 10, fill: 'hsl(var(--muted-foreground))' }}
           />
           <PolarRadiusAxis
-            angle={90}
+            angle={30}
             domain={[0, 'auto']}
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+            tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Radar
-            name="Categorias"
+            name="Objetivos"
             dataKey="value"
             stroke="hsl(var(--primary))"
             fill="hsl(var(--primary))"
             fillOpacity={0.3}
-            strokeWidth={2}
           />
         </RadarChart>
       </ResponsiveContainer>
