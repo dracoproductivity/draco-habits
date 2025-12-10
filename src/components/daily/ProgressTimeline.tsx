@@ -252,9 +252,9 @@ export const ProgressTimeline = () => {
       )}
 
       {chartMode === 'categories' && (
-        <div className="h-[220px]">
+        <div>
           <h3 className="font-semibold text-foreground mb-3">Categorias</h3>
-          <CategoryRadarChart className="h-[180px]" />
+          <CategoryRadarChart className="h-[180px]" compact />
         </div>
       )}
     </motion.div>

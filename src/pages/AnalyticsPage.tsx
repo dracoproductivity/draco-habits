@@ -421,8 +421,8 @@ export const AnalyticsPage = () => {
               </div>
             </div>
 
-            {/* Category Radar Chart */}
-            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4 mb-6">
+            {/* Category Radar Chart - Floating without box */}
+            <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
                   <Target className="w-5 h-5 text-purple-400" />

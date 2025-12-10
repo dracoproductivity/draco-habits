@@ -28,7 +28,7 @@ export const UniversalHeader = () => {
       {/* Right side - Draco & XP */}
       <div className="flex items-center gap-3">
         <div className="flex flex-col items-end">
-          <span className="text-xs text-primary font-medium">{draco.name}</span>
+          <span className="text-sm text-primary font-semibold">{draco.name}</span>
           <span className="text-xs text-muted-foreground">Nível {draco.level}</span>
           <XPBar
             currentXP={draco.currentXP}

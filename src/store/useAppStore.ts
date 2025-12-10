@@ -208,6 +208,10 @@ export const useAppStore = create<AppStore>()(
         }
         
         if (existing) {
+          // Check if XP was already awarded for this habit/date
+          const wasCompleted = existing.completed;
+          const xpAlreadyAwarded = existing.xpAwarded || false;
+          
           set({
             habitChecks: habitChecks.map((hc) =>
               hc.habitId === habitId && hc.date === date
@@ -215,12 +219,22 @@ export const useAppStore = create<AppStore>()(
                 : hc
             ),
           });
-          if (!existing.completed && xpToAdd > 0) {
+          
+          // Only add XP if going from uncompleted to completed AND XP wasn't already awarded
+          if (!wasCompleted && !xpAlreadyAwarded && xpToAdd > 0) {
             addXP(xpToAdd);
+            // Mark XP as awarded for this habit/date
+            set({
+              habitChecks: get().habitChecks.map((hc) =>
+                hc.habitId === habitId && hc.date === date
+                  ? { ...hc, xpAwarded: true }
+                  : hc
+              ),
+            });
           }
         } else {
           set({
-            habitChecks: [...habitChecks, { habitId, date, completed: true }],
+            habitChecks: [...habitChecks, { habitId, date, completed: true, xpAwarded: true }],
           });
           if (xpToAdd > 0) {
             addXP(xpToAdd);
