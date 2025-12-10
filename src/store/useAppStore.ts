@@ -191,7 +191,7 @@ export const useAppStore = create<AppStore>()(
       },
 
       toggleHabitCheck: (habitId, date) => {
-        const { habitChecks, habits, goals, addXP } = get();
+        const { habitChecks, habits, goals, draco } = get();
         const existing = habitChecks.find(
           (hc) => hc.habitId === habitId && hc.date === date
         );
@@ -199,45 +199,104 @@ export const useAppStore = create<AppStore>()(
         const habit = habits.find((h) => h.id === habitId);
         
         // Get XP from linked goal's category if exists
-        let xpToAdd = habit?.xpReward || 0;
+        let xpAmount = habit?.xpReward || 0;
         if (habit?.goalId) {
           const linkedGoal = goals.find(g => g.id === habit.goalId);
           if (linkedGoal?.categoryXP !== undefined) {
-            xpToAdd = linkedGoal.categoryXP;
+            xpAmount = linkedGoal.categoryXP;
           }
         }
         
         if (existing) {
-          // Check if XP was already awarded for this habit/date
           const wasCompleted = existing.completed;
-          const xpAlreadyAwarded = existing.xpAwarded || false;
+          const newCompleted = !wasCompleted;
           
+          // Update completion status
           set({
             habitChecks: habitChecks.map((hc) =>
               hc.habitId === habitId && hc.date === date
-                ? { ...hc, completed: !hc.completed }
+                ? { ...hc, completed: newCompleted }
                 : hc
             ),
           });
           
-          // Only add XP if going from uncompleted to completed AND XP wasn't already awarded
-          if (!wasCompleted && !xpAlreadyAwarded && xpToAdd > 0) {
-            addXP(xpToAdd);
-            // Mark XP as awarded for this habit/date
-            set({
-              habitChecks: get().habitChecks.map((hc) =>
-                hc.habitId === habitId && hc.date === date
-                  ? { ...hc, xpAwarded: true }
-                  : hc
-              ),
+          // Add XP when marking complete, remove XP when unmarking
+          if (newCompleted && xpAmount > 0) {
+            // Adding XP
+            set((state) => {
+              let newXP = state.draco.currentXP + xpAmount;
+              let newLevel = state.draco.level;
+              let xpToNext = state.draco.xpToNextLevel;
+              
+              while (newXP >= xpToNext) {
+                newXP -= xpToNext;
+                newLevel++;
+                xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
+              }
+              
+              return {
+                draco: {
+                  ...state.draco,
+                  level: newLevel,
+                  currentXP: newXP,
+                  xpToNextLevel: xpToNext,
+                  totalXP: state.draco.totalXP + xpAmount,
+                },
+              };
+            });
+          } else if (!newCompleted && xpAmount > 0) {
+            // Removing XP
+            set((state) => {
+              let newTotalXP = Math.max(0, state.draco.totalXP - xpAmount);
+              
+              // Recalculate level from total XP
+              let level = 1;
+              let xpRemaining = newTotalXP;
+              let xpForLevel = 100;
+              
+              while (xpRemaining >= xpForLevel) {
+                xpRemaining -= xpForLevel;
+                level++;
+                xpForLevel = Math.floor(100 * Math.pow(1.5, level - 1));
+              }
+              
+              return {
+                draco: {
+                  ...state.draco,
+                  level: level,
+                  currentXP: xpRemaining,
+                  xpToNextLevel: xpForLevel,
+                  totalXP: newTotalXP,
+                },
+              };
             });
           }
         } else {
           set({
-            habitChecks: [...habitChecks, { habitId, date, completed: true, xpAwarded: true }],
+            habitChecks: [...habitChecks, { habitId, date, completed: true }],
           });
-          if (xpToAdd > 0) {
-            addXP(xpToAdd);
+          if (xpAmount > 0) {
+            set((state) => {
+              let newXP = state.draco.currentXP + xpAmount;
+              let newLevel = state.draco.level;
+              let xpToNext = state.draco.xpToNextLevel;
+              
+              while (newXP >= xpToNext) {
+                newXP -= xpToNext;
+                newLevel++;
+                xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
+              }
+              
+              return {
+                draco: {
+                  ...state.draco,
+                  level: newLevel,
+                  currentXP: newXP,
+                  xpToNextLevel: xpToNext,
+                  totalXP: state.draco.totalXP + xpAmount,
+                },
+              };
+            });
           }
         }
       },
