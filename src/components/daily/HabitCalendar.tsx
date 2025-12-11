@@ -5,9 +5,17 @@ import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { CalendarDayModal } from './CalendarDayModal';
 import { getHabitsForDate } from '@/utils/habitInstanceCalculator';
-import { parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 type CalendarView = 'week' | 'month';
+
+// Helper to format date as YYYY-MM-DD in local timezone
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const HabitCalendar = () => {
   const [view, setView] = useState<CalendarView>('month');
@@ -37,7 +45,7 @@ export const HabitCalendar = () => {
       const d = new Date(year, month, 1 - i);
       days.push({
         date: d,
-        dateStr: d.toISOString().split('T')[0],
+        dateStr: formatLocalDate(d),
         isCurrentMonth: false,
       });
     }
@@ -46,7 +54,7 @@ export const HabitCalendar = () => {
       const d = new Date(year, month, i);
       days.push({
         date: d,
-        dateStr: d.toISOString().split('T')[0],
+        dateStr: formatLocalDate(d),
         isCurrentMonth: true,
       });
     }
@@ -66,7 +74,7 @@ export const HabitCalendar = () => {
       d.setDate(d.getDate() + i);
       days.push({
         date: d,
-        dateStr: d.toISOString().split('T')[0],
+        dateStr: formatLocalDate(d),
         isCurrentMonth: true,
       });
     }
@@ -75,7 +83,7 @@ export const HabitCalendar = () => {
   };
 
   const days = view === 'month' ? getDaysInMonth() : getWeekDays();
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatLocalDate(new Date());
 
   const navigate = (direction: number) => {
     const newDate = new Date(currentDate);
