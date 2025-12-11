@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory, DailyLog } from '@/types';
+import {
+  calculateHabitProgress,
+  calculateGoalProgress,
+  calculateAllPeriodProgress,
+  getHabitsForDate,
+  isHabitScheduledForDate,
+  calculateTotalOccurrences,
+  getPeriodBoundaries,
+  PeriodProgress
+} from '@/utils/habitInstanceCalculator';
 
 interface AppStore {
   // Auth
@@ -62,6 +72,13 @@ interface AppStore {
   getDailyProgress: (date: string) => number;
   getWeeklyProgress: (weekStart: string) => number;
   getMonthlyProgress: (year: number, month: number) => number;
+  
+  // New progress calculation methods
+  getHabitProgress: (habitId: string) => { completed: number; total: number; percentage: number };
+  getGoalProgress: (goalId: string) => number;
+  getAllPeriodProgress: () => Map<string, PeriodProgress>;
+  getHabitsForDate: (date: Date) => Habit[];
+  recalculateAllGoalProgress: () => void;
 }
 
 const calculateXPForLevel = (level: number): number => {
@@ -92,7 +109,6 @@ const defaultSettings: AppSettings = {
 
 // Empty defaults for first-time users
 const defaultHabits: Habit[] = [];
-
 const defaultGoals: Goal[] = [];
 
 export const useAppStore = create<AppStore>()(
@@ -172,6 +188,10 @@ export const useAppStore = create<AppStore>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ habits: [...state.habits, newHabit] }));
+        
+        // Recalculate goal progress after adding habit
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
+        
         return newHabit;
       },
 
@@ -181,6 +201,9 @@ export const useAppStore = create<AppStore>()(
             h.id === id ? { ...h, ...updates } : h
           ),
         }));
+        
+        // Recalculate goal progress after updating habit
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       removeHabit: (id) => {
@@ -188,6 +211,9 @@ export const useAppStore = create<AppStore>()(
           habits: state.habits.filter((h) => h.id !== id),
           habitChecks: state.habitChecks.filter((hc) => hc.habitId !== id),
         }));
+        
+        // Recalculate goal progress after removing habit
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       toggleHabitCheck: (habitId, date) => {
@@ -299,6 +325,9 @@ export const useAppStore = create<AppStore>()(
             });
           }
         }
+        
+        // Recalculate all goal progress after check toggle
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       addGoal: (goal) => {
@@ -415,20 +444,74 @@ export const useAppStore = create<AppStore>()(
         );
       },
 
+      // New progress calculation method for habits (X/N)
+      getHabitProgress: (habitId) => {
+        const { habits, goals, habitChecks } = get();
+        const habit = habits.find(h => h.id === habitId);
+        
+        if (!habit) {
+          return { completed: 0, total: 0, percentage: 0 };
+        }
+        
+        const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+        return calculateHabitProgress(habit, linkedGoal, habitChecks);
+      },
+
+      // Get goal progress using the new calculation
+      getGoalProgress: (goalId) => {
+        const { goals, habits, habitChecks } = get();
+        const goal = goals.find(g => g.id === goalId);
+        
+        if (!goal) return 0;
+        
+        return calculateGoalProgress(goal, habits, habitChecks);
+      },
+
+      // Get all period progress (including phantom goals)
+      getAllPeriodProgress: () => {
+        const { habits, goals, habitChecks } = get();
+        return calculateAllPeriodProgress(habits, goals, habitChecks);
+      },
+
+      // Get habits that should appear on a specific date
+      getHabitsForDate: (date: Date) => {
+        const { habits, goals } = get();
+        return getHabitsForDate(date, habits, goals);
+      },
+
+      // Recalculate all goal progress
+      recalculateAllGoalProgress: () => {
+        const { goals, habits, habitChecks } = get();
+        
+        const updatedGoals = goals.map(goal => {
+          const progress = calculateGoalProgress(goal, habits, habitChecks);
+          return { ...goal, progress };
+        });
+        
+        set({ goals: updatedGoals });
+      },
+
       getDailyProgress: (date) => {
-        const { habits, habitChecks } = get();
-        if (habits.length === 0) return 0;
+        const { habits, habitChecks, goals } = get();
+        const dateObj = new Date(date);
         
-        const completed = habitChecks.filter(
-          (hc) => hc.date === date && hc.completed
-        ).length;
+        // Get habits that should appear on this date
+        const habitsForDate = getHabitsForDate(dateObj, habits, goals);
         
-        return Math.round((completed / habits.length) * 100);
+        if (habitsForDate.length === 0) return 0;
+        
+        const completed = habitsForDate.filter(habit => {
+          const check = habitChecks.find(
+            hc => hc.habitId === habit.id && hc.date === date && hc.completed
+          );
+          return check !== undefined;
+        }).length;
+        
+        return Math.round((completed / habitsForDate.length) * 100);
       },
 
       getWeeklyProgress: (weekStart) => {
-        const { habits, habitChecks } = get();
-        if (habits.length === 0) return 0;
+        const { habits, habitChecks, goals } = get();
         
         const start = new Date(weekStart);
         const dates: string[] = [];
@@ -439,27 +522,54 @@ export const useAppStore = create<AppStore>()(
           dates.push(d.toISOString().split('T')[0]);
         }
         
-        const totalPossible = habits.length * 7;
-        const completed = habitChecks.filter(
-          (hc) => dates.includes(hc.date) && hc.completed
-        ).length;
+        let totalScheduled = 0;
+        let totalCompleted = 0;
         
-        return Math.round((completed / totalPossible) * 100);
+        for (const dateStr of dates) {
+          const dateObj = new Date(dateStr);
+          const habitsForDate = getHabitsForDate(dateObj, habits, goals);
+          totalScheduled += habitsForDate.length;
+          
+          const completedOnDate = habitsForDate.filter(habit => {
+            const check = habitChecks.find(
+              hc => hc.habitId === habit.id && hc.date === dateStr && hc.completed
+            );
+            return check !== undefined;
+          }).length;
+          
+          totalCompleted += completedOnDate;
+        }
+        
+        if (totalScheduled === 0) return 0;
+        return Math.round((totalCompleted / totalScheduled) * 100);
       },
 
       getMonthlyProgress: (year, month) => {
-        const { habits, habitChecks } = get();
-        if (habits.length === 0) return 0;
+        const { habits, habitChecks, goals } = get();
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const totalPossible = habits.length * daysInMonth;
         
-        const completed = habitChecks.filter((hc) => {
-          const date = new Date(hc.date);
-          return date.getFullYear() === year && date.getMonth() === month && hc.completed;
-        }).length;
+        let totalScheduled = 0;
+        let totalCompleted = 0;
         
-        return Math.round((completed / totalPossible) * 100);
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateObj = new Date(year, month, day);
+          const dateStr = dateObj.toISOString().split('T')[0];
+          const habitsForDate = getHabitsForDate(dateObj, habits, goals);
+          totalScheduled += habitsForDate.length;
+          
+          const completedOnDate = habitsForDate.filter(habit => {
+            const check = habitChecks.find(
+              hc => hc.habitId === habit.id && hc.date === dateStr && hc.completed
+            );
+            return check !== undefined;
+          }).length;
+          
+          totalCompleted += completedOnDate;
+        }
+        
+        if (totalScheduled === 0) return 0;
+        return Math.round((totalCompleted / totalScheduled) * 100);
       },
     }),
     {

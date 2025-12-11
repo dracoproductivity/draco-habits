@@ -3,88 +3,18 @@ import { X, Check } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit } from '@/types';
-import { isWithinInterval, startOfQuarter, endOfQuarter, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addWeeks, startOfYear } from 'date-fns';
+import { 
+  isHabitScheduledForDate, 
+  calculateHabitProgress 
+} from '@/utils/habitInstanceCalculator';
 
 interface CalendarDayModalProps {
   date: string;
   onClose: () => void;
 }
 
-// Check if a habit should appear on a specific date based on its period
-const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean => {
-  // If no goal linked, check weekdays
-  if (!habit.goalId) {
-    if (habit.isOneTime) return true;
-    if (!habit.weekDays || habit.weekDays.length === 0) return true;
-    return habit.weekDays.includes(date.getDay());
-  }
-  
-  // Get linked goal to determine period
-  const linkedGoal = goals.find(g => g.id === habit.goalId);
-  if (!linkedGoal) {
-    if (habit.isOneTime) return true;
-    if (!habit.weekDays || habit.weekDays.length === 0) return true;
-    return habit.weekDays.includes(date.getDay());
-  }
-  
-  const period = linkedGoal.period;
-  const type = linkedGoal.type;
-  
-  // Check if date is within the goal's period
-  let isWithinPeriod = false;
-  
-  switch (type) {
-    case 'yearly': {
-      const year = parseInt(period);
-      isWithinPeriod = date.getFullYear() === year;
-      break;
-    }
-    case 'quarterly': {
-      const match = period.match(/(\d+)º Tri - (\d+)/);
-      if (match) {
-        const quarter = parseInt(match[1]);
-        const year = parseInt(match[2]);
-        const quarterStart = startOfQuarter(new Date(year, (quarter - 1) * 3, 1));
-        const quarterEnd = endOfQuarter(quarterStart);
-        isWithinPeriod = isWithinInterval(date, { start: quarterStart, end: quarterEnd });
-      }
-      break;
-    }
-    case 'monthly': {
-      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-      const parts = period.split(' ');
-      const monthIndex = months.indexOf(parts[0]);
-      const year = parseInt(parts[1]);
-      if (monthIndex !== -1) {
-        isWithinPeriod = date.getFullYear() === year && date.getMonth() === monthIndex;
-      }
-      break;
-    }
-    case 'weekly': {
-      const match = period.match(/Semana (\d+) - (\d+)/);
-      if (match) {
-        const weekNum = parseInt(match[1]);
-        const year = parseInt(match[2]);
-        const yearStart = startOfYear(new Date(year, 0, 1));
-        const weekStart = startOfWeek(addWeeks(yearStart, weekNum - 1), { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-        isWithinPeriod = isWithinInterval(date, { start: weekStart, end: weekEnd });
-      }
-      break;
-    }
-  }
-  
-  if (!isWithinPeriod) return false;
-  
-  // Now check weekdays
-  if (habit.isOneTime) return true;
-  if (!habit.weekDays || habit.weekDays.length === 0) return true;
-  return habit.weekDays.includes(date.getDay());
-};
-
 export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
-  const { habits, goals, habitChecks, toggleHabitCheck } = useAppStore();
+  const { habits, goals, habitChecks, toggleHabitCheck, settings } = useAppStore();
   
   const dateObj = new Date(date);
   const formattedDate = dateObj.toLocaleDateString('pt-BR', {
@@ -94,8 +24,11 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
     year: 'numeric'
   });
 
-  // Get habits active on this date
-  const activeHabits = habits.filter(habit => isHabitActiveOnDate(habit, dateObj, goals));
+  // Get habits active on this date using the new utility
+  const activeHabits = habits.filter(habit => {
+    const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+    return isHabitScheduledForDate(habit, dateObj, linkedGoal);
+  });
 
   const isHabitCompleted = (habitId: string) => {
     const check = habitChecks.find(hc => hc.habitId === habitId && hc.date === date);
@@ -111,6 +44,13 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
     if (pct <= 50) return 'text-orange-500';
     if (pct <= 75) return 'text-yellow-500';
     return 'text-green-500';
+  };
+
+  // Get habit progress (X/N)
+  const getHabitProgressDisplay = (habit: Habit) => {
+    const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+    const progress = calculateHabitProgress(habit, linkedGoal, habitChecks);
+    return progress;
   };
 
   return (
@@ -154,6 +94,7 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
             activeHabits.map((habit, index) => {
               const completed = isHabitCompleted(habit.id);
               const linkedGoal = goals.find(g => g.id === habit.goalId);
+              const progress = getHabitProgressDisplay(habit);
               
               return (
                 <motion.div
@@ -179,17 +120,31 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <span className={cn(
-                      'text-sm font-medium transition-all',
-                      completed && 'line-through text-muted-foreground'
-                    )}>
-                      {habit.emoji && `${habit.emoji} `}{habit.name}
-                    </span>
-                    {linkedGoal && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {linkedGoal.emoji && `${linkedGoal.emoji} `}{linkedGoal.name}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {settings.showEmojis && habit.emoji && (
+                        <span className="text-sm">{habit.emoji}</span>
+                      )}
+                      <span className={cn(
+                        'text-sm font-medium transition-all',
+                        completed && 'line-through text-muted-foreground'
+                      )}>
+                        {habit.name}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {linkedGoal && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {linkedGoal.emoji && `${linkedGoal.emoji} `}{linkedGoal.name}
+                        </p>
+                      )}
+                      <span className="text-xs text-primary font-semibold">
+                        {progress.completed}/{progress.total}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    {progress.percentage}%
                   </div>
                 </motion.div>
               );

@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 
 interface HabitDetailModalProps {
   habit: Habit;
@@ -22,6 +23,14 @@ const WEEK_DAYS = [
   { value: 6, label: 'Sáb', fullLabel: 'Sábado' },
 ];
 
+const MONTH_WEEKS = [
+  { value: 1, label: '1ª Sem', fullLabel: 'Primeira semana' },
+  { value: 2, label: '2ª Sem', fullLabel: 'Segunda semana' },
+  { value: 3, label: '3ª Sem', fullLabel: 'Terceira semana' },
+  { value: 4, label: '4ª Sem', fullLabel: 'Quarta semana' },
+  { value: 5, label: '5ª Sem', fullLabel: 'Quinta semana' },
+];
+
 export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalProps) => {
   const { 
     goals, 
@@ -37,10 +46,17 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [newGoalName, setNewGoalName] = useState('');
   const [createdGoalIds, setCreatedGoalIds] = useState<Record<GoalType, string>>({} as Record<GoalType, string>);
   const [weekDays, setWeekDays] = useState<number[]>(habit.weekDays || [1, 2, 3, 4, 5]);
+  const [monthWeeks, setMonthWeeks] = useState<number[]>(habit.monthWeeks || []);
   const [isOneTime, setIsOneTime] = useState(habit.isOneTime || false);
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(habit.repeatFrequency || 1);
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
+
+  // Calculate habit progress using the new utility
+  const habitProgress = useMemo(() => {
+    const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+    return calculateHabitProgress(habit, linkedGoal, habitChecks);
+  }, [habit, goals, habitChecks]);
 
   // Calculate habit progress history from creation date
   const progressHistory = useMemo(() => {
@@ -62,12 +78,6 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     
     return history;
   }, [habit.id, habit.createdAt, habitChecks]);
-
-  const completionRate = useMemo(() => {
-    if (progressHistory.length === 0) return 0;
-    const completedCount = progressHistory.filter(d => d.completed).length;
-    return Math.round((completedCount / progressHistory.length) * 100);
-  }, [progressHistory]);
 
   // Get linked goals hierarchy
   const linkedGoals = useMemo(() => {
@@ -95,10 +105,20 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     );
   };
 
+  const toggleMonthWeek = (week: number) => {
+    if (isOneTime) return;
+    setMonthWeeks(prev => 
+      prev.includes(week) 
+        ? prev.filter(w => w !== week)
+        : [...prev, week].sort()
+    );
+  };
+
   const handleSave = () => {
     updateHabit(habit.id, {
       goalId: selectedGoalId || undefined,
       weekDays: isOneTime ? undefined : weekDays,
+      monthWeeks: isOneTime ? undefined : (monthWeeks.length > 0 ? monthWeeks : undefined),
       isOneTime,
       repeatFrequency: isOneTime ? undefined : repeatFrequency,
       notificationEnabled,
@@ -201,7 +221,12 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               {settings.showEmojis && habit.emoji && (
                 <span className="text-2xl">{habit.emoji}</span>
               )}
-              <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
+                <p className="text-sm text-primary font-medium">
+                  {habitProgress.completed}/{habitProgress.total} ({habitProgress.percentage}%)
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -217,7 +242,9 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp className="w-4 h-4 text-primary" />
                 <h3 className="font-medium text-foreground">Histórico de Progresso</h3>
-                <span className="ml-auto text-sm text-primary font-semibold">{completionRate}%</span>
+                <span className="ml-auto text-sm text-primary font-semibold">
+                  {habitProgress.completed}/{habitProgress.total}
+                </span>
               </div>
               
               <div className="grid grid-cols-10 gap-1">
@@ -376,7 +403,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <>
                     {/* Frequency selection */}
                     <div className="space-y-2">
-                      <span className="text-xs text-muted-foreground">Frequência:</span>
+                      <span className="text-xs text-muted-foreground">Frequência semanal:</span>
                       <div className="grid grid-cols-4 gap-1">
                         {([1, 2, 3, 4] as const).map((freq) => (
                           <button
@@ -416,6 +443,34 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                         ))}
                       </div>
                     </div>
+
+                    {/* Month weeks selection */}
+                    <div className="space-y-2">
+                      <span className="text-xs text-muted-foreground">Semanas específicas do mês (opcional):</span>
+                      <div className="flex gap-1">
+                        {MONTH_WEEKS.map((week) => (
+                          <button
+                            key={week.value}
+                            onClick={() => toggleMonthWeek(week.value)}
+                            className={cn(
+                              'flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all',
+                              monthWeeks.includes(week.value)
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                            title={week.fullLabel}
+                          >
+                            {week.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {monthWeeks.length === 0 
+                          ? 'Todas as semanas do mês' 
+                          : `Apenas semana${monthWeeks.length > 1 ? 's' : ''} ${monthWeeks.join(', ')}`
+                        }
+                      </p>
+                    </div>
                   </>
                 )}
               </div>
@@ -425,7 +480,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Bell className="w-4 h-4 text-primary" />
-                <h3 className="font-medium text-foreground">Notificação</h3>
+                <h3 className="font-medium text-foreground">Notificações</h3>
               </div>
               
               <div className="space-y-3">
@@ -439,7 +494,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   )}
                 >
                   <Bell className="w-4 h-4" />
-                  Ativar lembrete
+                  {notificationEnabled ? 'Notificação ativada' : 'Ativar notificação'}
                 </button>
                 
                 {notificationEnabled && (
@@ -449,7 +504,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                       type="time"
                       value={notificationTime}
                       onChange={(e) => setNotificationTime(e.target.value)}
-                      className="flex-1 bg-muted/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                     />
                   </div>
                 )}
