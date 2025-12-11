@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { CalendarDayModal } from './CalendarDayModal';
+import { getHabitsForDate } from '@/utils/habitInstanceCalculator';
+import { parseISO } from 'date-fns';
 
 type CalendarView = 'week' | 'month';
 
@@ -11,14 +13,16 @@ export const HabitCalendar = () => {
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const { habits, habitChecks } = useAppStore();
+  const { habits, habitChecks, goals } = useAppStore();
 
   const getCompletionPercentage = (dateStr: string) => {
-    if (habits.length === 0) return 0;
+    const dateObj = parseISO(dateStr);
+    const scheduledHabits = getHabitsForDate(dateObj, habits, goals);
+    if (scheduledHabits.length === 0) return 0;
     const completedCount = habitChecks.filter(
-      (hc) => hc.date === dateStr && hc.completed
+      (hc) => hc.date === dateStr && hc.completed && scheduledHabits.some(h => h.id === hc.habitId)
     ).length;
-    return Math.round((completedCount / habits.length) * 100);
+    return Math.round((completedCount / scheduledHabits.length) * 100);
   };
 
   const getDaysInMonth = () => {

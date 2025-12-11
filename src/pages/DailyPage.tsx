@@ -33,12 +33,14 @@ export const DailyPage = () => {
               <HabitList />
               
               {/* Right column: Progress timeline + floating radar */}
-              <div className="space-y-6">
-                <ProgressTimeline />
-                {/* Floating Radar Chart - no box */}
-                <div>
-                  <h3 className="font-semibold text-foreground mb-3">Categorias</h3>
-                  <CategoryRadarChart className="h-[180px]" compact />
+              <div className="flex gap-6 items-stretch">
+                <div className="flex-1">
+                  <ProgressTimeline />
+                </div>
+                {/* Floating Radar Chart - centered vertically */}
+                <div className="flex flex-col justify-center items-center w-48">
+                  <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
+                  <CategoryRadarChart className="h-[180px] w-full" compact />
                 </div>
               </div>
             </div>
@@ -52,14 +54,14 @@ export const DailyPage = () => {
           /* Mobile/Tablet: Vertical stack */
           <div className="space-y-8">
             <HabitList />
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-stretch">
               <div className="flex-1">
                 <ProgressTimeline />
               </div>
-              {/* Floating Radar Chart on mobile - no box */}
-              <div className="w-40">
-                <h4 className="font-semibold text-foreground text-sm mb-2">Categorias</h4>
-                <CategoryRadarChart compact className="h-[140px]" />
+              {/* Floating Radar Chart on mobile - centered vertically */}
+              <div className="w-40 flex flex-col justify-center items-center">
+                <h4 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h4>
+                <CategoryRadarChart compact className="h-[140px] w-full" />
               </div>
             </div>
             <HabitCalendar />
