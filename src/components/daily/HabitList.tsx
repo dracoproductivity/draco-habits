@@ -8,6 +8,7 @@ import { GoalType, Habit } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { isHabitScheduledForDate, calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -669,9 +670,12 @@ export const HabitList = () => {
 
   const isCircular = settings.progressDisplayMode === 'circular';
 
-  // Filter habits to show only on scheduled days
+  // Filter habits to show only on scheduled days using new utility
   const visibleHabits = useMemo(() => {
-    return habits.filter((habit) => isHabitActiveOnDate(habit, viewDate, goals));
+    return habits.filter((habit) => {
+      const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+      return isHabitScheduledForDate(habit, viewDate, linkedGoal);
+    });
   }, [habits, viewDate, goals]);
 
   return (

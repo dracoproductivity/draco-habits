@@ -18,6 +18,7 @@ export interface Habit {
   weekDays?: number[]; // 0=Sunday, 1=Monday, etc. Days the habit repeats
   isOneTime?: boolean; // If true, it's a single event without repetition
   repeatFrequency?: 1 | 2 | 3 | 4; // Repeats every X weeks (1=every week, 2=every 2 weeks, etc.)
+  monthWeeks?: number[]; // 1-5, specific weeks of month (1=first week, 2=second week, etc.)
   createdAt: string;
 }
 
@@ -25,7 +26,6 @@ export interface HabitCheck {
   habitId: string;
   date: string;
   completed: boolean;
-  xpAwarded?: boolean; // Track if XP was already given for this check
 }
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
