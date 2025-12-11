@@ -1,7 +1,13 @@
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
-import { GoalType } from '@/types';
+import { GoalType, Goal } from '@/types';
 import { cn } from '@/lib/utils';
+import { 
+  calculateGoalProgress, 
+  getPeriodBoundaries,
+  isHabitScheduledForDate
+} from '@/utils/habitInstanceCalculator';
+import { eachDayOfInterval, parseISO, isWithinInterval, getDay } from 'date-fns';
 
 interface PeriodCardProps {
   title: string;
@@ -10,8 +16,8 @@ interface PeriodCardProps {
   period: string;
   className?: string;
   onClick?: () => void;
-  quarterMonths?: string[]; // For quarterly cards, show month progress
-  displayYear?: number; // Year being displayed
+  quarterMonths?: string[];
+  displayYear?: number;
 }
 
 const MONTH_NAMES = [
@@ -19,7 +25,6 @@ const MONTH_NAMES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-// Check if a period has started or is in the past
 const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 'started' | 'not_started' | 'past' => {
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -28,13 +33,9 @@ const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 
   
   const yearToCheck = displayYear || currentYear;
   
-  // Future year - not started
   if (yearToCheck > currentYear) return 'not_started';
-  
-  // Past year - past
   if (yearToCheck < currentYear) return 'past';
   
-  // Same year - check period
   if (type === 'yearly') return 'started';
   
   if (type === 'quarterly') {
@@ -79,12 +80,6 @@ const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 
   return 'started';
 };
 
-// Helper for backward compatibility
-const isPeriodStarted = (type: GoalType, period: string, displayYear?: number): boolean => {
-  const status = getPeriodStatus(type, period, displayYear);
-  return status === 'started' || status === 'past';
-};
-
 const ProgressCircle = ({ progress }: { progress: number }) => {
   const radius = 20;
   const circumference = 2 * Math.PI * radius;
@@ -117,32 +112,122 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
   );
 };
 
-export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
-  const { goals, settings } = useAppStore();
+// Calculate period progress including all child periods and their habits
+const calculatePeriodProgressWithChildren = (
+  type: GoalType,
+  period: string,
+  goals: Goal[],
+  habits: any[],
+  habitChecks: any[],
+  displayYear?: number
+): number => {
+  const boundaries = getPeriodBoundaries(type, period);
+  if (!boundaries) return 0;
 
-  const periodGoals = goals.filter((g) => g.type === type && g.period === period);
-  const averageProgress = periodGoals.length > 0
-    ? Math.round(periodGoals.reduce((acc, g) => acc + g.progress, 0) / periodGoals.length)
-    : 0;
+  let totalCompleted = 0;
+  let totalOccurrences = 0;
+  
+  // Get all days in the period
+  const allDays = eachDayOfInterval({ start: boundaries.start, end: boundaries.end });
+  
+  // For each day, find all habits that should be scheduled
+  for (const day of allDays) {
+    const dateStr = day.toISOString().split('T')[0];
+    
+    for (const habit of habits) {
+      const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+      
+      // Check if this habit belongs to a period within the current boundaries
+      if (linkedGoal) {
+        const goalBoundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
+        if (!goalBoundaries) continue;
+        
+        // Goal period must be within or equal to this period's boundaries
+        if (goalBoundaries.start < boundaries.start || goalBoundaries.end > boundaries.end) {
+          continue;
+        }
+        
+        // Check if habit is scheduled for this day
+        const habitCreatedAt = parseISO(habit.createdAt);
+        if (day < habitCreatedAt) continue;
+        
+        // Check if day is within the goal's boundaries
+        if (!isWithinInterval(day, { start: goalBoundaries.start, end: goalBoundaries.end })) {
+          continue;
+        }
+        
+        // Check weekdays
+        if (habit.weekDays && habit.weekDays.length > 0) {
+          const dayOfWeek = getDay(day);
+          if (!habit.weekDays.includes(dayOfWeek)) continue;
+        }
+        
+        // Check one-time habits
+        if (habit.isOneTime) {
+          if (dateStr !== habitCreatedAt.toISOString().split('T')[0]) continue;
+        }
+        
+        // This habit instance should be counted
+        totalOccurrences++;
+        
+        const isCompleted = habitChecks.some(
+          (hc: any) => hc.habitId === habit.id && hc.date === dateStr && hc.completed
+        );
+        if (isCompleted) totalCompleted++;
+      }
+    }
+  }
+  
+  if (totalOccurrences === 0) {
+    // Check for direct goals without habits
+    const directGoals = goals.filter(g => g.type === type && g.period === period);
+    if (directGoals.length > 0) {
+      const goalsWithHabits = directGoals.filter(g => habits.some(h => h.goalId === g.id));
+      if (goalsWithHabits.length === 0) {
+        // No habits linked, use goal's stored progress
+        return Math.round(directGoals.reduce((acc, g) => acc + g.progress, 0) / directGoals.length);
+      }
+    }
+    return 0;
+  }
+  
+  return Math.round((totalCompleted / totalOccurrences) * 100);
+};
+
+export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
+  const { goals, settings, habits, habitChecks } = useAppStore();
+
+  const averageProgress = calculatePeriodProgressWithChildren(
+    type, 
+    period, 
+    goals, 
+    habits, 
+    habitChecks,
+    displayYear
+  );
 
   const isCircular = settings.progressDisplayMode === 'circular';
   const periodStatus = getPeriodStatus(type, period, displayYear);
   
-  // Get first 3 goals for preview
+  const periodGoals = goals.filter((g) => g.type === type && g.period === period);
   const previewGoals = periodGoals.slice(0, 3);
   const remainingCount = periodGoals.length - 3;
 
-  // Calculate monthly progress for quarters
   const getMonthProgress = (monthName: string) => {
     const year = displayYear || new Date().getFullYear();
     const monthPeriod = `${monthName} ${year}`;
-    const monthGoals = goals.filter((g) => g.type === 'monthly' && g.period === monthPeriod);
     const status = getPeriodStatus('monthly', monthPeriod, year);
-    if (monthGoals.length === 0) return { progress: 0, status };
-    return { 
-      progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
-      status
-    };
+    
+    const progress = calculatePeriodProgressWithChildren(
+      'monthly',
+      monthPeriod,
+      goals,
+      habits,
+      habitChecks,
+      year
+    );
+    
+    return { progress, status };
   };
 
   return (
@@ -157,7 +242,6 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
     >
-      {/* Neutral gradient background */}
       <div 
         className="absolute inset-0"
         style={{ 
@@ -165,11 +249,9 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
         }}
       />
       
-      {/* Additional overlay for depth */}
       <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-card/30 to-transparent" />
 
       <div className="relative z-10 p-4">
-        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex-1">
             <h3 className="font-semibold text-lg">{title}</h3>
@@ -194,7 +276,6 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
         </div>
 
-        {/* Linear Progress bar */}
         {!isCircular && (
           <div className="progress-bar mb-3">
             <motion.div
@@ -205,7 +286,6 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
         )}
 
-        {/* Monthly progress for quarters */}
         {quarterMonths && quarterMonths.length > 0 && (
           <div className="space-y-2 mt-3 pt-3 border-t border-border/20">
             {quarterMonths.map((month) => {
@@ -234,7 +314,6 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
         )}
 
-        {/* Goals Preview (sub-subtitles) - only for non-quarterly */}
         {!quarterMonths && previewGoals.length > 0 && (
           <div className="space-y-1.5 mt-3 pt-3 border-t border-border/20">
             {previewGoals.map((goal) => (
@@ -254,7 +333,6 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
           </div>
         )}
 
-        {/* Summary if no goals */}
         {!quarterMonths && periodGoals.length === 0 && (
           <p className="text-sm text-muted-foreground/60 mt-2">
             Nenhum objetivo
