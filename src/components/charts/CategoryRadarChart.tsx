@@ -65,6 +65,22 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
       }));
   }, [goals, habits, customCategories]);
 
+  // Calculate max value for proper grid scaling
+  const maxValue = useMemo(() => {
+    if (radarData.length === 0) return 5;
+    const max = Math.max(...radarData.map(d => d.value));
+    return Math.max(max, 3); // Minimum of 3 for nice display
+  }, [radarData]);
+
+  // Generate tick values for concentric circles
+  const gridTicks = useMemo(() => {
+    const ticks: number[] = [];
+    for (let i = 1; i <= maxValue; i++) {
+      ticks.push(i);
+    }
+    return ticks;
+  }, [maxValue]);
+
   if (radarData.length < 3) {
     return (
       <div className={className}>
@@ -91,15 +107,21 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
     <div className={className}>
       <ResponsiveContainer width="100%" height={compact ? 150 : 200}>
         <RadarChart data={radarData} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
-          <PolarGrid stroke="hsl(var(--border))" />
+          <PolarGrid 
+            stroke="hsl(var(--muted-foreground))" 
+            strokeOpacity={0.3}
+            gridType="circle"
+          />
           <PolarAngleAxis
             dataKey="category"
             tick={{ fontSize: compact ? 8 : 10, fill: 'hsl(var(--muted-foreground))' }}
           />
           <PolarRadiusAxis
-            angle={30}
-            domain={[0, 'auto']}
+            angle={90}
+            domain={[0, maxValue]}
+            tickCount={maxValue + 1}
             tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+            axisLine={false}
           />
           <Tooltip content={<CustomTooltip />} />
           <Radar
@@ -108,6 +130,7 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
             stroke="hsl(var(--primary))"
             fill="hsl(var(--primary))"
             fillOpacity={0.3}
+            strokeWidth={2}
           />
         </RadarChart>
       </ResponsiveContainer>
