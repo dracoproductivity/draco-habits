@@ -1,7 +1,16 @@
 import { useState, useMemo } from 'react';
-import { Target, ListTodo } from 'lucide-react';
+import { Target, ListTodo, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { 
+  format, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval,
+  startOfMonth,
+  endOfMonth,
+  addWeeks,
+  addMonths,
+} from 'date-fns';
 import {
   LineChart,
   Line,
@@ -26,6 +35,7 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
   const [progressTimeRange, setProgressTimeRange] = useState<ProgressTimeRange>('month');
   const [selectedHabitId, setSelectedHabitId] = useState<string>('all');
   const [selectedGoalId, setSelectedGoalId] = useState<string>('all');
+  const [referenceDate, setReferenceDate] = useState<Date>(new Date());
 
   const accountStartDate = useMemo(() => {
     if (habits.length === 0) return new Date();
@@ -34,18 +44,18 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
   }, [habits]);
 
   const getProgressData = useMemo(() => {
-    const today = new Date();
+    const baseDate = referenceDate;
     let days;
     
     if (progressTimeRange === 'week') {
       days = eachDayOfInterval({
-        start: startOfWeek(today, { weekStartsOn: 1 }),
-        end: endOfWeek(today, { weekStartsOn: 1 }),
+        start: startOfWeek(baseDate, { weekStartsOn: 1 }),
+        end: endOfWeek(baseDate, { weekStartsOn: 1 }),
       });
     } else {
       days = eachDayOfInterval({
-        start: subDays(today, 30),
-        end: today,
+        start: startOfMonth(baseDate),
+        end: endOfMonth(baseDate),
       });
     }
 
@@ -126,13 +136,18 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
             <div>
               <h3 className="font-semibold text-foreground text-sm">Progresso</h3>
               <p className="text-xs text-muted-foreground">
-                {progressTimeRange === 'week' ? 'Semana atual' : 'Últimos 30 dias'}
+                {progressTimeRange === 'week'
+                  ? `Semana de ${format(startOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')} a ${format(endOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+                  : format(referenceDate, 'MM/yyyy')}
               </p>
             </div>
           </div>
           <div className="flex gap-1">
             <button
-              onClick={() => setProgressTimeRange('week')}
+              onClick={() => {
+                setProgressTimeRange('week');
+                setReferenceDate(new Date());
+              }}
               className={`px-2 py-1 text-xs rounded-lg transition-colors ${
                 progressTimeRange === 'week'
                   ? 'bg-primary text-primary-foreground'
@@ -142,19 +157,53 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
               Semana
             </button>
             <button
-              onClick={() => setProgressTimeRange('month')}
+              onClick={() => {
+                setProgressTimeRange('month');
+                setReferenceDate(new Date());
+              }}
               className={`px-2 py-1 text-xs rounded-lg transition-colors ${
                 progressTimeRange === 'month'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
               }`}
             >
-              30 dias
+              Mês
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Range navigation */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <button
+            onClick={() =>
+              setReferenceDate((prev) =>
+                progressTimeRange === 'week' ? addWeeks(prev, -1) : addMonths(prev, -1)
+              )
+            }
+            className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
+          >
+            <ChevronLeft className="w-3 h-3" />
+            <span>Anterior</span>
+          </button>
+          <span>
+            {progressTimeRange === 'week'
+              ? `Semana ${format(startOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+              : format(referenceDate, 'MMMM yyyy')}
+          </span>
+          <button
+            onClick={() =>
+              setReferenceDate((prev) =>
+                progressTimeRange === 'week' ? addWeeks(prev, 1) : addMonths(prev, 1)
+              )
+            }
+            className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
+          >
+            <span>Próximo</span>
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 mt-1">
           <div className="flex gap-1">
             <button
               onClick={() => {
