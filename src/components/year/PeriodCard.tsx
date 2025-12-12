@@ -112,7 +112,7 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
   );
 };
 
-// Calculate period progress including all child periods and their habits
+// Calculate period progress based on goal percentages and child periods
 const calculatePeriodProgressWithChildren = (
   type: GoalType,
   period: string,
@@ -121,77 +121,57 @@ const calculatePeriodProgressWithChildren = (
   habitChecks: any[],
   displayYear?: number
 ): number => {
-  const boundaries = getPeriodBoundaries(type, period);
-  if (!boundaries) return 0;
+  // Collect goals that belong directly to this period (same type)
+  const directGoals = goals.filter((g) => g.type === type && g.period === period);
 
-  let totalCompleted = 0;
-  let totalOccurrences = 0;
-  
-  // Get all days in the period
-  const allDays = eachDayOfInterval({ start: boundaries.start, end: boundaries.end });
-  
-  // For each day, find all habits that should be scheduled
-  for (const day of allDays) {
-    const dateStr = day.toISOString().split('T')[0];
-    
-    for (const habit of habits) {
-      const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-      
-      // Check if this habit belongs to a period within the current boundaries
-      if (linkedGoal) {
-        const goalBoundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
-        if (!goalBoundaries) continue;
-        
-        // Goal period must be within or equal to this period's boundaries
-        if (goalBoundaries.start < boundaries.start || goalBoundaries.end > boundaries.end) {
-          continue;
+  // Helper to collect child goals for month / quarter / year
+  const collectChildGoals = (): Goal[] => {
+    const results: Goal[] = [];
+    const boundaries = getPeriodBoundaries(type, period);
+    if (!boundaries) return results;
+
+    for (const goal of goals) {
+      // Skip goals of the same type – they are handled as directGoals
+      if (goal.type === type) continue;
+
+      // Month should aggregate weekly + monthly goals
+      if (type === 'monthly' && (goal.type === 'weekly')) {
+        const childBounds = getPeriodBoundaries(goal.type, goal.period);
+        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
+          results.push(goal);
         }
-        
-        // Check if habit is scheduled for this day
-        const habitCreatedAt = parseISO(habit.createdAt);
-        if (day < habitCreatedAt) continue;
-        
-        // Check if day is within the goal's boundaries
-        if (!isWithinInterval(day, { start: goalBoundaries.start, end: goalBoundaries.end })) {
-          continue;
+      }
+
+      // Quarter aggregates trimestral (direct) + monthly goals of its months
+      if (type === 'quarterly' && goal.type === 'monthly') {
+        const childBounds = getPeriodBoundaries(goal.type, goal.period);
+        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
+          results.push(goal);
         }
-        
-        // Check weekdays
-        if (habit.weekDays && habit.weekDays.length > 0) {
-          const dayOfWeek = getDay(day);
-          if (!habit.weekDays.includes(dayOfWeek)) continue;
+      }
+
+      // Year aggregates annual (direct) + trimestral goals
+      if (type === 'yearly' && goal.type === 'quarterly') {
+        const childBounds = getPeriodBoundaries(goal.type, goal.period);
+        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
+          results.push(goal);
         }
-        
-        // Check one-time habits
-        if (habit.isOneTime) {
-          if (dateStr !== habitCreatedAt.toISOString().split('T')[0]) continue;
-        }
-        
-        // This habit instance should be counted
-        totalOccurrences++;
-        
-        const isCompleted = habitChecks.some(
-          (hc: any) => hc.habitId === habit.id && hc.date === dateStr && hc.completed
-        );
-        if (isCompleted) totalCompleted++;
       }
     }
-  }
-  
-  if (totalOccurrences === 0) {
-    // Check for direct goals without habits
-    const directGoals = goals.filter(g => g.type === type && g.period === period);
-    if (directGoals.length > 0) {
-      const goalsWithHabits = directGoals.filter(g => habits.some(h => h.goalId === g.id));
-      if (goalsWithHabits.length === 0) {
-        // No habits linked, use goal's stored progress
-        return Math.round(directGoals.reduce((acc, g) => acc + g.progress, 0) / directGoals.length);
-      }
-    }
+
+    return results;
+  };
+
+  const childGoals = collectChildGoals();
+  const allGoals = [...directGoals, ...childGoals];
+
+  if (allGoals.length === 0) {
+    // No explicit goals – fall back to 0 (phantom progress handled elsewhere)
     return 0;
   }
-  
-  return Math.round((totalCompleted / totalOccurrences) * 100);
+
+  const totalProgress = allGoals.reduce((sum, g) => sum + (g.progress || 0), 0);
+  return Math.round(totalProgress / allGoals.length);
 };
 
 export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {

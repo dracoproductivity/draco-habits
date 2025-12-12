@@ -235,8 +235,9 @@ export const ProgressTimeline = () => {
       )}
 
       {chartMode === 'progress' && (
-        <ProgressCharts compact />
+        <ProgressCharts />
       )}
+
     </motion.div>
   );
 };
