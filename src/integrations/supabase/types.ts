@@ -14,7 +14,342 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      custom_categories: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          id: string
+          name: string
+          show_emoji: boolean
+          user_id: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name: string
+          show_emoji?: boolean
+          user_id: string
+          xp_reward?: number
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name?: string
+          show_emoji?: boolean
+          user_id?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      daily_logs: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          phone_usage_hours: number | null
+          sleep_hours: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          phone_usage_hours?: number | null
+          sleep_hours?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          phone_usage_hours?: number | null
+          sleep_hours?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      draco_state: {
+        Row: {
+          color: string
+          created_at: string
+          current_xp: number
+          id: string
+          level: number
+          name: string
+          total_xp: number
+          updated_at: string
+          user_id: string
+          xp_to_next_level: number
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          current_xp?: number
+          id?: string
+          level?: number
+          name?: string
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          xp_to_next_level?: number
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          current_xp?: number
+          id?: string
+          level?: number
+          name?: string
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          xp_to_next_level?: number
+        }
+        Relationships: []
+      }
+      goals: {
+        Row: {
+          category: string | null
+          category_xp: number | null
+          created_at: string
+          emoji: string | null
+          id: string
+          name: string
+          parent_goal_id: string | null
+          period_value: string | null
+          progress: number
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          category_xp?: number | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name: string
+          parent_goal_id?: string | null
+          period_value?: string | null
+          progress?: number
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          category_xp?: number | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          name?: string
+          parent_goal_id?: string | null
+          period_value?: string | null
+          progress?: number
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_parent_goal_id_fkey"
+            columns: ["parent_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habit_checks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_checks_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string
+          description: string | null
+          emoji: string | null
+          frequency_weeks: number
+          goal_id: string | null
+          id: string
+          name: string
+          notification_enabled: boolean
+          notification_time: string | null
+          period_type: string
+          period_value: string | null
+          repeat_weekly: boolean
+          selected_days: number[] | null
+          specific_weeks_of_month: number[] | null
+          updated_at: string
+          user_id: string
+          xp_reward: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          frequency_weeks?: number
+          goal_id?: string | null
+          id?: string
+          name: string
+          notification_enabled?: boolean
+          notification_time?: string | null
+          period_type: string
+          period_value?: string | null
+          repeat_weekly?: boolean
+          selected_days?: number[] | null
+          specific_weeks_of_month?: number[] | null
+          updated_at?: string
+          user_id: string
+          xp_reward?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          frequency_weeks?: number
+          goal_id?: string | null
+          id?: string
+          name?: string
+          notification_enabled?: boolean
+          notification_time?: string | null
+          period_type?: string
+          period_value?: string | null
+          repeat_weekly?: boolean
+          selected_days?: number[] | null
+          specific_weeks_of_month?: number[] | null
+          updated_at?: string
+          user_id?: string
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habits_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          birth_date: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          photo: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_date?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          photo?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_date?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          photo?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          account_created_at: string | null
+          created_at: string
+          dark_mode: boolean
+          id: string
+          last_daily_log_date: string | null
+          max_phone_hours: number | null
+          min_sleep_hours: number | null
+          notification_reminders: Json | null
+          notifications_enabled: boolean
+          progress_display_mode: string
+          show_emojis: boolean
+          theme_color: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_created_at?: string | null
+          created_at?: string
+          dark_mode?: boolean
+          id?: string
+          last_daily_log_date?: string | null
+          max_phone_hours?: number | null
+          min_sleep_hours?: number | null
+          notification_reminders?: Json | null
+          notifications_enabled?: boolean
+          progress_display_mode?: string
+          show_emojis?: boolean
+          theme_color?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_created_at?: string | null
+          created_at?: string
+          dark_mode?: boolean
+          id?: string
+          last_daily_log_date?: string | null
+          max_phone_hours?: number | null
+          min_sleep_hours?: number | null
+          notification_reminders?: Json | null
+          notifications_enabled?: boolean
+          progress_display_mode?: string
+          show_emojis?: boolean
+          theme_color?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -17,9 +17,12 @@ import {
   Moon,
   Camera,
   Save,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useCloudSync } from '@/hooks/useCloudSync';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } from '@/types';
@@ -75,9 +78,12 @@ const FRIENDLY_MESSAGES = [
 
 export const SettingsPage = () => {
   const { settings, updateSettings, logout, user, updateUser, draco, updateDraco } = useAppStore();
+  const { signOut } = useAuth();
+  const { saveProfile, saveDraco, saveSettings } = useCloudSync();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [newReminderTime, setNewReminderTime] = useState('09:00');
+  const [savingProfile, setSavingProfile] = useState(false);
   
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -92,6 +98,11 @@ export const SettingsPage = () => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
 
+  // Sync settings to cloud when they change
+  useEffect(() => {
+    saveSettings(settings);
+  }, [settings, saveSettings]);
+
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 0;
     try {
@@ -102,7 +113,8 @@ export const SettingsPage = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     logout();
     toast({
       title: 'Até logo!',
@@ -110,7 +122,8 @@ export const SettingsPage = () => {
     });
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
+    await signOut();
     logout();
     toast({
       title: 'Conta excluída',
@@ -144,17 +157,25 @@ export const SettingsPage = () => {
     }
   };
 
-  const handleSaveProfile = () => {
-    updateUser({
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    const profileData = {
       firstName,
       lastName,
       birthDate,
       photo: photoPreview,
-    });
+    };
+    updateUser(profileData);
     updateDraco({ name: dracoName });
+    
+    // Save to cloud
+    await saveProfile(profileData);
+    await saveDraco({ ...draco, name: dracoName });
+    
+    setSavingProfile(false);
     toast({
       title: 'Perfil atualizado!',
-      description: 'Suas informações foram salvas',
+      description: 'Suas informações foram salvas na nuvem',
     });
   };
 
@@ -356,9 +377,9 @@ export const SettingsPage = () => {
               </div>
             </div>
 
-            <button onClick={handleSaveProfile} className="btn-fire w-full flex items-center justify-center gap-2 py-2">
-              <Save className="w-4 h-4" />
-              Salvar perfil
+            <button onClick={handleSaveProfile} disabled={savingProfile} className="btn-fire w-full flex items-center justify-center gap-2 py-2">
+              {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {savingProfile ? 'Salvando...' : 'Salvar perfil'}
             </button>
           </div>
         </section>
