@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useCloudSync } from '@/hooks/useCloudSync';
 import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
 import { GoalsPage } from './GoalsPage';
@@ -12,11 +14,16 @@ import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
 import { useResponsive } from '@/hooks/useResponsive';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const { isAuthenticated, activeTab, settings } = useAppStore();
+  const { activeTab, settings } = useAppStore();
+  const { isAuthenticated, loading } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
+  
+  // Initialize cloud sync
+  useCloudSync();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
@@ -42,6 +49,18 @@ const Index = () => {
       setShowMorningCheckIn(true);
     }
   }, [isAuthenticated]); // Only run on mount/auth change, not on every settings change
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <AuthPage />;

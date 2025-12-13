@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { Mail, Lock, Eye, EyeOff, User, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 export const SignupForm = () => {
@@ -11,9 +11,10 @@ export const SignupForm = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signup } = useAppStore();
+  const [loading, setLoading] = useState(false);
+  const { signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!firstName || !email || !password || !confirmPassword) {
@@ -43,14 +44,21 @@ export const SignupForm = () => {
       return;
     }
 
-    const success = signup({
-      email,
-      firstName,
-      lastName,
-      photo: '',
-    }, password);
+    setLoading(true);
+    const { error } = await signUp(email, password, firstName, lastName);
+    setLoading(false);
 
-    if (success) {
+    if (error) {
+      let errorMessage = error.message;
+      if (error.message.includes('already registered')) {
+        errorMessage = 'Este email já está cadastrado';
+      }
+      toast({
+        title: 'Erro ao criar conta',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } else {
       toast({
         title: 'Conta criada!',
         description: 'Bem-vindo ao Draco Habits',
@@ -75,6 +83,7 @@ export const SignupForm = () => {
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             className="input-dark w-full pl-12"
+            disabled={loading}
           />
         </div>
         <input
@@ -83,6 +92,7 @@ export const SignupForm = () => {
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           className="input-dark w-full"
+          disabled={loading}
         />
       </div>
 
@@ -94,6 +104,7 @@ export const SignupForm = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="input-dark w-full pl-12"
+          disabled={loading}
         />
       </div>
 
@@ -105,6 +116,7 @@ export const SignupForm = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="input-dark w-full pl-12 pr-12"
+          disabled={loading}
         />
         <button
           type="button"
@@ -123,11 +135,13 @@ export const SignupForm = () => {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           className="input-dark w-full pl-12"
+          disabled={loading}
         />
       </div>
 
-      <button type="submit" className="btn-fire w-full">
-        Criar conta
+      <button type="submit" className="btn-fire w-full flex items-center justify-center gap-2" disabled={loading}>
+        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+        {loading ? 'Criando conta...' : 'Criar conta'}
       </button>
     </motion.form>
   );

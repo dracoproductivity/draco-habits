@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3 } from 'lucide-react';
+import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addWeeks, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   XAxis,
@@ -94,19 +94,22 @@ export const AnalyticsPage = () => {
     });
   }, [dailyLogs, phoneTimeRange, maxPhoneHours]);
 
+  // State for week/month navigation in progress chart
+  const [progressReferenceDate, setProgressReferenceDate] = useState<Date>(new Date());
+
   const getProgressData = useMemo(() => {
-    const today = new Date();
+    const baseDate = progressReferenceDate;
     let days;
     
     if (progressTimeRange === 'week') {
       days = eachDayOfInterval({
-        start: startOfWeek(today, { weekStartsOn: 1 }),
-        end: endOfWeek(today, { weekStartsOn: 1 }),
+        start: startOfWeek(baseDate, { weekStartsOn: 1 }),
+        end: endOfWeek(baseDate, { weekStartsOn: 1 }),
       });
     } else {
       days = eachDayOfInterval({
-        start: subDays(today, 30),
-        end: today,
+        start: startOfMonth(baseDate),
+        end: endOfMonth(baseDate),
       });
     }
 
@@ -163,7 +166,7 @@ export const AnalyticsPage = () => {
         };
       });
     }
-  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate]);
+  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate, progressReferenceDate]);
 
   const SleepTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -448,13 +451,18 @@ export const AnalyticsPage = () => {
                     <div>
                       <h3 className="font-semibold text-foreground">Progresso</h3>
                       <p className="text-xs text-muted-foreground">
-                        {progressTimeRange === 'week' ? 'Semana atual' : 'Últimos 30 dias'}
+                        {progressTimeRange === 'week'
+                          ? `Semana de ${format(startOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')} a ${format(endOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+                          : format(progressReferenceDate, 'MMMM yyyy', { locale: ptBR })}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-1">
                     <button
-                      onClick={() => setProgressTimeRange('week')}
+                      onClick={() => {
+                        setProgressTimeRange('week');
+                        setProgressReferenceDate(new Date());
+                      }}
                       className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                         progressTimeRange === 'week'
                           ? 'bg-primary text-primary-foreground'
@@ -464,16 +472,50 @@ export const AnalyticsPage = () => {
                       Semana
                     </button>
                     <button
-                      onClick={() => setProgressTimeRange('month')}
+                      onClick={() => {
+                        setProgressTimeRange('month');
+                        setProgressReferenceDate(new Date());
+                      }}
                       className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                         progressTimeRange === 'month'
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
                       }`}
                     >
-                      30 dias
+                      Mês
                     </button>
                   </div>
+                </div>
+
+                {/* Range navigation */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <button
+                    onClick={() =>
+                      setProgressReferenceDate((prev) =>
+                        progressTimeRange === 'week' ? addWeeks(prev, -1) : addMonths(prev, -1)
+                      )
+                    }
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                    <span>Anterior</span>
+                  </button>
+                  <span className="font-medium">
+                    {progressTimeRange === 'week'
+                      ? `Semana ${format(startOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+                      : format(progressReferenceDate, 'MMMM yyyy', { locale: ptBR })}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setProgressReferenceDate((prev) =>
+                        progressTimeRange === 'week' ? addWeeks(prev, 1) : addMonths(prev, 1)
+                      )
+                    }
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
+                  >
+                    <span>Próximo</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-2">
