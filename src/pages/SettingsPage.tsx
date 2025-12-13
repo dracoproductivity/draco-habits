@@ -85,6 +85,23 @@ export const SettingsPage = () => {
   const [newReminderTime, setNewReminderTime] = useState('09:00');
   const [savingProfile, setSavingProfile] = useState(false);
   
+  // Ensure notificationReminders is always an array
+  const getReminders = (): NotificationReminder[] => {
+    if (!settings.notificationReminders) return [];
+    if (Array.isArray(settings.notificationReminders)) return settings.notificationReminders;
+    if (typeof settings.notificationReminders === 'string') {
+      try {
+        const parsed = JSON.parse(settings.notificationReminders);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+  
+  const reminders = getReminders();
+  
   // Profile state
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
@@ -188,7 +205,7 @@ export const SettingsPage = () => {
       enabled: true,
     };
     updateSettings({
-      notificationReminders: [...(settings.notificationReminders || []), newReminder],
+      notificationReminders: [...reminders, newReminder],
     });
     setShowAddReminder(false);
     setNewReminderTime('09:00');
@@ -200,7 +217,7 @@ export const SettingsPage = () => {
 
   const removeReminder = (id: string) => {
     updateSettings({
-      notificationReminders: settings.notificationReminders?.filter((r) => r.id !== id) || [],
+      notificationReminders: reminders.filter((r) => r.id !== id),
     });
     toast({
       title: 'Lembrete removido',
@@ -210,17 +227,17 @@ export const SettingsPage = () => {
 
   const toggleReminder = (id: string) => {
     updateSettings({
-      notificationReminders: settings.notificationReminders?.map((r) =>
+      notificationReminders: reminders.map((r) =>
         r.id === id ? { ...r, enabled: !r.enabled } : r
-      ) || [],
+      ),
     });
   };
 
   const updateReminderMessage = (id: string, message: string) => {
     updateSettings({
-      notificationReminders: settings.notificationReminders?.map((r) =>
+      notificationReminders: reminders.map((r) =>
         r.id === id ? { ...r, message } : r
-      ) || [],
+      ),
     });
   };
 
@@ -581,7 +598,7 @@ export const SettingsPage = () => {
                   <p className="text-sm text-muted-foreground">Seus lembretes:</p>
                   
                   <div className="space-y-2">
-                    {(settings.notificationReminders || []).map((reminder) => (
+                    {reminders.map((reminder) => (
                       <motion.div
                         key={reminder.id}
                         initial={{ opacity: 0, x: -20 }}
