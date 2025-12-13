@@ -157,12 +157,27 @@ export const useCloudSync = () => {
       
       if (settingsData) {
         const settings = settingsData as SettingsRow;
+        
+        // Parse notification_reminders - it may come as a string from the database
+        let notificationReminders: AppSettings['notificationReminders'] = [];
+        if (settings.notification_reminders) {
+          if (typeof settings.notification_reminders === 'string') {
+            try {
+              notificationReminders = JSON.parse(settings.notification_reminders);
+            } catch {
+              notificationReminders = [];
+            }
+          } else if (Array.isArray(settings.notification_reminders)) {
+            notificationReminders = settings.notification_reminders as AppSettings['notificationReminders'];
+          }
+        }
+        
         store.updateSettings({
           themeColor: settings.theme_color as AppSettings['themeColor'],
           progressDisplayMode: settings.progress_display_mode as AppSettings['progressDisplayMode'],
           showEmojis: settings.show_emojis,
           notificationsEnabled: settings.notifications_enabled,
-          notificationReminders: settings.notification_reminders as AppSettings['notificationReminders'],
+          notificationReminders,
           darkMode: settings.dark_mode,
           minSleepHours: settings.min_sleep_hours || 7,
           maxPhoneHours: settings.max_phone_hours || 2,
