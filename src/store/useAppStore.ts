@@ -167,11 +167,23 @@ export const useAppStore = create<AppStore>()(
       },
 
       logout: () => {
+        // Clear all user data on logout to prevent data mixing between users
         set({ 
           isAuthenticated: false, 
           user: null,
           isFirstTime: true,
+          habits: [],
+          habitChecks: [],
+          goals: [],
+          customCategories: [],
+          dailyLogs: [],
+          draco: defaultDraco,
+          settings: defaultSettings,
+          showWelcomeModal: false,
         });
+        
+        // Also clear the persisted storage to ensure clean slate
+        localStorage.removeItem('draco-habits-storage');
       },
 
       updateUser: (updates) => {

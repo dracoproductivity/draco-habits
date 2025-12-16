@@ -109,6 +109,15 @@ export const useCloudSync = () => {
     
     syncInProgress.current = true;
     
+    // Clear existing data first to prevent data from other users mixing
+    useAppStore.setState({
+      habits: [],
+      habitChecks: [],
+      goals: [],
+      customCategories: [],
+      dailyLogs: [],
+    });
+    
     try {
       // Load profile
       const { data: profile } = await supabase
@@ -192,23 +201,20 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id);
       
-      if (goalsData && goalsData.length > 0) {
-        const goals: Goal[] = (goalsData as GoalRow[]).map((g) => ({
-          id: g.id,
-          name: g.name,
-          emoji: g.emoji || undefined,
-          type: g.type as Goal['type'],
-          period: g.period_value || '',
-          progress: g.progress,
-          parentGoalId: g.parent_goal_id || undefined,
-          category: g.category as Goal['category'],
-          categoryXP: g.category_xp || undefined,
-          createdAt: g.created_at,
-        }));
-        
-        // Replace goals in store
-        useAppStore.setState({ goals });
-      }
+      const goals: Goal[] = (goalsData as GoalRow[] || []).map((g) => ({
+        id: g.id,
+        name: g.name,
+        emoji: g.emoji || undefined,
+        type: g.type as Goal['type'],
+        period: g.period_value || '',
+        progress: g.progress,
+        parentGoalId: g.parent_goal_id || undefined,
+        category: g.category as Goal['category'],
+        categoryXP: g.category_xp || undefined,
+        createdAt: g.created_at,
+      }));
+      
+      useAppStore.setState({ goals });
       
       // Load habits
       const { data: habitsData } = await supabase
@@ -216,24 +222,22 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id);
       
-      if (habitsData && habitsData.length > 0) {
-        const habits: Habit[] = (habitsData as HabitRow[]).map((h) => ({
-          id: h.id,
-          name: h.name,
-          emoji: h.emoji || undefined,
-          xpReward: h.xp_reward || 10,
-          goalId: h.goal_id || undefined,
-          notificationEnabled: h.notification_enabled,
-          notificationTime: h.notification_time || undefined,
-          weekDays: h.selected_days || undefined,
-          isOneTime: !h.repeat_weekly,
-          repeatFrequency: h.frequency_weeks as Habit['repeatFrequency'],
-          monthWeeks: h.specific_weeks_of_month || undefined,
-          createdAt: h.created_at,
-        }));
-        
-        useAppStore.setState({ habits });
-      }
+      const habits: Habit[] = (habitsData as HabitRow[] || []).map((h) => ({
+        id: h.id,
+        name: h.name,
+        emoji: h.emoji || undefined,
+        xpReward: h.xp_reward || 10,
+        goalId: h.goal_id || undefined,
+        notificationEnabled: h.notification_enabled,
+        notificationTime: h.notification_time || undefined,
+        weekDays: h.selected_days || undefined,
+        isOneTime: !h.repeat_weekly,
+        repeatFrequency: h.frequency_weeks as Habit['repeatFrequency'],
+        monthWeeks: h.specific_weeks_of_month || undefined,
+        createdAt: h.created_at,
+      }));
+      
+      useAppStore.setState({ habits });
       
       // Load habit checks
       const { data: checksData } = await supabase
@@ -241,15 +245,13 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id);
       
-      if (checksData && checksData.length > 0) {
-        const habitChecks: HabitCheck[] = (checksData as HabitCheckRow[]).map((c) => ({
-          habitId: c.habit_id,
-          date: c.date,
-          completed: c.completed,
-        }));
-        
-        useAppStore.setState({ habitChecks });
-      }
+      const habitChecks: HabitCheck[] = (checksData as HabitCheckRow[] || []).map((c) => ({
+        habitId: c.habit_id,
+        date: c.date,
+        completed: c.completed,
+      }));
+      
+      useAppStore.setState({ habitChecks });
       
       // Load daily logs
       const { data: logsData } = await supabase
@@ -257,15 +259,13 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id);
       
-      if (logsData && logsData.length > 0) {
-        const dailyLogs: DailyLog[] = (logsData as DailyLogRow[]).map((l) => ({
-          date: l.date,
-          sleepHours: l.sleep_hours || 0,
-          phoneUsageHours: l.phone_usage_hours || 0,
-        }));
-        
-        useAppStore.setState({ dailyLogs });
-      }
+      const dailyLogs: DailyLog[] = (logsData as DailyLogRow[] || []).map((l) => ({
+        date: l.date,
+        sleepHours: l.sleep_hours || 0,
+        phoneUsageHours: l.phone_usage_hours || 0,
+      }));
+      
+      useAppStore.setState({ dailyLogs });
       
       // Load custom categories
       const { data: categoriesData } = await supabase
@@ -273,16 +273,14 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id);
       
-      if (categoriesData && categoriesData.length > 0) {
-        const customCategories: CustomCategory[] = (categoriesData as CustomCategoryRow[]).map((c) => ({
-          id: c.id,
-          name: c.name,
-          emoji: c.emoji || undefined,
-          xpReward: c.xp_reward,
-        }));
-        
-        useAppStore.setState({ customCategories });
-      }
+      const customCategories: CustomCategory[] = (categoriesData as CustomCategoryRow[] || []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        emoji: c.emoji || undefined,
+        xpReward: c.xp_reward,
+      }));
+      
+      useAppStore.setState({ customCategories });
       
       lastSyncTime.current = Date.now();
     } catch (error) {
@@ -512,10 +510,19 @@ export const useCloudSync = () => {
     }
   }, [user]);
   
-  // Initial load when authenticated
+  // Initial load when authenticated - track user ID to detect user changes
+  const lastLoadedUserId = useRef<string | null>(null);
+  
   useEffect(() => {
     if (isAuthenticated && user) {
-      loadFromCloud();
+      // If user changed, force reload
+      if (lastLoadedUserId.current !== user.id) {
+        lastLoadedUserId.current = user.id;
+        syncInProgress.current = false; // Reset sync flag for new user
+        loadFromCloud();
+      }
+    } else {
+      lastLoadedUserId.current = null;
     }
   }, [isAuthenticated, user, loadFromCloud]);
   

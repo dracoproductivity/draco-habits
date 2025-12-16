@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useCloudSync } from '@/hooks/useCloudSync';
@@ -18,12 +18,24 @@ import { Loader2 } from 'lucide-react';
 
 const Index = () => {
   const { activeTab, settings } = useAppStore();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
+  const prevUserIdRef = useRef<string | null>(null);
   
   // Initialize cloud sync
   useCloudSync();
+
+  // Clear store when user changes or logs out
+  useEffect(() => {
+    if (!isAuthenticated && prevUserIdRef.current) {
+      // User logged out - store should already be cleared by logout function
+      prevUserIdRef.current = null;
+    } else if (isAuthenticated && user?.id && prevUserIdRef.current !== user.id) {
+      // New user logged in
+      prevUserIdRef.current = user.id;
+    }
+  }, [isAuthenticated, user?.id]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
