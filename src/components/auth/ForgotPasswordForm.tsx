@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
@@ -10,14 +11,31 @@ interface ForgotPasswordFormProps {
 export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { resetPassword } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email) {
       toast({
         title: 'Erro',
         description: 'Digite seu email',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLoading(true);
+    
+    const { error } = await resetPassword(email);
+    
+    setLoading(false);
+    
+    if (error) {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível enviar o email',
         variant: 'destructive',
       });
       return;
@@ -69,11 +87,16 @@ export const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input-dark w-full pl-12"
+              disabled={loading}
             />
           </div>
 
-          <button type="submit" className="btn-fire w-full">
-            Enviar link
+          <button type="submit" className="btn-fire w-full" disabled={loading}>
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+            ) : (
+              'Enviar link'
+            )}
           </button>
         </form>
       )}
