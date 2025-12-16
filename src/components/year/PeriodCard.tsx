@@ -121,57 +121,89 @@ const calculatePeriodProgressWithChildren = (
   habitChecks: any[],
   displayYear?: number
 ): number => {
-  // Collect goals that belong directly to this period (same type)
-  const directGoals = goals.filter((g) => g.type === type && g.period === period);
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentQuarter = Math.ceil((currentMonth + 1) / 3);
+  const yearToCheck = displayYear || currentYear;
 
-  // Helper to collect child goals for month / quarter / year
-  const collectChildGoals = (): Goal[] => {
-    const results: Goal[] = [];
-    const boundaries = getPeriodBoundaries(type, period);
-    if (!boundaries) return results;
-
-    for (const goal of goals) {
-      // Skip goals of the same type – they are handled as directGoals
-      if (goal.type === type) continue;
-
-      // Month should aggregate weekly + monthly goals
-      if (type === 'monthly' && (goal.type === 'weekly')) {
-        const childBounds = getPeriodBoundaries(goal.type, goal.period);
-        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
-          results.push(goal);
-        }
-      }
-
-      // Quarter aggregates trimestral (direct) + monthly goals of its months
-      if (type === 'quarterly' && goal.type === 'monthly') {
-        const childBounds = getPeriodBoundaries(goal.type, goal.period);
-        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
-          results.push(goal);
-        }
-      }
-
-      // Year aggregates annual (direct) + trimestral goals
-      if (type === 'yearly' && goal.type === 'quarterly') {
-        const childBounds = getPeriodBoundaries(goal.type, goal.period);
-        if (childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end) {
-          results.push(goal);
-        }
+  // Helper to check if a goal/period has started
+  const hasStarted = (goalType: GoalType, goalPeriod: string): boolean => {
+    if (yearToCheck > currentYear) return false;
+    if (yearToCheck < currentYear) return true;
+    
+    if (goalType === 'yearly') return true;
+    
+    if (goalType === 'quarterly') {
+      const quarterMatch = goalPeriod.match(/(\d+)º Tri/);
+      if (quarterMatch) {
+        const quarter = parseInt(quarterMatch[1]);
+        return quarter <= currentQuarter;
       }
     }
-
-    return results;
+    
+    if (goalType === 'monthly') {
+      const monthName = goalPeriod.split(' ')[0];
+      const monthIndex = MONTH_NAMES.indexOf(monthName);
+      if (monthIndex !== -1) {
+        return monthIndex <= currentMonth;
+      }
+    }
+    
+    return true;
   };
 
-  const childGoals = collectChildGoals();
-  const allGoals = [...directGoals, ...childGoals];
+  // For yearly: sum of annual goals progress + quarterly goals progress / count of started items
+  if (type === 'yearly') {
+    const annualGoals = goals.filter((g) => g.type === 'yearly' && g.period === period);
+    const quarterlyGoals = goals.filter((g) => {
+      if (g.type !== 'quarterly') return false;
+      const yearMatch = g.period.match(/(\d{4})/);
+      return yearMatch && parseInt(yearMatch[1]) === yearToCheck;
+    });
 
-  if (allGoals.length === 0) {
-    // No explicit goals – fall back to 0 (phantom progress handled elsewhere)
-    return 0;
+    // Filter only items that have started (not "Não iniciado")
+    const startedAnnualGoals = annualGoals.filter(g => hasStarted(g.type as GoalType, g.period));
+    const startedQuarterlyGoals = quarterlyGoals.filter(g => hasStarted(g.type as GoalType, g.period));
+
+    const allStartedItems = [...startedAnnualGoals, ...startedQuarterlyGoals];
+    
+    if (allStartedItems.length === 0) return 0;
+
+    const totalProgress = allStartedItems.reduce((sum, g) => sum + (g.progress || 0), 0);
+    return Math.round(totalProgress / allStartedItems.length);
   }
 
-  const totalProgress = allGoals.reduce((sum, g) => sum + (g.progress || 0), 0);
-  return Math.round(totalProgress / allGoals.length);
+  // For quarterly: sum of quarterly goals + monthly goals / count of started items
+  if (type === 'quarterly') {
+    const directGoals = goals.filter((g) => g.type === type && g.period === period);
+    const boundaries = getPeriodBoundaries(type, period);
+    
+    const monthlyGoals = boundaries ? goals.filter((g) => {
+      if (g.type !== 'monthly') return false;
+      const childBounds = getPeriodBoundaries(g.type, g.period);
+      return childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end;
+    }) : [];
+
+    const startedDirect = directGoals.filter(g => hasStarted(g.type as GoalType, g.period));
+    const startedMonthly = monthlyGoals.filter(g => hasStarted(g.type as GoalType, g.period));
+    
+    const allStartedItems = [...startedDirect, ...startedMonthly];
+    
+    if (allStartedItems.length === 0) return 0;
+
+    const totalProgress = allStartedItems.reduce((sum, g) => sum + (g.progress || 0), 0);
+    return Math.round(totalProgress / allStartedItems.length);
+  }
+
+  // For monthly/weekly: just average direct goals
+  const directGoals = goals.filter((g) => g.type === type && g.period === period);
+  const startedGoals = directGoals.filter(g => hasStarted(g.type as GoalType, g.period));
+  
+  if (startedGoals.length === 0) return 0;
+
+  const totalProgress = startedGoals.reduce((sum, g) => sum + (g.progress || 0), 0);
+  return Math.round(totalProgress / startedGoals.length);
 };
 
 export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
