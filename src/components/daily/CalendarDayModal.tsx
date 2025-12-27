@@ -16,7 +16,10 @@ interface CalendarDayModalProps {
 export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
   const { habits, goals, habitChecks, toggleHabitCheck, settings } = useAppStore();
   
-  const dateObj = new Date(date);
+  // Parse date string as local timezone (not UTC)
+  const [year, month, day] = date.split('-').map(Number);
+  const dateObj = new Date(year, month - 1, day);
+  
   const formattedDate = dateObj.toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
