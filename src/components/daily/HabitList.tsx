@@ -1326,109 +1326,110 @@ export const HabitList = () => {
                       </>
                     )}
                   </div>
+                )}
+              </motion.div>
+              )}
+            </AnimatePresence>
 
-                  {/* New Category Modal */}
-                  <AnimatePresence>
-                    {(showNewCategoryModal || editingCategory) && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            {/* New Category Modal */}
+          <AnimatePresence>
+            {(showNewCategoryModal || editingCategory) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+                onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+                >
+                  <h3 className="text-lg font-bold mb-4">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h3>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="🎯"
+                        value={editingCategory ? editingCategory.emoji || '' : newCategoryEmoji}
+                        onChange={(e) => editingCategory 
+                          ? setEditingCategory({...editingCategory, emoji: e.target.value})
+                          : setNewCategoryEmoji(e.target.value)
+                        }
+                        className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
+                        maxLength={2}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Nome da categoria"
+                        value={editingCategory ? editingCategory.name : newCategoryName}
+                        onChange={(e) => editingCategory
+                          ? setEditingCategory({...editingCategory, name: e.target.value})
+                          : setNewCategoryName(e.target.value)
+                        }
+                        className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">XP padrão</label>
+                      <div className="flex gap-1 flex-wrap">
+                        {XP_OPTIONS.map((xp) => (
+                          <button
+                            key={xp}
+                            onClick={() => editingCategory
+                              ? setEditingCategory({...editingCategory, xpReward: xp})
+                              : setNewCategoryXP(xp)
+                            }
+                            className={cn(
+                              'px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                              (editingCategory ? editingCategory.xpReward : newCategoryXP) === xp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            {xp} XP
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
                         onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}
+                        className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm"
                       >
-                        <motion.div
-                          initial={{ scale: 0.9, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0.9, opacity: 0 }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
-                        >
-                          <h3 className="text-lg font-bold mb-4">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h3>
-                          <div className="space-y-4">
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="🎯"
-                                value={editingCategory ? editingCategory.emoji || '' : newCategoryEmoji}
-                                onChange={(e) => editingCategory 
-                                  ? setEditingCategory({...editingCategory, emoji: e.target.value})
-                                  : setNewCategoryEmoji(e.target.value)
-                                }
-                                className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
-                                maxLength={2}
-                              />
-                              <input
-                                type="text"
-                                placeholder="Nome da categoria"
-                                value={editingCategory ? editingCategory.name : newCategoryName}
-                                onChange={(e) => editingCategory
-                                  ? setEditingCategory({...editingCategory, name: e.target.value})
-                                  : setNewCategoryName(e.target.value)
-                                }
-                                className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-2 block">XP padrão</label>
-                              <div className="flex gap-1 flex-wrap">
-                                {XP_OPTIONS.map((xp) => (
-                                  <button
-                                    key={xp}
-                                    onClick={() => editingCategory
-                                      ? setEditingCategory({...editingCategory, xpReward: xp})
-                                      : setNewCategoryXP(xp)
-                                    }
-                                    className={cn(
-                                      'px-3 py-2 rounded-lg text-xs font-medium transition-all',
-                                      (editingCategory ? editingCategory.xpReward : newCategoryXP) === xp
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                                    )}
-                                  >
-                                    {xp} XP
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}
-                                className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm"
-                              >
-                                Cancelar
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (editingCategory) {
-                                    updateCustomCategory(editingCategory.id, {
-                                      name: editingCategory.name,
-                                      emoji: editingCategory.emoji,
-                                      xpReward: editingCategory.xpReward,
-                                    });
-                                    setEditingCategory(null);
-                                  } else {
-                                    addCustomCategory({
-                                      name: newCategoryName,
-                                      emoji: newCategoryEmoji,
-                                      xpReward: newCategoryXP,
-                                    });
-                                    setShowNewCategoryModal(false);
-                                    setNewCategoryName('');
-                                    setNewCategoryEmoji('🎯');
-                                    setNewCategoryXP(20);
-                                  }
-                                }}
-                                className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
-                              >
-                                {editingCategory ? 'Salvar' : 'Criar'}
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (editingCategory) {
+                            updateCustomCategory(editingCategory.id, {
+                              name: editingCategory.name,
+                              emoji: editingCategory.emoji,
+                              xpReward: editingCategory.xpReward,
+                            });
+                            setEditingCategory(null);
+                          } else {
+                            addCustomCategory({
+                              name: newCategoryName,
+                              emoji: newCategoryEmoji,
+                              xpReward: newCategoryXP,
+                            });
+                            setShowNewCategoryModal(false);
+                            setNewCategoryName('');
+                            setNewCategoryEmoji('🎯');
+                            setNewCategoryXP(20);
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                      >
+                        {editingCategory ? 'Salvar' : 'Criar'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
