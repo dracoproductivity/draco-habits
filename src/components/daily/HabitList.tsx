@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { GoalType, Habit } from '@/types';
+import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -354,7 +354,10 @@ export const HabitList = () => {
     addGoal,
     updateHabit,
     getDailyProgress,
-    getWeeklyProgress
+    getWeeklyProgress,
+    customCategories,
+    addCustomCategory,
+    updateCustomCategory,
   } = useAppStore();
   
   const [showAddForm, setShowAddForm] = useState(false);
@@ -366,6 +369,18 @@ export const HabitList = () => {
   const [singleGoalType, setSingleGoalType] = useState<GoalType | ''>('');
   const [singleGoalPeriod, setSingleGoalPeriod] = useState('');
   const [singleGoalName, setSingleGoalName] = useState('');
+  
+  // Category and XP selection for goal creation
+  const [selectedCategory, setSelectedCategory] = useState<GoalCategory | string>('');
+  const [selectedCategoryXP, setSelectedCategoryXP] = useState<number>(20);
+  const [showCategoryStep, setShowCategoryStep] = useState(false);
+  
+  // Custom category creation/edit state
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
+  const [newCategoryXP, setNewCategoryXP] = useState<number>(20);
+  const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
   
   // Hierarchical creation state
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
@@ -469,8 +484,8 @@ export const HabitList = () => {
     });
   };
 
-  // Single goal creation
-  const handleCreateSingleGoal = () => {
+  // Single goal creation - show category step
+  const handleSingleGoalProceedToCategory = () => {
     if (!singleGoalName.trim()) {
       toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
       return;
@@ -483,15 +498,20 @@ export const HabitList = () => {
       toast({ title: 'Erro', description: 'Selecione um período', variant: 'destructive' });
       return;
     }
+    setShowCategoryStep(true);
+  };
 
-    const totalDays = calculateTotalDaysForPeriod(singleGoalType, singleGoalPeriod);
+  const handleCreateSingleGoal = () => {
+    const totalDays = calculateTotalDaysForPeriod(singleGoalType as GoalType, singleGoalPeriod);
     
     const newGoal = addGoal({
       name: singleGoalName.trim(),
       emoji: newHabitEmoji || undefined,
-      type: singleGoalType,
+      type: singleGoalType as GoalType,
       period: singleGoalPeriod,
       progress: 0,
+      category: selectedCategory as GoalCategory || undefined,
+      categoryXP: selectedCategoryXP,
     });
     
     setSelectedGoalId(newGoal.id);
@@ -584,7 +604,8 @@ export const HabitList = () => {
     }
   };
 
-  const handleFinalizeHierarchicalCreation = () => {
+  // Hierarchical - show category step
+  const handleHierarchicalProceedToCategory = () => {
     if (!newGoalName.trim()) {
       toast({ title: 'Erro', description: 'Digite um nome para o objetivo', variant: 'destructive' });
       return;
@@ -593,8 +614,20 @@ export const HabitList = () => {
       toast({ title: 'Erro', description: 'Selecione pelo menos um período', variant: 'destructive' });
       return;
     }
-
+    
     // Store the last step data
+    setGoalCreationData(prev => ({
+      ...prev,
+      [goalCreationStep]: { 
+        name: newGoalName.trim(), 
+        periods: prev[goalCreationStep].periods 
+      }
+    }));
+    
+    setShowCategoryStep(true);
+  };
+
+  const handleFinalizeHierarchicalCreation = () => {
     const finalData = {
       ...goalCreationData,
       [goalCreationStep]: { 
@@ -618,6 +651,8 @@ export const HabitList = () => {
             type: step,
             period: period,
             progress: 0,
+            category: selectedCategory as GoalCategory || undefined,
+            categoryXP: selectedCategoryXP,
           });
           lastCreatedGoalId = newGoal.id;
         });
@@ -638,6 +673,9 @@ export const HabitList = () => {
     setSingleGoalName('');
     setGoalCreationStep('yearly');
     setNewGoalName('');
+    setSelectedCategory('');
+    setSelectedCategoryXP(20);
+    setShowCategoryStep(false);
     setGoalCreationData({
       yearly: { name: '', periods: [] },
       quarterly: { name: '', periods: [] },
@@ -870,331 +908,527 @@ export const HabitList = () => {
                       </button>
                     </div>
 
-                    {/* Mode selection */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setCreationMode('single')}
-                        className={cn(
-                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                          creationMode === 'single'
-                            ? 'gradient-primary text-primary-foreground'
-                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                        )}
-                      >
-                        Período único
-                      </button>
-                      <button
-                        onClick={() => setCreationMode('hierarchical')}
-                        className={cn(
-                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                          creationMode === 'hierarchical'
-                            ? 'gradient-primary text-primary-foreground'
-                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                        )}
-                      >
-                        Hierárquico
-                      </button>
-                    </div>
-
-                    {creationMode === 'single' ? (
-                      <>
-                        {/* Single goal creation */}
-                        <input
-                          type="text"
-                          placeholder="Nome do objetivo"
-                          value={singleGoalName}
-                          onChange={(e) => setSingleGoalName(e.target.value)}
-                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        />
-
-                        {/* Period type selection */}
+                    {/* Category Step */}
+                    {showCategoryStep ? (
+                      <div className="space-y-4">
+                        <h5 className="text-sm font-medium text-foreground">Categoria e XP</h5>
+                        
+                        {/* Category selection */}
                         <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">Tipo de período</label>
-                          <div className="grid grid-cols-4 gap-1">
-                            {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((type) => (
+                          <label className="text-xs text-muted-foreground mb-2 block">Categoria (opcional)</label>
+                          <div className="flex flex-wrap gap-2">
+                            {DEFAULT_CATEGORIES.map((cat) => (
                               <button
-                                key={type}
-                                onClick={() => {
-                                  setSingleGoalType(type);
-                                  setSingleGoalPeriod('');
-                                }}
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat.id)}
                                 className={cn(
-                                  'py-2 px-2 rounded-lg text-xs font-medium transition-all',
-                                  singleGoalType === type
+                                  'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                                  selectedCategory === cat.id
+                                    ? 'gradient-fire text-primary-foreground'
+                                    : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                                )}
+                              >
+                                <span>{cat.emoji}</span>
+                                <span>{cat.name}</span>
+                              </button>
+                            ))}
+                            {customCategories.map((cat) => (
+                              <div key={cat.id} className="relative group">
+                                <button
+                                  onClick={() => setSelectedCategory(cat.name)}
+                                  className={cn(
+                                    'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                                    selectedCategory === cat.name
+                                      ? 'gradient-fire text-primary-foreground'
+                                      : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                                  )}
+                                >
+                                  {cat.emoji && <span>{cat.emoji}</span>}
+                                  <span>{cat.name}</span>
+                                </button>
+                                <button
+                                  onClick={() => setEditingCategory(cat)}
+                                  className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-1 bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              onClick={() => setShowNewCategoryModal(true)}
+                              className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border hover:bg-muted/50 transition-all flex items-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Nova
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* XP selection */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-2 block">XP por hábito concluído</label>
+                          <div className="flex gap-1 flex-wrap">
+                            {XP_OPTIONS.map((xp) => (
+                              <button
+                                key={xp}
+                                onClick={() => setSelectedCategoryXP(xp)}
+                                className={cn(
+                                  'px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                                  selectedCategoryXP === xp
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
                                 )}
                               >
-                                {getStepLabel(type)}
+                                {xp} XP
                               </button>
                             ))}
                           </div>
                         </div>
 
-                        {/* Period selection */}
-                        {singleGoalType && (
-                          <div>
-                            <label className="text-xs text-muted-foreground mb-1 block">Período</label>
-                            <select
-                              value={singleGoalPeriod}
-                              onChange={(e) => setSingleGoalPeriod(e.target.value)}
-                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                            >
-                              <option value="">Selecione um período</option>
-                              {getPeriodOptions(singleGoalType).map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                            {singleGoalPeriod && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Total: {calculateTotalDaysForPeriod(singleGoalType, singleGoalPeriod)} dias
-                              </p>
-                            )}
-                          </div>
-                        )}
-
                         <div className="flex gap-2">
                           <button
-                            onClick={resetGoalCreation}
+                            onClick={() => setShowCategoryStep(false)}
                             className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
                           >
                             Voltar
                           </button>
                           <button
-                            onClick={handleCreateSingleGoal}
-                            disabled={!singleGoalName.trim() || !singleGoalType || !singleGoalPeriod}
-                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                            onClick={creationMode === 'single' ? handleCreateSingleGoal : handleFinalizeHierarchicalCreation}
+                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
                           >
-                            Criar
+                            Criar objetivo
                           </button>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <>
-                        {/* Hierarchical goal creation */}
-                        <div className="flex gap-1 mb-2">
-                          {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
-                            <div
-                              key={step}
-                              className={cn(
-                                'flex-1 h-1 rounded-full transition-colors',
-                                i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
-                                  ? 'bg-primary'
-                                  : 'bg-muted'
-                              )}
-                            />
-                          ))}
-                        </div>
-
-                        <h5 className="text-sm font-medium text-foreground">
-                          Objetivo {getStepLabel(goalCreationStep)}
-                        </h5>
-
-                        <input
-                          type="text"
-                          placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
-                          value={newGoalName}
-                          onChange={(e) => setNewGoalName(e.target.value)}
-                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        />
-
-                        {/* Multi-select period */}
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Períodos (selecione um ou mais)
-                          </label>
-                          
-                          {/* Select All button */}
+                        {/* Mode selection */}
+                        <div className="flex gap-2">
                           <button
-                            onClick={() => {
-                              const allOptions = getFilteredOptions(goalCreationStep).map(o => o.value);
-                              const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
-                              setGoalCreationData(prev => ({
-                                ...prev,
-                                [goalCreationStep]: { 
-                                  ...prev[goalCreationStep], 
-                                  periods: allSelected ? [] : allOptions 
-                                }
-                              }));
-                            }}
+                            onClick={() => setCreationMode('single')}
                             className={cn(
-                              'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all mb-2 border-2 border-dashed',
-                              getFilteredOptions(goalCreationStep).every(o => goalCreationData[goalCreationStep].periods.includes(o.value))
-                                ? 'bg-primary/20 border-primary text-primary'
-                                : 'bg-muted/30 border-border/50 text-foreground hover:bg-muted/50'
+                              'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                              creationMode === 'single'
+                                ? 'gradient-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
                             )}
                           >
-                            ✓ Selecionar todos
+                            Período único
                           </button>
+                          <button
+                            onClick={() => setCreationMode('hierarchical')}
+                            className={cn(
+                              'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                              creationMode === 'hierarchical'
+                                ? 'gradient-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            Hierárquico
+                          </button>
+                        </div>
 
-                          {/* Quick select options for weeks */}
-                          {goalCreationStep === 'weekly' && (
-                            <div className="space-y-1 mb-2 p-2 rounded-xl bg-secondary/10 border border-secondary/30">
-                              <p className="text-xs font-medium text-secondary-foreground mb-1">Seleção rápida:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {/* All weeks of the year */}
-                                {generateYearOptions().map(year => (
+                        {creationMode === 'single' ? (
+                          <>
+                            {/* Single goal creation */}
+                            <input
+                              type="text"
+                              placeholder="Nome do objetivo"
+                              value={singleGoalName}
+                              onChange={(e) => setSingleGoalName(e.target.value)}
+                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            />
+
+                            {/* Period type selection */}
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">Tipo de período</label>
+                              <div className="grid grid-cols-4 gap-1">
+                                {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((type) => (
                                   <button
-                                    key={`year-${year.value}`}
+                                    key={type}
                                     onClick={() => {
-                                      const yearWeeks = getFilteredOptions('weekly').filter(o => o.value.includes(year.value)).map(o => o.value);
-                                      const allSelected = yearWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                      setGoalCreationData(prev => ({
-                                        ...prev,
-                                        weekly: { 
-                                          ...prev.weekly, 
-                                          periods: allSelected 
-                                            ? prev.weekly.periods.filter(p => !yearWeeks.includes(p))
-                                            : [...new Set([...prev.weekly.periods, ...yearWeeks])]
-                                        }
-                                      }));
+                                      setSingleGoalType(type);
+                                      setSingleGoalPeriod('');
                                     }}
-                                    className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                                    className={cn(
+                                      'py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                                      singleGoalType === type
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                    )}
                                   >
-                                    Ano {year.value}
+                                    {getStepLabel(type)}
                                   </button>
                                 ))}
-                                {/* 1st and 2nd semester */}
-                                {generateYearOptions().map(year => (
-                                  <>
-                                    <button
-                                      key={`s1-${year.value}`}
-                                      onClick={() => {
-                                        const s1Weeks = getFilteredOptions('weekly').filter(o => {
-                                          const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                          if (!match) return false;
-                                          return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) <= 26;
-                                        }).map(o => o.value);
-                                        const allSelected = s1Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                        setGoalCreationData(prev => ({
-                                          ...prev,
-                                          weekly: { 
-                                            ...prev.weekly, 
-                                            periods: allSelected 
-                                              ? prev.weekly.periods.filter(p => !s1Weeks.includes(p))
-                                              : [...new Set([...prev.weekly.periods, ...s1Weeks])]
-                                          }
-                                        }));
-                                      }}
-                                      className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                                    >
-                                      1º Sem {year.value}
-                                    </button>
-                                    <button
-                                      key={`s2-${year.value}`}
-                                      onClick={() => {
-                                        const s2Weeks = getFilteredOptions('weekly').filter(o => {
-                                          const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                          if (!match) return false;
-                                          return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) > 26;
-                                        }).map(o => o.value);
-                                        const allSelected = s2Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                        setGoalCreationData(prev => ({
-                                          ...prev,
-                                          weekly: { 
-                                            ...prev.weekly, 
-                                            periods: allSelected 
-                                              ? prev.weekly.periods.filter(p => !s2Weeks.includes(p))
-                                              : [...new Set([...prev.weekly.periods, ...s2Weeks])]
-                                          }
-                                        }));
-                                      }}
-                                      className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                                    >
-                                      2º Sem {year.value}
-                                    </button>
-                                  </>
-                                ))}
-                              </div>
-                              {/* Months */}
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((monthLabel, monthIndex) => {
-                                  const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-                                  return (
-                                    <button
-                                      key={monthLabel}
-                                      onClick={() => {
-                                        const monthWeeks = getFilteredOptions('weekly').filter(o => {
-                                          return o.label.toLowerCase().includes(monthNames[monthIndex]);
-                                        }).map(o => o.value);
-                                        const allSelected = monthWeeks.length > 0 && monthWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                        setGoalCreationData(prev => ({
-                                          ...prev,
-                                          weekly: { 
-                                            ...prev.weekly, 
-                                            periods: allSelected 
-                                              ? prev.weekly.periods.filter(p => !monthWeeks.includes(p))
-                                              : [...new Set([...prev.weekly.periods, ...monthWeeks])]
-                                          }
-                                        }));
-                                      }}
-                                      className="px-2 py-1 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted/70 text-foreground transition-all"
-                                    >
-                                      {monthLabel}
-                                    </button>
-                                  );
-                                })}
                               </div>
                             </div>
-                          )}
 
-                          <div className="max-h-40 overflow-y-auto space-y-1 bg-muted/20 rounded-xl p-2">
-                            {getFilteredOptions(goalCreationStep).map((option) => (
+                            {/* Period selection */}
+                            {singleGoalType && (
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">Período</label>
+                                <select
+                                  value={singleGoalPeriod}
+                                  onChange={(e) => setSingleGoalPeriod(e.target.value)}
+                                  className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                                >
+                                  <option value="">Selecione um período</option>
+                                  {getPeriodOptions(singleGoalType).map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                                {singleGoalPeriod && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Total: {calculateTotalDaysForPeriod(singleGoalType, singleGoalPeriod)} dias
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2">
                               <button
-                                key={option.value}
-                                onClick={() => togglePeriodSelection(goalCreationStep, option.value)}
+                                onClick={resetGoalCreation}
+                                className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                              >
+                                Voltar
+                              </button>
+                              <button
+                                onClick={handleSingleGoalProceedToCategory}
+                                disabled={!singleGoalName.trim() || !singleGoalType || !singleGoalPeriod}
+                                className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                              >
+                                Próximo
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Hierarchical goal creation */}
+                            <div className="flex gap-1 mb-2">
+                              {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
+                                <div
+                                  key={step}
+                                  className={cn(
+                                    'flex-1 h-1 rounded-full transition-colors',
+                                    i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
+                                      ? 'bg-primary'
+                                      : 'bg-muted'
+                                  )}
+                                />
+                              ))}
+                            </div>
+
+                            <h5 className="text-sm font-medium text-foreground">
+                              Objetivo {getStepLabel(goalCreationStep)}
+                            </h5>
+
+                            <input
+                              type="text"
+                              placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
+                              value={newGoalName}
+                              onChange={(e) => setNewGoalName(e.target.value)}
+                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            />
+
+                            {/* Multi-select period */}
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-1 block">
+                                Períodos (selecione um ou mais)
+                              </label>
+                              
+                              {/* Select All button */}
+                              <button
+                                onClick={() => {
+                                  const allOptions = getFilteredOptions(goalCreationStep).map(o => o.value);
+                                  const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
+                                  setGoalCreationData(prev => ({
+                                    ...prev,
+                                    [goalCreationStep]: { 
+                                      ...prev[goalCreationStep], 
+                                      periods: allSelected ? [] : allOptions 
+                                    }
+                                  }));
+                                }}
                                 className={cn(
-                                  'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
-                                  goalCreationData[goalCreationStep].periods.includes(option.value)
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                                  'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all mb-2 border-2 border-dashed',
+                                  getFilteredOptions(goalCreationStep).every(o => goalCreationData[goalCreationStep].periods.includes(o.value))
+                                    ? 'bg-primary/20 border-primary text-primary'
+                                    : 'bg-muted/30 border-border/50 text-foreground hover:bg-muted/50'
                                 )}
                               >
-                                {option.label}
+                                ✓ Selecionar todos
                               </button>
-                            ))}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {goalCreationData[goalCreationStep].periods.length} selecionado(s)
-                          </p>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {goalCreationStep !== 'yearly' ? (
-                            <button
-                              onClick={() => {
-                                const prevStep = getPrevStep(goalCreationStep);
-                                if (prevStep) {
-                                  setGoalCreationStep(prevStep);
-                                  setNewGoalName(goalCreationData[prevStep].name);
-                                }
-                              }}
-                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
-                            >
-                              Voltar
-                            </button>
-                          ) : (
-                            <button
-                              onClick={resetGoalCreation}
-                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
-                            >
-                              Voltar
-                            </button>
-                          )}
-                          <button
-                            onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleFinalizeHierarchicalCreation}
-                            disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
-                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
-                          >
-                            {getNextStep(goalCreationStep) ? 'Próximo' : 'Concluir'}
-                          </button>
-                        </div>
+
+                              {/* Quick select options for weeks */}
+                              {goalCreationStep === 'weekly' && (
+                                <div className="space-y-1 mb-2 p-2 rounded-xl bg-secondary/10 border border-secondary/30">
+                                  <p className="text-xs font-medium text-secondary-foreground mb-1">Seleção rápida:</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {/* All weeks of the year */}
+                                    {generateYearOptions().map(year => (
+                                      <button
+                                        key={`year-${year.value}`}
+                                        onClick={() => {
+                                          const yearWeeks = getFilteredOptions('weekly').filter(o => o.value.includes(year.value)).map(o => o.value);
+                                          const allSelected = yearWeeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                          setGoalCreationData(prev => ({
+                                            ...prev,
+                                            weekly: { 
+                                              ...prev.weekly, 
+                                              periods: allSelected 
+                                                ? prev.weekly.periods.filter(p => !yearWeeks.includes(p))
+                                                : [...new Set([...prev.weekly.periods, ...yearWeeks])]
+                                            }
+                                          }));
+                                        }}
+                                        className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                                      >
+                                        Ano {year.value}
+                                      </button>
+                                    ))}
+                                    {/* 1st and 2nd semester */}
+                                    {generateYearOptions().map(year => (
+                                      <React.Fragment key={`sem-${year.value}`}>
+                                        <button
+                                          onClick={() => {
+                                            const s1Weeks = getFilteredOptions('weekly').filter(o => {
+                                              const match = o.value.match(/Semana (\d+) - (\d+)/);
+                                              if (!match) return false;
+                                              return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) <= 26;
+                                            }).map(o => o.value);
+                                            const allSelected = s1Weeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                            setGoalCreationData(prev => ({
+                                              ...prev,
+                                              weekly: { 
+                                                ...prev.weekly, 
+                                                periods: allSelected 
+                                                  ? prev.weekly.periods.filter(p => !s1Weeks.includes(p))
+                                                  : [...new Set([...prev.weekly.periods, ...s1Weeks])]
+                                              }
+                                            }));
+                                          }}
+                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                                        >
+                                          1º Sem {year.value}
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const s2Weeks = getFilteredOptions('weekly').filter(o => {
+                                              const match = o.value.match(/Semana (\d+) - (\d+)/);
+                                              if (!match) return false;
+                                              return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) > 26;
+                                            }).map(o => o.value);
+                                            const allSelected = s2Weeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                            setGoalCreationData(prev => ({
+                                              ...prev,
+                                              weekly: { 
+                                                ...prev.weekly, 
+                                                periods: allSelected 
+                                                  ? prev.weekly.periods.filter(p => !s2Weeks.includes(p))
+                                                  : [...new Set([...prev.weekly.periods, ...s2Weeks])]
+                                              }
+                                            }));
+                                          }}
+                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                                        >
+                                          2º Sem {year.value}
+                                        </button>
+                                      </React.Fragment>
+                                    ))}
+                                  </div>
+                                  {/* Months */}
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((monthLabel, monthIndex) => {
+                                      const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+                                      return (
+                                        <button
+                                          key={monthLabel}
+                                          onClick={() => {
+                                            const monthWeeks = getFilteredOptions('weekly').filter(o => {
+                                              return o.label.toLowerCase().includes(monthNames[monthIndex]);
+                                            }).map(o => o.value);
+                                            const allSelected = monthWeeks.length > 0 && monthWeeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                            setGoalCreationData(prev => ({
+                                              ...prev,
+                                              weekly: { 
+                                                ...prev.weekly, 
+                                                periods: allSelected 
+                                                  ? prev.weekly.periods.filter(p => !monthWeeks.includes(p))
+                                                  : [...new Set([...prev.weekly.periods, ...monthWeeks])]
+                                              }
+                                            }));
+                                          }}
+                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted/70 text-foreground transition-all"
+                                        >
+                                          {monthLabel}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="max-h-40 overflow-y-auto space-y-1 bg-muted/20 rounded-xl p-2">
+                                {getFilteredOptions(goalCreationStep).map((option) => (
+                                  <button
+                                    key={option.value}
+                                    onClick={() => togglePeriodSelection(goalCreationStep, option.value)}
+                                    className={cn(
+                                      'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
+                                      goalCreationData[goalCreationStep].periods.includes(option.value)
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                                    )}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {goalCreationData[goalCreationStep].periods.length} selecionado(s)
+                              </p>
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              {goalCreationStep !== 'yearly' ? (
+                                <button
+                                  onClick={() => {
+                                    const prevStep = getPrevStep(goalCreationStep);
+                                    if (prevStep) {
+                                      setGoalCreationStep(prevStep);
+                                      setNewGoalName(goalCreationData[prevStep].name);
+                                    }
+                                  }}
+                                  className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                                >
+                                  Voltar
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={resetGoalCreation}
+                                  className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                                >
+                                  Voltar
+                                </button>
+                              )}
+                              <button
+                                onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleHierarchicalProceedToCategory}
+                                disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
+                                className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                              >
+                                {getNextStep(goalCreationStep) ? 'Próximo' : 'Próximo'}
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
-                )}
+
+                  {/* New Category Modal */}
+                  <AnimatePresence>
+                    {(showNewCategoryModal || editingCategory) && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+                        onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}
+                      >
+                        <motion.div
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.9, opacity: 0 }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+                        >
+                          <h3 className="text-lg font-bold mb-4">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h3>
+                          <div className="space-y-4">
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="🎯"
+                                value={editingCategory ? editingCategory.emoji || '' : newCategoryEmoji}
+                                onChange={(e) => editingCategory 
+                                  ? setEditingCategory({...editingCategory, emoji: e.target.value})
+                                  : setNewCategoryEmoji(e.target.value)
+                                }
+                                className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
+                                maxLength={2}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Nome da categoria"
+                                value={editingCategory ? editingCategory.name : newCategoryName}
+                                onChange={(e) => editingCategory
+                                  ? setEditingCategory({...editingCategory, name: e.target.value})
+                                  : setNewCategoryName(e.target.value)
+                                }
+                                className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-2 block">XP padrão</label>
+                              <div className="flex gap-1 flex-wrap">
+                                {XP_OPTIONS.map((xp) => (
+                                  <button
+                                    key={xp}
+                                    onClick={() => editingCategory
+                                      ? setEditingCategory({...editingCategory, xpReward: xp})
+                                      : setNewCategoryXP(xp)
+                                    }
+                                    className={cn(
+                                      'px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                                      (editingCategory ? editingCategory.xpReward : newCategoryXP) === xp
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                    )}
+                                  >
+                                    {xp} XP
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}
+                                className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (editingCategory) {
+                                    updateCustomCategory(editingCategory.id, {
+                                      name: editingCategory.name,
+                                      emoji: editingCategory.emoji,
+                                      xpReward: editingCategory.xpReward,
+                                    });
+                                    setEditingCategory(null);
+                                  } else {
+                                    addCustomCategory({
+                                      name: newCategoryName,
+                                      emoji: newCategoryEmoji,
+                                      xpReward: newCategoryXP,
+                                    });
+                                    setShowNewCategoryModal(false);
+                                    setNewCategoryName('');
+                                    setNewCategoryEmoji('🎯');
+                                    setNewCategoryXP(20);
+                                  }
+                                }}
+                                className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                              >
+                                {editingCategory ? 'Salvar' : 'Criar'}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
