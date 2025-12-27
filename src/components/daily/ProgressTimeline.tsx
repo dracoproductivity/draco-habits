@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BarChart3, RotateCcw } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
 
 type ViewMode = 'week' | 'month';
 type ChartMode = 'evolution' | 'progress';
@@ -20,7 +22,7 @@ export const ProgressTimeline = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [weekOffset, setWeekOffset] = useState(0);
-  const { getDailyProgress } = useAppStore();
+  const { habits, goals, habitChecks } = useAppStore();
 
   const today = new Date();
   
@@ -40,8 +42,31 @@ export const ProgressTimeline = () => {
     const formatDate = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
     return `${formatDate(monday)} - ${formatDate(sunday)}`;
   };
+
+  const isCurrentWeek = weekOffset === 0;
+  const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
   
-  const getWeekDays = () => {
+  // Calculate daily progress for a specific date
+  const calculateDailyProgress = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    
+    // Get habits that are scheduled for this date
+    const scheduledHabits = habits.filter(habit => {
+      const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+      return isHabitScheduledForDate(habit, date, linkedGoal);
+    });
+    
+    if (scheduledHabits.length === 0) return 0;
+    
+    // Count completed habits
+    const completedCount = habitChecks.filter(
+      hc => hc.date === dateStr && hc.completed && scheduledHabits.some(h => h.id === hc.habitId)
+    ).length;
+    
+    return Math.round((completedCount / scheduledHabits.length) * 100);
+  };
+  
+  const getWeekDays = useMemo(() => {
     const days: { name: string; progress: number }[] = [];
     const monday = getWeekMonday();
     
@@ -49,36 +74,33 @@ export const ProgressTimeline = () => {
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
       days.push({
         name: dayNames[i],
-        progress: getDailyProgress(dateStr),
+        progress: calculateDailyProgress(d),
       });
     }
     
     return days;
-  };
+  }, [weekOffset, habits, goals, habitChecks]);
 
-  const getMonthDays = () => {
+  const getMonthDays = useMemo(() => {
     const days: { name: string; progress: number }[] = [];
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
     
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(selectedYear, selectedMonth, i);
-      const dateStr = d.toISOString().split('T')[0];
       days.push({
         name: i.toString(),
-        progress: getDailyProgress(dateStr),
+        progress: calculateDailyProgress(d),
       });
     }
     
     return days;
-  };
+  }, [selectedMonth, selectedYear, habits, goals, habitChecks]);
 
-  // Recalculate chart data when dependencies change
   const chartData = viewMode === 'week' 
-    ? getWeekDays() 
-    : getMonthDays();
+    ? getWeekDays 
+    : getMonthDays;
 
   const handlePrevMonth = () => {
     if (selectedMonth === 0) {
@@ -95,6 +117,15 @@ export const ProgressTimeline = () => {
       setSelectedYear(selectedYear + 1);
     } else {
       setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  const handleReturnToNow = () => {
+    if (viewMode === 'week') {
+      setWeekOffset(0);
+    } else {
+      setSelectedMonth(today.getMonth());
+      setSelectedYear(today.getFullYear());
     }
   };
 
@@ -197,6 +228,15 @@ export const ProgressTimeline = () => {
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+              {!isCurrentWeek && (
+                <button
+                  onClick={handleReturnToNow}
+                  className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-all"
+                  title="Voltar para esta semana"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -215,6 +255,15 @@ export const ProgressTimeline = () => {
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
+              {!isCurrentMonth && (
+                <button
+                  onClick={handleReturnToNow}
+                  className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-all"
+                  title="Voltar para este mês"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
 

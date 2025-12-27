@@ -102,12 +102,27 @@ export const useCloudSync = () => {
   const store = useAppStore();
   const syncInProgress = useRef(false);
   const lastSyncTime = useRef<number>(0);
+  const isInitialLoad = useRef(true);
+  const lastSyncedData = useRef<{
+    habits: string;
+    goals: string;
+    habitChecks: string;
+    customCategories: string;
+    draco: string;
+  }>({
+    habits: '',
+    goals: '',
+    habitChecks: '',
+    customCategories: '',
+    draco: '',
+  });
   
   // Load all data from cloud
   const loadFromCloud = useCallback(async () => {
     if (!user || syncInProgress.current) return;
     
     syncInProgress.current = true;
+    isInitialLoad.current = true;
     
     // Clear existing data first to prevent data from other users mixing
     useAppStore.setState({
@@ -282,11 +297,24 @@ export const useCloudSync = () => {
       
       useAppStore.setState({ customCategories });
       
+      // Update last synced data to prevent immediate re-sync
+      lastSyncedData.current = {
+        habits: JSON.stringify(habits),
+        goals: JSON.stringify(goals),
+        habitChecks: JSON.stringify(habitChecks),
+        customCategories: JSON.stringify(customCategories),
+        draco: JSON.stringify(dracoData),
+      };
+      
       lastSyncTime.current = Date.now();
     } catch (error) {
       console.error('Error loading from cloud:', error);
     } finally {
       syncInProgress.current = false;
+      // Mark initial load as complete after a short delay
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 1000);
     }
   }, [user, store]);
   
@@ -425,6 +453,13 @@ export const useCloudSync = () => {
   const deleteHabit = useCallback(async (habitId: string) => {
     if (!user) return;
     
+    // First delete habit checks for this habit
+    await supabase
+      .from('habit_checks')
+      .delete()
+      .eq('habit_id', habitId)
+      .eq('user_id', user.id);
+    
     const { error } = await supabase
       .from('habits')
       .delete()
@@ -525,6 +560,134 @@ export const useCloudSync = () => {
       lastLoadedUserId.current = null;
     }
   }, [isAuthenticated, user, loadFromCloud]);
+  
+  // Auto-sync habits when they change
+  useEffect(() => {
+    if (!user || isInitialLoad.current) return;
+    
+    const currentHabits = useAppStore.getState().habits;
+    const currentHabitsStr = JSON.stringify(currentHabits);
+    
+    if (currentHabitsStr !== lastSyncedData.current.habits) {
+      // Find new or updated habits
+      const previousHabits: Habit[] = lastSyncedData.current.habits ? JSON.parse(lastSyncedData.current.habits) : [];
+      const previousIds = new Set(previousHabits.map(h => h.id));
+      const currentIds = new Set(currentHabits.map(h => h.id));
+      
+      // Save new and updated habits
+      currentHabits.forEach(habit => {
+        const prev = previousHabits.find(h => h.id === habit.id);
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(habit)) {
+          saveHabit(habit);
+        }
+      });
+      
+      // Delete removed habits
+      previousHabits.forEach(habit => {
+        if (!currentIds.has(habit.id)) {
+          deleteHabit(habit.id);
+        }
+      });
+      
+      lastSyncedData.current.habits = currentHabitsStr;
+    }
+  }, [useAppStore.getState().habits, user, saveHabit, deleteHabit]);
+  
+  // Auto-sync goals when they change
+  useEffect(() => {
+    if (!user || isInitialLoad.current) return;
+    
+    const currentGoals = useAppStore.getState().goals;
+    const currentGoalsStr = JSON.stringify(currentGoals);
+    
+    if (currentGoalsStr !== lastSyncedData.current.goals) {
+      // Find new or updated goals
+      const previousGoals: Goal[] = lastSyncedData.current.goals ? JSON.parse(lastSyncedData.current.goals) : [];
+      const currentIds = new Set(currentGoals.map(g => g.id));
+      
+      // Save new and updated goals
+      currentGoals.forEach(goal => {
+        const prev = previousGoals.find(g => g.id === goal.id);
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(goal)) {
+          saveGoal(goal);
+        }
+      });
+      
+      // Delete removed goals
+      previousGoals.forEach(goal => {
+        if (!currentIds.has(goal.id)) {
+          deleteGoal(goal.id);
+        }
+      });
+      
+      lastSyncedData.current.goals = currentGoalsStr;
+    }
+  }, [useAppStore.getState().goals, user, saveGoal, deleteGoal]);
+  
+  // Auto-sync habit checks when they change
+  useEffect(() => {
+    if (!user || isInitialLoad.current) return;
+    
+    const currentChecks = useAppStore.getState().habitChecks;
+    const currentChecksStr = JSON.stringify(currentChecks);
+    
+    if (currentChecksStr !== lastSyncedData.current.habitChecks) {
+      const previousChecks: HabitCheck[] = lastSyncedData.current.habitChecks ? JSON.parse(lastSyncedData.current.habitChecks) : [];
+      
+      // Save new and updated checks
+      currentChecks.forEach(check => {
+        const prev = previousChecks.find(c => c.habitId === check.habitId && c.date === check.date);
+        if (!prev || prev.completed !== check.completed) {
+          saveHabitCheck(check.habitId, check.date, check.completed);
+        }
+      });
+      
+      lastSyncedData.current.habitChecks = currentChecksStr;
+    }
+  }, [useAppStore.getState().habitChecks, user, saveHabitCheck]);
+  
+  // Auto-sync custom categories when they change
+  useEffect(() => {
+    if (!user || isInitialLoad.current) return;
+    
+    const currentCategories = useAppStore.getState().customCategories;
+    const currentCategoriesStr = JSON.stringify(currentCategories);
+    
+    if (currentCategoriesStr !== lastSyncedData.current.customCategories) {
+      const previousCategories: CustomCategory[] = lastSyncedData.current.customCategories ? JSON.parse(lastSyncedData.current.customCategories) : [];
+      const currentIds = new Set(currentCategories.map(c => c.id));
+      
+      // Save new and updated categories
+      currentCategories.forEach(category => {
+        const prev = previousCategories.find(c => c.id === category.id);
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(category)) {
+          saveCustomCategory(category);
+        }
+      });
+      
+      // Delete removed categories
+      previousCategories.forEach(category => {
+        if (!currentIds.has(category.id)) {
+          deleteCustomCategory(category.id);
+        }
+      });
+      
+      lastSyncedData.current.customCategories = currentCategoriesStr;
+    }
+  }, [useAppStore.getState().customCategories, user, saveCustomCategory, deleteCustomCategory]);
+  
+  // Auto-sync draco when it changes
+  useEffect(() => {
+    if (!user || isInitialLoad.current) return;
+    
+    const currentDraco = useAppStore.getState().draco;
+    const currentDracoStr = JSON.stringify(currentDraco);
+    
+    if (currentDracoStr !== lastSyncedData.current.draco) {
+      saveDraco(currentDraco);
+      lastSyncedData.current.draco = currentDracoStr;
+    }
+  }, [useAppStore.getState().draco, user, saveDraco]);
   
   return {
     loadFromCloud,

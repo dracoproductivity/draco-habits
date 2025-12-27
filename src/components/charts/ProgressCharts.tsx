@@ -20,6 +20,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
 
 type ProgressFilter = 'habits' | 'goals';
 type ProgressTimeRange = 'week' | 'month';
@@ -67,27 +68,41 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
       return days.map((day) => {
         const dateStr = format(day, 'yyyy-MM-dd');
         const isBeforeAccount = day < accountStartDate;
-        const totalHabits = filteredHabits.length;
         
-        if (isBeforeAccount || totalHabits === 0) {
+        if (isBeforeAccount) {
           return { 
             date: format(day, 'dd/MM'), 
-            progress: isBeforeAccount ? null : 0,
-            isBeforeAccount 
+            progress: null,
+            isBeforeAccount: true 
           };
         }
 
-        const completed = habitChecks.filter(
-          (hc) => hc.date === dateStr && hc.completed && filteredHabits.some((h) => h.id === hc.habitId)
+        // Get habits scheduled for this day
+        const scheduledHabits = filteredHabits.filter(habit => {
+          const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+          return isHabitScheduledForDate(habit, day, linkedGoal);
+        });
+
+        if (scheduledHabits.length === 0) {
+          return {
+            date: format(day, 'dd/MM'),
+            progress: null,
+            isBeforeAccount: false,
+          };
+        }
+
+        const completedCount = habitChecks.filter(
+          (hc) => hc.date === dateStr && hc.completed && scheduledHabits.some((h) => h.id === hc.habitId)
         ).length;
 
         return {
           date: format(day, 'dd/MM'),
-          progress: Math.round((completed / totalHabits) * 100),
+          progress: Math.round((completedCount / scheduledHabits.length) * 100),
           isBeforeAccount: false,
         };
       });
     } else {
+      // For goals, calculate cumulative progress over time
       const filteredGoals = selectedGoalId === 'all' 
         ? goals 
         : goals.filter((g) => g.id === selectedGoalId);
@@ -100,25 +115,69 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
         }));
       }
 
-      const avgProgress = filteredGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / filteredGoals.length;
-
       return days.map((day) => {
+        const dateStr = format(day, 'yyyy-MM-dd');
         const isBeforeAccount = day < accountStartDate;
+        
+        if (isBeforeAccount) {
+          return {
+            date: format(day, 'dd/MM'),
+            progress: null,
+            isBeforeAccount: true,
+          };
+        }
+
+        // Calculate cumulative progress: total completed checks up to this day / total scheduled up to this day
+        let totalCompleted = 0;
+        let totalScheduled = 0;
+
+        filteredGoals.forEach(goal => {
+          const goalHabits = habits.filter(h => h.goalId === goal.id);
+          
+          goalHabits.forEach(habit => {
+            // Check all days from habit creation to current day
+            const habitCreated = new Date(habit.createdAt);
+            const startDate = habitCreated > accountStartDate ? habitCreated : accountStartDate;
+            
+            const daysToCheck = eachDayOfInterval({
+              start: startDate,
+              end: day,
+            });
+
+            daysToCheck.forEach(checkDay => {
+              if (isHabitScheduledForDate(habit, checkDay, goal)) {
+                totalScheduled++;
+                const checkDateStr = format(checkDay, 'yyyy-MM-dd');
+                const isCompleted = habitChecks.some(
+                  hc => hc.habitId === habit.id && hc.date === checkDateStr && hc.completed
+                );
+                if (isCompleted) {
+                  totalCompleted++;
+                }
+              }
+            });
+          });
+        });
+
+        const progress = totalScheduled > 0 ? Math.round((totalCompleted / totalScheduled) * 100) : 0;
+
         return {
           date: format(day, 'dd/MM'),
-          progress: isBeforeAccount ? null : Math.round(avgProgress),
-          isBeforeAccount,
+          progress,
+          isBeforeAccount: false,
         };
       });
     }
-  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate]);
+  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate, referenceDate]);
 
   const ProgressTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-sm font-semibold text-foreground">{payload[0].value}%</p>
+          <p className="text-sm font-semibold text-foreground">
+            {payload[0].value !== null ? `${payload[0].value}%` : 'Sem dados'}
+          </p>
         </div>
       );
     }
@@ -294,17 +353,8 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
               strokeWidth={2}
               dot={(props: any) => {
                 const { cx, cy, payload } = props;
-                if (payload.isBeforeAccount) {
-                  return (
-                    <circle
-                      key={`dot-${payload.date}`}
-                      cx={cx}
-                      cy={cy || props.height / 2}
-                      r={3}
-                      fill="hsl(var(--muted))"
-                      stroke="hsl(var(--muted))"
-                    />
-                  );
+                if (payload.isBeforeAccount || payload.progress === null) {
+                  return null;
                 }
                 return (
                   <circle
