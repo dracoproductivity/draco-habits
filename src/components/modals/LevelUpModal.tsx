@@ -8,9 +8,10 @@ interface LevelUpModalProps {
   onClose: () => void;
   newLevel: number;
   dracoName: string;
+  dracoColor?: string;
 }
 
-export const LevelUpModal = ({ isOpen, onClose, newLevel, dracoName }: LevelUpModalProps) => {
+export const LevelUpModal = ({ isOpen, onClose, newLevel, dracoName, dracoColor = 'purple' }: LevelUpModalProps) => {
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -124,7 +125,7 @@ export const LevelUpModal = ({ isOpen, onClose, newLevel, dracoName }: LevelUpMo
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="w-full h-full"
               >
-                <DracoIcon level={newLevel} />
+                <DracoIcon level={newLevel} color={dracoColor} />
               </motion.div>
               
               {/* Orbiting stars */}
