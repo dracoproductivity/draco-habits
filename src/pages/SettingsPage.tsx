@@ -30,6 +30,7 @@ import { DracoIcon, DRACO_IMAGES } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { Switch } from '@/components/ui/switch';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
+import { CategoriesSection } from '@/components/settings/CategoriesSection';
 import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
@@ -545,6 +546,9 @@ export const SettingsPage = () => {
             </div>
           </div>
         </section>
+
+        {/* Categories Section */}
+        <CategoriesSection />
 
         {/* Health Settings */}
         <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">

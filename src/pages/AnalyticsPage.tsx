@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3, ChevronLeft, ChevronRight, Plus, Edit3 } from 'lucide-react';
+import { Moon, Smartphone, Target, CalendarDays, BarChart3, Plus, Edit3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addWeeks, addMonths } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   XAxis,
@@ -17,13 +17,12 @@ import {
 } from 'recharts';
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
+import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { HealthLogModal } from '@/components/analytics/HealthLogModal';
 import { cn } from '@/lib/utils';
 
 type TimeRange = 'weekly' | 'monthly';
-type ProgressFilter = 'habits' | 'goals';
-type ProgressTimeRange = 'week' | 'month';
 type AnalyticsView = 'progress' | 'charts';
 
 export const AnalyticsPage = () => {
@@ -33,10 +32,6 @@ export const AnalyticsPage = () => {
   const [analyticsView, setAnalyticsView] = useState<AnalyticsView>('progress');
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
-  const [progressFilter, setProgressFilter] = useState<ProgressFilter>('habits');
-  const [progressTimeRange, setProgressTimeRange] = useState<ProgressTimeRange>('month');
-  const [selectedHabitId, setSelectedHabitId] = useState<string>('all');
-  const [selectedGoalId, setSelectedGoalId] = useState<string>('all');
   
   // Health log modal state
   const [showSleepModal, setShowSleepModal] = useState(false);
@@ -50,13 +45,6 @@ export const AnalyticsPage = () => {
 
   const minSleepHours = settings.minSleepHours || 7;
   const maxPhoneHours = settings.maxPhoneHours || 2;
-
-  // Find the earliest habit creation date as account start
-  const accountStartDate = useMemo(() => {
-    if (habits.length === 0) return new Date();
-    const dates = habits.map(h => new Date(h.createdAt));
-    return new Date(Math.min(...dates.map(d => d.getTime())));
-  }, [habits]);
 
   const getDateRange = (range: TimeRange) => {
     const today = new Date();
@@ -84,7 +72,6 @@ export const AnalyticsPage = () => {
         date: format(day, 'dd/MM'),
         dayName: format(day, 'EEE', { locale: ptBR }),
         hours: log?.sleepHours ?? null,
-        // For sleep: below minimum is bad (red), at minimum is warning (yellow), above is good (green)
         status: log ? (log.sleepHours < minSleepHours ? 'bad' : log.sleepHours === minSleepHours ? 'warning' : 'good') : null,
       };
     });
@@ -101,85 +88,10 @@ export const AnalyticsPage = () => {
         date: format(day, 'dd/MM'),
         dayName: format(day, 'EEE', { locale: ptBR }),
         hours: log?.phoneUsageHours ?? null,
-        // For phone: above maximum is bad (red), at maximum is warning (yellow), below is good (green)
         status: log ? (log.phoneUsageHours > maxPhoneHours ? 'bad' : log.phoneUsageHours === maxPhoneHours ? 'warning' : 'good') : null,
       };
     });
   }, [dailyLogs, phoneTimeRange, maxPhoneHours]);
-
-  // State for week/month navigation in progress chart
-  const [progressReferenceDate, setProgressReferenceDate] = useState<Date>(new Date());
-
-  const getProgressData = useMemo(() => {
-    const baseDate = progressReferenceDate;
-    let days;
-    
-    if (progressTimeRange === 'week') {
-      days = eachDayOfInterval({
-        start: startOfWeek(baseDate, { weekStartsOn: 1 }),
-        end: endOfWeek(baseDate, { weekStartsOn: 1 }),
-      });
-    } else {
-      days = eachDayOfInterval({
-        start: startOfMonth(baseDate),
-        end: endOfMonth(baseDate),
-      });
-    }
-
-    if (progressFilter === 'habits') {
-      const filteredHabits = selectedHabitId === 'all' 
-        ? habits 
-        : habits.filter((h) => h.id === selectedHabitId);
-
-      return days.map((day) => {
-        const dateStr = format(day, 'yyyy-MM-dd');
-        const isBeforeAccount = day < accountStartDate;
-        const totalHabits = filteredHabits.length;
-        
-        if (isBeforeAccount || totalHabits === 0) {
-          return { 
-            date: format(day, 'dd/MM'), 
-            progress: isBeforeAccount ? null : 0,
-            isBeforeAccount 
-          };
-        }
-
-        const completed = habitChecks.filter(
-          (hc) => hc.date === dateStr && hc.completed && filteredHabits.some((h) => h.id === hc.habitId)
-        ).length;
-
-        return {
-          date: format(day, 'dd/MM'),
-          progress: Math.round((completed / totalHabits) * 100),
-          isBeforeAccount: false,
-        };
-      });
-    } else {
-      // For goals, we show the goal's current progress
-      const filteredGoals = selectedGoalId === 'all' 
-        ? goals 
-        : goals.filter((g) => g.id === selectedGoalId);
-
-      if (filteredGoals.length === 0) {
-        return days.map((day) => ({ 
-          date: format(day, 'dd/MM'), 
-          progress: day < accountStartDate ? null : 0,
-          isBeforeAccount: day < accountStartDate 
-        }));
-      }
-
-      const avgProgress = filteredGoals.reduce((sum, g) => sum + (g.progress || 0), 0) / filteredGoals.length;
-
-      return days.map((day) => {
-        const isBeforeAccount = day < accountStartDate;
-        return {
-          date: format(day, 'dd/MM'),
-          progress: isBeforeAccount ? null : Math.round(avgProgress),
-          isBeforeAccount,
-        };
-      });
-    }
-  }, [progressFilter, progressTimeRange, selectedHabitId, selectedGoalId, habits, goals, habitChecks, accountStartDate, progressReferenceDate]);
 
   const SleepTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -189,18 +101,6 @@ export const AnalyticsPage = () => {
           <p className="text-sm font-semibold text-foreground">
             {payload[0].value !== null ? `${payload[0].value}h` : 'Sem dados'}
           </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const ProgressTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card border border-border rounded-lg p-2 shadow-lg">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-sm font-semibold text-foreground">{payload[0].value}%</p>
         </div>
       );
     }
@@ -503,202 +403,8 @@ export const AnalyticsPage = () => {
               </div>
             </div>
 
-            {/* Progress Chart with Filters */}
-            <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
-              <div className="flex flex-col gap-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-                      <Target className="w-5 h-5 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">Progresso</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {progressTimeRange === 'week'
-                          ? `Semana de ${format(startOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')} a ${format(endOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
-                          : format(progressReferenceDate, 'MMMM yyyy', { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        setProgressTimeRange('week');
-                        setProgressReferenceDate(new Date());
-                      }}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        progressTimeRange === 'week'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Semana
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProgressTimeRange('month');
-                        setProgressReferenceDate(new Date());
-                      }}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        progressTimeRange === 'month'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Mês
-                    </button>
-                  </div>
-                </div>
-
-                {/* Range navigation */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <button
-                    onClick={() =>
-                      setProgressReferenceDate((prev) =>
-                        progressTimeRange === 'week' ? addWeeks(prev, -1) : addMonths(prev, -1)
-                      )
-                    }
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                    <span>Anterior</span>
-                  </button>
-                  <span className="font-medium">
-                    {progressTimeRange === 'week'
-                      ? `Semana ${format(startOfWeek(progressReferenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
-                      : format(progressReferenceDate, 'MMMM yyyy', { locale: ptBR })}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setProgressReferenceDate((prev) =>
-                        progressTimeRange === 'week' ? addWeeks(prev, 1) : addMonths(prev, 1)
-                      )
-                    }
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
-                  >
-                    <span>Próximo</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => {
-                        setProgressFilter('habits');
-                        setSelectedHabitId('all');
-                      }}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors flex items-center gap-1 ${
-                        progressFilter === 'habits'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      <ListTodo className="w-3 h-3" />
-                      Hábitos
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProgressFilter('goals');
-                        setSelectedGoalId('all');
-                      }}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors flex items-center gap-1 ${
-                        progressFilter === 'goals'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      <Target className="w-3 h-3" />
-                      Objetivos
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sub-filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Filtrar:</span>
-                  {progressFilter === 'habits' ? (
-                    <select
-                      value={selectedHabitId}
-                      onChange={(e) => setSelectedHabitId(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    >
-                      <option value="all">Todos os hábitos</option>
-                      {habits.map((habit) => (
-                        <option key={habit.id} value={habit.id}>
-                          {habit.emoji ? `${habit.emoji} ` : ''}{habit.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={selectedGoalId}
-                      onChange={(e) => setSelectedGoalId(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    >
-                      <option value="all">Todos os objetivos</option>
-                      {goals.map((goal) => (
-                        <option key={goal.id} value={goal.id}>
-                          {goal.emoji ? `${goal.emoji} ` : ''}{goal.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={getProgressData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                      interval={progressTimeRange === 'month' ? 6 : 0}
-                    />
-                    <YAxis
-                      domain={[0, 100]}
-                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                      tickFormatter={(v) => `${v}%`}
-                    />
-                    <Tooltip content={<ProgressTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="progress"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                      dot={(props: any) => {
-                        const { cx, cy, payload } = props;
-                        if (payload.isBeforeAccount) {
-                          return (
-                            <circle
-                              key={`progress-dot-${payload.date}`}
-                              cx={cx}
-                              cy={cy || props.height / 2}
-                              r={4}
-                              fill="hsl(var(--muted))"
-                              stroke="hsl(var(--muted))"
-                            />
-                          );
-                        }
-                        return (
-                          <circle
-                            key={`progress-dot-${payload.date}`}
-                            cx={cx}
-                            cy={cy}
-                            r={3}
-                            fill="hsl(var(--primary))"
-                          />
-                        );
-                      }}
-                      connectNulls={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            {/* Evolution + Progress Timeline (same as Daily page) */}
+            <ProgressTimeline />
           </>
         )}
       </div>
