@@ -1,11 +1,21 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Pencil, Tag, Sparkles } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Pencil, Tag, Sparkles, Trash2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface HabitDetailModalProps {
   habit: Habit;
@@ -40,8 +50,11 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     settings,
     customCategories,
     addCustomCategory,
-    updateCustomCategory
+    updateCustomCategory,
+    removeHabit
   } = useAppStore();
+
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   // Get linked goal to find current category
   const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
@@ -719,9 +732,43 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
             >
               Salvar Alterações
             </button>
+
+            {/* Delete Button */}
+            <button
+              onClick={() => setShowDeleteConfirmation(true)}
+              className="w-full py-3 flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Excluir hábito</span>
+            </button>
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir hábito</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o hábito "{habit.name}"? Esta ação não pode ser desfeita e todo o histórico de progresso será perdido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                removeHabit(habit.id);
+                toast({ title: 'Hábito excluído!', description: `"${habit.name}" foi removido.` });
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AnimatePresence>
   );
 };

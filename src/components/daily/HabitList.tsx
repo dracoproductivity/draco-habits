@@ -1501,15 +1501,6 @@ export const HabitList = () => {
                       <Bell className="w-3.5 h-3.5 text-primary" />
                     )}
                     <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeHabit(habit.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
                   </div>
                 </motion.div>
               );
