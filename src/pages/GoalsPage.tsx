@@ -217,6 +217,7 @@ export const GoalsPage = () => {
     monthly: { name: '', periods: [] },
     weekly: { name: '', periods: [] },
   });
+  const [showCategoryStep, setShowCategoryStep] = useState(false);
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
@@ -395,12 +396,32 @@ export const GoalsPage = () => {
     setNewGoalEmoji('');
     setCreationMode('single');
     setGoalCreationStep('yearly');
+    setShowCategoryStep(false);
     setGoalCreationData({
       yearly: { name: '', periods: [] },
       quarterly: { name: '', periods: [] },
       monthly: { name: '', periods: [] },
       weekly: { name: '', periods: [] },
     });
+  };
+
+  const handleSingleGoalProceedToCategory = () => {
+    if (!newGoalName.trim() || !newGoalType || !newGoalPeriod) return;
+    setShowCategoryStep(true);
+  };
+
+  const handleHierarchicalProceedToCategory = () => {
+    if (!newGoalName.trim()) return;
+    if (goalCreationData[goalCreationStep].periods.length === 0) return;
+
+    setGoalCreationData(prev => ({
+      ...prev,
+      [goalCreationStep]: { 
+        ...prev[goalCreationStep],
+        name: newGoalName.trim()
+      }
+    }));
+    setShowCategoryStep(true);
   };
 
   const getStepLabel = (step: GoalType) => {
@@ -835,31 +856,125 @@ export const GoalsPage = () => {
                 </button>
               </div>
 
-              {/* Mode selection */}
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => setCreationMode('single')}
-                  className={cn(
-                    'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                    creationMode === 'single'
-                      ? 'gradient-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  )}
-                >
-                  Período único
-                </button>
-                <button
-                  onClick={() => setCreationMode('hierarchical')}
-                  className={cn(
-                    'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                    creationMode === 'hierarchical'
-                      ? 'gradient-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  )}
-                >
-                  Hierárquico
-                </button>
-              </div>
+              {/* Category Step */}
+              {showCategoryStep ? (
+                <div className="space-y-4">
+                  <h5 className="text-sm font-medium text-foreground">Categoria e XP</h5>
+                  
+                  {/* Category selection */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-2 block">Categoria (opcional)</label>
+                    <div className="flex flex-wrap gap-2">
+                      {DEFAULT_CATEGORIES.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setNewGoalCategory(cat.id)}
+                          className={cn(
+                            'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                            newGoalCategory === cat.id
+                              ? 'gradient-fire text-primary-foreground'
+                              : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                          )}
+                        >
+                          <span>{cat.emoji}</span>
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                      {customCategories.map((cat) => (
+                        <div key={cat.id} className="relative group">
+                          <button
+                            onClick={() => setNewGoalCategory(cat.name as GoalCategory)}
+                            className={cn(
+                              'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                              newGoalCategory === cat.name
+                                ? 'gradient-fire text-primary-foreground'
+                                : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                            )}
+                          >
+                            {cat.emoji && <span>{cat.emoji}</span>}
+                            <span>{cat.name}</span>
+                          </button>
+                          <button
+                            onClick={() => openEditCategoryModal(cat)}
+                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-1 bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setShowNewCategoryModal(true)}
+                        className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border hover:bg-muted/50 transition-all flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Nova
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* XP selection */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-2 block">XP por hábito concluído</label>
+                    <div className="flex gap-1 flex-wrap">
+                      {XP_OPTIONS.map((xp) => (
+                        <button
+                          key={xp}
+                          onClick={() => setNewGoalCategoryXP(xp)}
+                          className={cn(
+                            'px-3 py-2 rounded-lg text-xs font-medium transition-all',
+                            newGoalCategoryXP === xp
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                          )}
+                        >
+                          {xp} XP
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowCategoryStep(false)}
+                      className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      onClick={creationMode === 'single' ? handleCreateGoal : handleFinalizeHierarchicalCreation}
+                      className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                    >
+                      Criar objetivo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Mode selection */}
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={() => setCreationMode('single')}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                        creationMode === 'single'
+                          ? 'gradient-primary text-primary-foreground'
+                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      Período único
+                    </button>
+                    <button
+                      onClick={() => setCreationMode('hierarchical')}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                        creationMode === 'hierarchical'
+                          ? 'gradient-primary text-primary-foreground'
+                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      Hierárquico
+                    </button>
+                  </div>
 
               {creationMode === 'single' ? (
                 <div className="space-y-4">
@@ -925,87 +1040,12 @@ export const GoalsPage = () => {
                     </div>
                   )}
 
-                  {/* Category selection */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
-                    <div className="flex flex-wrap gap-2">
-                      {DEFAULT_CATEGORIES.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => setNewGoalCategory(cat.id)}
-                          className={cn(
-                            'px-3 py-2 rounded-xl text-sm transition-all flex items-center gap-1',
-                            newGoalCategory === cat.id
-                              ? 'gradient-fire text-primary-foreground'
-                              : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                          )}
-                        >
-                          <span>{cat.emoji}</span>
-                          <span>{cat.name}</span>
-                        </button>
-                      ))}
-                      {customCategories.map((cat) => (
-                        <div key={cat.id} className="relative group">
-                          <button
-                            onClick={() => setNewGoalCategory(cat.name as GoalCategory)}
-                            className={cn(
-                              'px-3 py-2 rounded-xl text-sm transition-all flex items-center gap-1',
-                              newGoalCategory === cat.name
-                                ? 'gradient-fire text-primary-foreground'
-                                : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                            )}
-                          >
-                            {cat.emoji && <span>{cat.emoji}</span>}
-                            <span>{cat.name}</span>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditCategoryModal(cat);
-                            }}
-                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Pencil className="w-3 h-3 text-muted-foreground" />
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setShowNewCategoryModal(true)}
-                        className="px-3 py-2 rounded-xl text-sm bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Criar</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* XP selection */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">XP por hábito concluído</label>
-                    <div className="flex gap-2">
-                      {XP_OPTIONS.map((xp) => (
-                        <button
-                          key={xp}
-                          onClick={() => setNewGoalCategoryXP(xp)}
-                          className={cn(
-                            'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                            newGoalCategoryXP === xp
-                              ? 'gradient-fire text-primary-foreground'
-                              : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                          )}
-                        >
-                          {xp}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
                   <button
-                    onClick={handleCreateGoal}
+                    onClick={handleSingleGoalProceedToCategory}
                     disabled={!newGoalName.trim() || !newGoalType || !newGoalPeriod}
-                    className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 gradient-primary text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Criar Objetivo
+                    Próximo
                   </button>
                 </div>
               ) : (
@@ -1208,84 +1248,6 @@ export const GoalsPage = () => {
                     </p>
                   </div>
 
-                  {/* Category selection for last step */}
-                  {goalCreationStep === 'weekly' && (
-                    <>
-                      <div>
-                        <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
-                        <div className="flex flex-wrap gap-2">
-                          {DEFAULT_CATEGORIES.map((cat) => (
-                            <button
-                              key={cat.id}
-                              onClick={() => setNewGoalCategory(cat.id)}
-                              className={cn(
-                                'px-3 py-2 rounded-xl text-sm transition-all flex items-center gap-1',
-                                newGoalCategory === cat.id
-                                  ? 'gradient-fire text-primary-foreground'
-                                  : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                              )}
-                            >
-                              <span>{cat.emoji}</span>
-                              <span>{cat.name}</span>
-                            </button>
-                          ))}
-                          {customCategories.map((cat) => (
-                            <div key={cat.id} className="relative group">
-                              <button
-                                onClick={() => setNewGoalCategory(cat.name as GoalCategory)}
-                                className={cn(
-                                  'px-3 py-2 rounded-xl text-sm transition-all flex items-center gap-1',
-                                  newGoalCategory === cat.name
-                                    ? 'gradient-fire text-primary-foreground'
-                                    : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                                )}
-                              >
-                                {cat.emoji && <span>{cat.emoji}</span>}
-                                <span>{cat.name}</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditCategoryModal(cat);
-                                }}
-                                className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Pencil className="w-3 h-3 text-muted-foreground" />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            onClick={() => setShowNewCategoryModal(true)}
-                            className="px-3 py-2 rounded-xl text-sm bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>Criar</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-sm text-muted-foreground mb-2 block">XP por hábito</label>
-                        <div className="flex gap-2">
-                          {XP_OPTIONS.map((xp) => (
-                            <button
-                              key={xp}
-                              onClick={() => setNewGoalCategoryXP(xp)}
-                              className={cn(
-                                'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                                newGoalCategoryXP === xp
-                                  ? 'gradient-fire text-primary-foreground'
-                                  : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                              )}
-                            >
-                              {xp}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
                   {/* Navigation buttons */}
                   <div className="flex gap-2">
                     {getPrevStep(goalCreationStep) ? (
@@ -1307,25 +1269,17 @@ export const GoalsPage = () => {
                       </button>
                     )}
                     
-                    {getNextStep(goalCreationStep) ? (
-                      <button
-                        onClick={handleHierarchicalStepNext}
-                        disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
-                        className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
-                      >
-                        Próximo
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleFinalizeHierarchicalCreation}
-                        disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
-                        className="flex-1 px-4 py-2 gradient-fire text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
-                      >
-                        Criar Objetivos
-                      </button>
-                    )}
+                    <button
+                      onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleHierarchicalProceedToCategory}
+                      disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
+                      className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                    >
+                      Próximo
+                    </button>
                   </div>
                 </div>
+              )}
+                </>
               )}
             </motion.div>
           </motion.div>
