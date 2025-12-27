@@ -31,6 +31,7 @@ const AppContent = () => {
         onClose={clearLevelUp}
         newLevel={levelUpInfo?.newLevel || 1}
         dracoName={draco.name}
+        dracoColor={draco.color}
       />
     </>
   );

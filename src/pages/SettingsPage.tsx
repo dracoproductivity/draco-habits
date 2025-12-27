@@ -26,7 +26,7 @@ import { useCloudSync } from '@/hooks/useCloudSync';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } from '@/types';
-import { DracoIcon } from '@/components/icons/DracoIcon';
+import { DracoIcon, DRACO_IMAGES } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { Switch } from '@/components/ui/switch';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
@@ -46,18 +46,17 @@ const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
   { id: 'mint', name: 'Menta', color: '170 70% 50%' },
 ];
 
-const DRACO_COLORS: { id: DracoState['color']; name: string; color: string }[] = [
-  { id: 'blue', name: 'Azul', color: '200 90% 50%' },
-  { id: 'green', name: 'Verde', color: '160 80% 45%' },
-  { id: 'yellow', name: 'Amarelo', color: '45 95% 55%' },
-  { id: 'neutral', name: 'Branco/Preto', color: '0 0% 70%' },
-  { id: 'red', name: 'Vermelho', color: '0 85% 50%' },
-  { id: 'purple', name: 'Roxo', color: '270 80% 45%' },
-  { id: 'pink', name: 'Rosa', color: '330 85% 60%' },
-  { id: 'orange', name: 'Laranja', color: '25 95% 55%' },
-  { id: 'lilac', name: 'Lilás', color: '280 65% 70%' },
-  { id: 'gray', name: 'Cinza', color: '220 15% 55%' },
-  { id: 'mint', name: 'Menta', color: '170 70% 50%' },
+const DRACO_OPTIONS: { id: DracoState['color']; name: string }[] = [
+  { id: 'white', name: 'Branco' },
+  { id: 'gray', name: 'Cinza' },
+  { id: 'lavender', name: 'Lavanda' },
+  { id: 'orange', name: 'Laranja' },
+  { id: 'pink', name: 'Rosa' },
+  { id: 'purple', name: 'Roxo' },
+  { id: 'red', name: 'Vermelho' },
+  { id: 'black', name: 'Preto' },
+  { id: 'silver', name: 'Prata' },
+  { id: 'gold', name: 'Dourado' },
 ];
 
 const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
@@ -287,7 +286,7 @@ export const SettingsPage = () => {
           <div className="p-4 rounded-xl bg-muted/30 border border-border/30 mb-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 animate-float">
-                <DracoIcon level={draco.level} />
+                <DracoIcon level={draco.level} color={draco.color} />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-lg">{dracoName} - Nível {draco.level}</h3>
@@ -380,24 +379,26 @@ export const SettingsPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Cor do Draco</label>
-              <div className="grid grid-cols-6 gap-2">
-                {DRACO_COLORS.map((color) => (
+              <label className="text-xs text-muted-foreground">Escolha seu Draco</label>
+              <div className="grid grid-cols-5 gap-2">
+                {DRACO_OPTIONS.map((option) => (
                   <button
-                    key={color.id}
-                    onClick={() => updateDraco({ color: color.id })}
+                    key={option.id}
+                    onClick={() => updateDraco({ color: option.id })}
                     className={cn(
                       'relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all',
-                      draco.color === color.id 
+                      draco.color === option.id 
                         ? 'border-primary bg-primary/10' 
                         : 'border-transparent bg-muted/30 hover:bg-muted/50'
                     )}
                   >
-                    <div 
-                      className="w-6 h-6 rounded-full"
-                      style={{ backgroundColor: `hsl(${color.color})` }}
+                    <img 
+                      src={DRACO_IMAGES[option.id]}
+                      alt={option.name}
+                      className="w-12 h-12 object-contain rounded-lg"
                     />
-                    {draco.color === color.id && (
+                    <span className="text-[9px] text-foreground leading-tight">{option.name}</span>
+                    {draco.color === option.id && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-2.5 h-2.5 text-primary-foreground" />
                       </div>

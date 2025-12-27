@@ -67,7 +67,9 @@ export interface DracoState {
   xpToNextLevel: number;
   totalXP: number;
   name: string;
-  color: 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint';
+  color: 'white' | 'gray' | 'lavender' | 'orange' | 'pink' | 'purple' | 'red' | 'black' | 'silver' | 'gold' | 
+         // Legacy colors - keep for backwards compatibility
+         'blue' | 'green' | 'yellow' | 'neutral' | 'lilac' | 'mint';
 }
 
 export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint';

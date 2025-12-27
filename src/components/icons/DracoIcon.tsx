@@ -1,12 +1,63 @@
 import { cn } from '@/lib/utils';
-import dracoLogo from '@/assets/draco-logo.jpeg';
+
+// Import all dragon images
+import dracoWhite from '@/assets/dragons/draco-white.jpg';
+import dracoGray from '@/assets/dragons/draco-gray.jpg';
+import dracoLavender from '@/assets/dragons/draco-lavender.jpg';
+import dracoOrange from '@/assets/dragons/draco-orange.jpg';
+import dracoPink from '@/assets/dragons/draco-pink.jpg';
+import dracoPurple from '@/assets/dragons/draco-purple.jpg';
+import dracoRed from '@/assets/dragons/draco-red.jpg';
+import dracoBlack from '@/assets/dragons/draco-black.jpg';
+import dracoSilver from '@/assets/dragons/draco-silver.jpg';
+import dracoGold from '@/assets/dragons/draco-gold.jpg';
+
+export type DracoColorType = 
+  | 'white' 
+  | 'gray' 
+  | 'lavender' 
+  | 'orange' 
+  | 'pink' 
+  | 'purple' 
+  | 'red' 
+  | 'black' 
+  | 'silver' 
+  | 'gold'
+  // Legacy colors - map to new ones
+  | 'blue' 
+  | 'green' 
+  | 'yellow' 
+  | 'neutral' 
+  | 'lilac' 
+  | 'mint';
+
+export const DRACO_IMAGES: Record<string, string> = {
+  white: dracoWhite,
+  gray: dracoGray,
+  lavender: dracoLavender,
+  orange: dracoOrange,
+  pink: dracoPink,
+  purple: dracoPurple,
+  red: dracoRed,
+  black: dracoBlack,
+  silver: dracoSilver,
+  gold: dracoGold,
+  // Legacy mappings
+  blue: dracoSilver,
+  green: dracoGold,
+  yellow: dracoGold,
+  neutral: dracoWhite,
+  lilac: dracoLavender,
+  mint: dracoSilver,
+};
 
 interface DracoIconProps {
   className?: string;
   level?: number;
+  color?: string;
 }
 
-export const DracoIcon = ({ className, level = 1 }: DracoIconProps) => {
+export const DracoIcon = ({ className, level = 1, color = 'purple' }: DracoIconProps) => {
   // Glow effect based on level
   const getGlow = () => {
     if (level < 5) return '';
@@ -16,10 +67,12 @@ export const DracoIcon = ({ className, level = 1 }: DracoIconProps) => {
     return 'shadow-[0_0_30px_hsl(var(--primary)/0.7)]';
   };
 
+  const imageSrc = DRACO_IMAGES[color] || DRACO_IMAGES.purple;
+
   return (
     <div className={cn('relative', className)}>
       <img
-        src={dracoLogo}
+        src={imageSrc}
         alt={`Draco Level ${level}`}
         className={cn(
           'w-full h-full object-contain rounded-xl transition-all duration-300',

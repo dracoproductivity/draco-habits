@@ -39,7 +39,7 @@ export const UniversalHeader = () => {
           />
         </div>
         <div className="w-12 h-12 animate-float">
-          <DracoIcon level={draco.level} />
+          <DracoIcon level={draco.level} color={draco.color} />
         </div>
       </div>
     </header>
