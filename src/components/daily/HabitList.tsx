@@ -964,26 +964,6 @@ export const HabitList = () => {
                           </div>
                         </div>
 
-                        {/* XP selection */}
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-2 block">XP por hábito concluído</label>
-                          <div className="flex gap-1 flex-wrap">
-                            {XP_OPTIONS.map((xp) => (
-                              <button
-                                key={xp}
-                                onClick={() => setSelectedCategoryXP(xp)}
-                                className={cn(
-                                  'px-3 py-2 rounded-lg text-xs font-medium transition-all',
-                                  selectedCategoryXP === xp
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                                )}
-                              >
-                                {xp} XP
-                              </button>
-                            ))}
-                          </div>
-                        </div>
 
                         <div className="flex gap-2">
                           <button

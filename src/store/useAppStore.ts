@@ -29,6 +29,7 @@ interface AppStore {
   
   // Draco
   draco: DracoState;
+  levelUpInfo: { newLevel: number } | null; // For level up animation
   
   // Habits
   habits: Habit[];
@@ -47,6 +48,9 @@ interface AppStore {
   // UI
   activeTab: TabType;
   showWelcomeModal: boolean;
+  
+  // Level up modal
+  clearLevelUp: () => void;
   
   // Actions
   login: (email: string, password: string) => boolean;
@@ -127,6 +131,7 @@ export const useAppStore = create<AppStore>()(
       isFirstTime: true,
       user: null,
       draco: defaultDraco,
+      levelUpInfo: null,
       habits: defaultHabits,
       habitChecks: [],
       goals: defaultGoals,
@@ -135,6 +140,10 @@ export const useAppStore = create<AppStore>()(
       settings: defaultSettings,
       activeTab: 'daily',
       showWelcomeModal: false,
+
+      clearLevelUp: () => {
+        set({ levelUpInfo: null });
+      },
 
       login: (email, password) => {
         if (email && password) {
@@ -245,14 +254,8 @@ export const useAppStore = create<AppStore>()(
         
         const habit = habits.find((h) => h.id === habitId);
         
-        // Get XP from linked goal's category if exists
+        // Get XP from habit's own xpReward (no longer from goal's categoryXP)
         let xpAmount = habit?.xpReward || 0;
-        if (habit?.goalId) {
-          const linkedGoal = goals.find(g => g.id === habit.goalId);
-          if (linkedGoal?.categoryXP !== undefined) {
-            xpAmount = linkedGoal.categoryXP;
-          }
-        }
         
         if (existing) {
           const wasCompleted = existing.completed;
@@ -271,6 +274,7 @@ export const useAppStore = create<AppStore>()(
           if (newCompleted && xpAmount > 0) {
             // Adding XP
             set((state) => {
+              const oldLevel = state.draco.level;
               let newXP = state.draco.currentXP + xpAmount;
               let newLevel = state.draco.level;
               let xpToNext = state.draco.xpToNextLevel;
@@ -281,6 +285,9 @@ export const useAppStore = create<AppStore>()(
                 xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
               }
               
+              // Check if leveled up
+              const leveledUp = newLevel > oldLevel;
+              
               return {
                 draco: {
                   ...state.draco,
@@ -289,6 +296,7 @@ export const useAppStore = create<AppStore>()(
                   xpToNextLevel: xpToNext,
                   totalXP: state.draco.totalXP + xpAmount,
                 },
+                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
               };
             });
           } else if (!newCompleted && xpAmount > 0) {
@@ -324,6 +332,7 @@ export const useAppStore = create<AppStore>()(
           });
           if (xpAmount > 0) {
             set((state) => {
+              const oldLevel = state.draco.level;
               let newXP = state.draco.currentXP + xpAmount;
               let newLevel = state.draco.level;
               let xpToNext = state.draco.xpToNextLevel;
@@ -334,6 +343,9 @@ export const useAppStore = create<AppStore>()(
                 xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
               }
               
+              // Check if leveled up
+              const leveledUp = newLevel > oldLevel;
+              
               return {
                 draco: {
                   ...state.draco,
@@ -342,6 +354,7 @@ export const useAppStore = create<AppStore>()(
                   xpToNextLevel: xpToNext,
                   totalXP: state.draco.totalXP + xpAmount,
                 },
+                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
               };
             });
           }
