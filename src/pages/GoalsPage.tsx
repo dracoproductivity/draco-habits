@@ -1052,6 +1052,141 @@ export const GoalsPage = () => {
                     <label className="text-xs text-muted-foreground mb-1 block">
                       Selecione os períodos (pode selecionar vários):
                     </label>
+                    
+                    {/* Select All button */}
+                    <button
+                      onClick={() => {
+                        const allOptions = getFilteredOptions(goalCreationStep).map(o => o.value);
+                        const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
+                        setGoalCreationData(prev => ({
+                          ...prev,
+                          [goalCreationStep]: { 
+                            ...prev[goalCreationStep], 
+                            periods: allSelected ? [] : allOptions 
+                          }
+                        }));
+                      }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all mb-2 border-2 border-dashed',
+                        getFilteredOptions(goalCreationStep).every(o => goalCreationData[goalCreationStep].periods.includes(o.value))
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-muted/30 border-border/50 text-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      ✓ Selecionar todos
+                    </button>
+
+                    {/* Quick select options for weeks */}
+                    {goalCreationStep === 'weekly' && (
+                      <div className="space-y-1 mb-2 p-2 rounded-xl bg-secondary/10 border border-secondary/30">
+                        <p className="text-xs font-medium text-secondary-foreground mb-1">Seleção rápida:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {/* All weeks of the year */}
+                          {generateYearOptions().map(year => (
+                            <button
+                              key={`year-${year.value}`}
+                              onClick={() => {
+                                const yearWeeks = getFilteredOptions(goalCreationStep).filter(o => o.value.includes(year.value)).map(o => o.value);
+                                const allSelected = yearWeeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                setGoalCreationData(prev => ({
+                                  ...prev,
+                                  weekly: { 
+                                    ...prev.weekly, 
+                                    periods: allSelected 
+                                      ? prev.weekly.periods.filter(p => !yearWeeks.includes(p))
+                                      : [...new Set([...prev.weekly.periods, ...yearWeeks])]
+                                  }
+                                }));
+                              }}
+                              className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                            >
+                              Ano {year.value}
+                            </button>
+                          ))}
+                          {/* 1st and 2nd semester */}
+                          {generateYearOptions().map(year => (
+                            <>
+                              <button
+                                key={`s1-${year.value}`}
+                                onClick={() => {
+                                  const s1Weeks = getFilteredOptions(goalCreationStep).filter(o => {
+                                    const match = o.value.match(/Semana (\d+) - (\d+)/);
+                                    if (!match) return false;
+                                    return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) <= 26;
+                                  }).map(o => o.value);
+                                  const allSelected = s1Weeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                  setGoalCreationData(prev => ({
+                                    ...prev,
+                                    weekly: { 
+                                      ...prev.weekly, 
+                                      periods: allSelected 
+                                        ? prev.weekly.periods.filter(p => !s1Weeks.includes(p))
+                                        : [...new Set([...prev.weekly.periods, ...s1Weeks])]
+                                    }
+                                  }));
+                                }}
+                                className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                              >
+                                1º Sem {year.value}
+                              </button>
+                              <button
+                                key={`s2-${year.value}`}
+                                onClick={() => {
+                                  const s2Weeks = getFilteredOptions(goalCreationStep).filter(o => {
+                                    const match = o.value.match(/Semana (\d+) - (\d+)/);
+                                    if (!match) return false;
+                                    return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) > 26;
+                                  }).map(o => o.value);
+                                  const allSelected = s2Weeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                  setGoalCreationData(prev => ({
+                                    ...prev,
+                                    weekly: { 
+                                      ...prev.weekly, 
+                                      periods: allSelected 
+                                        ? prev.weekly.periods.filter(p => !s2Weeks.includes(p))
+                                        : [...new Set([...prev.weekly.periods, ...s2Weeks])]
+                                    }
+                                  }));
+                                }}
+                                className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
+                              >
+                                2º Sem {year.value}
+                              </button>
+                            </>
+                          ))}
+                        </div>
+                        {/* Months */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((monthLabel, monthIndex) => {
+                            const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+                            return (
+                              <button
+                                key={monthLabel}
+                                onClick={() => {
+                                  const monthWeeks = getFilteredOptions(goalCreationStep).filter(o => {
+                                    return o.label.toLowerCase().includes(monthNames[monthIndex]);
+                                  }).map(o => o.value);
+                                  const allSelected = monthWeeks.length > 0 && monthWeeks.every(v => goalCreationData.weekly.periods.includes(v));
+                                  setGoalCreationData(prev => ({
+                                    ...prev,
+                                    weekly: { 
+                                      ...prev.weekly, 
+                                      periods: allSelected 
+                                        ? prev.weekly.periods.filter(p => !monthWeeks.includes(p))
+                                        : [...new Set([...prev.weekly.periods, ...monthWeeks])]
+                                    }
+                                  }));
+                                }}
+                                className="px-2 py-1 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted/70 text-foreground transition-all"
+                              >
+                                {monthLabel}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded-xl bg-muted/20 border border-border/30">
                       {getFilteredOptions(goalCreationStep).map((option) => (
                         <button
