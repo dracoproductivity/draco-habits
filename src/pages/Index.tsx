@@ -16,44 +16,15 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 const Index = () => {
-  const { activeTab, settings, habits, goals, habitChecks, customCategories } = useAppStore();
+  const { activeTab, settings } = useAppStore();
   const { isAuthenticated, loading, user } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
   const prevUserIdRef = useRef<string | null>(null);
-  const cleanupDone = useRef(false);
   
-  // Initialize cloud sync
+  // Initialize cloud sync - this handles loading data from cloud
   useCloudSync();
-
-  // Clean up invalid UUIDs from localStorage on mount
-  useEffect(() => {
-    if (cleanupDone.current) return;
-    cleanupDone.current = true;
-    
-    // Filter out items with invalid UUIDs
-    const validHabits = habits.filter(h => UUID_REGEX.test(h.id));
-    const validGoals = goals.filter(g => UUID_REGEX.test(g.id));
-    const validHabitChecks = habitChecks.filter(hc => UUID_REGEX.test(hc.habitId));
-    const validCategories = customCategories.filter(c => UUID_REGEX.test(c.id));
-    
-    // If any were invalid, update the store
-    if (validHabits.length !== habits.length || 
-        validGoals.length !== goals.length || 
-        validHabitChecks.length !== habitChecks.length ||
-        validCategories.length !== customCategories.length) {
-      useAppStore.setState({
-        habits: validHabits,
-        goals: validGoals,
-        habitChecks: validHabitChecks,
-        customCategories: validCategories,
-      });
-    }
-  }, []);
 
   // Clear store when user changes or logs out
   useEffect(() => {

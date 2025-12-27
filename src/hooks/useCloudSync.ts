@@ -104,53 +104,49 @@ interface CustomCategoryRow {
   xp_reward: number;
 }
 
-export const useCloudSync = () => {
-  const { user, isAuthenticated } = useAuth();
-  const syncInProgress = useRef(false);
-  const isInitialLoad = useRef(true);
-  const lastSyncedData = useRef<{
-    habits: string;
-    goals: string;
-    habitChecks: string;
-    customCategories: string;
-    draco: string;
-  }>({
+// Global refs to persist across hook instances
+const globalState = {
+  syncInProgress: false,
+  isInitialLoad: true,
+  lastLoadedUserId: null as string | null,
+  lastSyncedData: {
     habits: '',
     goals: '',
     habitChecks: '',
     customCategories: '',
     draco: '',
-  });
+  },
+};
+
+export const useCloudSync = () => {
+  const { user, isAuthenticated } = useAuth();
+  const userIdRef = useRef<string | null>(null);
+  
+  // Update userIdRef when user changes
+  useEffect(() => {
+    userIdRef.current = user?.id || null;
+  }, [user?.id]);
   
   // Load all data from cloud
-  const loadFromCloud = useCallback(async () => {
-    if (!user || syncInProgress.current) return;
+  const loadFromCloud = useCallback(async (userId: string) => {
+    if (globalState.syncInProgress) return;
     
-    syncInProgress.current = true;
-    isInitialLoad.current = true;
-    
-    // Clear existing data first to prevent data from other users mixing
-    useAppStore.setState({
-      habits: [],
-      habitChecks: [],
-      goals: [],
-      customCategories: [],
-      dailyLogs: [],
-    });
+    globalState.syncInProgress = true;
+    globalState.isInitialLoad = true;
     
     try {
       // Load profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       
       if (profile) {
         const profileData = profile as ProfileRow;
         useAppStore.getState().updateUser({
-          id: user.id,
-          email: user.email || '',
+          id: userId,
+          email: '',
           firstName: profileData.first_name || 'Usuário',
           lastName: profileData.last_name || '',
           birthDate: profileData.birth_date || undefined,
@@ -162,7 +158,7 @@ export const useCloudSync = () => {
       const { data: dracoData } = await supabase
         .from('draco_state')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       
       if (dracoData) {
@@ -181,13 +177,13 @@ export const useCloudSync = () => {
       const { data: settingsData } = await supabase
         .from('user_settings')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       
       if (settingsData) {
         const settings = settingsData as SettingsRow;
         
-        // Parse notification_reminders - it may come as a string from the database
+        // Parse notification_reminders
         let notificationReminders: AppSettings['notificationReminders'] = [];
         if (settings.notification_reminders) {
           if (typeof settings.notification_reminders === 'string') {
@@ -219,7 +215,7 @@ export const useCloudSync = () => {
       const { data: goalsData } = await supabase
         .from('goals')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       const goals: Goal[] = (goalsData as GoalRow[] || []).map((g) => ({
         id: g.id,
@@ -234,13 +230,11 @@ export const useCloudSync = () => {
         createdAt: g.created_at,
       }));
       
-      useAppStore.setState({ goals });
-      
       // Load habits
       const { data: habitsData } = await supabase
         .from('habits')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       const habits: Habit[] = (habitsData as HabitRow[] || []).map((h) => ({
         id: h.id,
@@ -257,13 +251,11 @@ export const useCloudSync = () => {
         createdAt: h.created_at,
       }));
       
-      useAppStore.setState({ habits });
-      
       // Load habit checks
       const { data: checksData } = await supabase
         .from('habit_checks')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       const habitChecks: HabitCheck[] = (checksData as HabitCheckRow[] || []).map((c) => ({
         habitId: c.habit_id,
@@ -271,13 +263,11 @@ export const useCloudSync = () => {
         completed: c.completed,
       }));
       
-      useAppStore.setState({ habitChecks });
-      
       // Load daily logs
       const { data: logsData } = await supabase
         .from('daily_logs')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       const dailyLogs: DailyLog[] = (logsData as DailyLogRow[] || []).map((l) => ({
         date: l.date,
@@ -285,13 +275,11 @@ export const useCloudSync = () => {
         phoneUsageHours: l.phone_usage_hours || 0,
       }));
       
-      useAppStore.setState({ dailyLogs });
-      
       // Load custom categories
       const { data: categoriesData } = await supabase
         .from('custom_categories')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
       
       const customCategories: CustomCategory[] = (categoriesData as CustomCategoryRow[] || []).map((c) => ({
         id: c.id,
@@ -300,10 +288,17 @@ export const useCloudSync = () => {
         xpReward: c.xp_reward,
       }));
       
-      useAppStore.setState({ customCategories });
+      // Set all data at once
+      useAppStore.setState({
+        habits,
+        goals,
+        habitChecks,
+        dailyLogs,
+        customCategories,
+      });
       
       // Update last synced data to prevent immediate re-sync
-      lastSyncedData.current = {
+      globalState.lastSyncedData = {
         habits: JSON.stringify(habits),
         goals: JSON.stringify(goals),
         habitChecks: JSON.stringify(habitChecks),
@@ -314,17 +309,18 @@ export const useCloudSync = () => {
     } catch (error) {
       console.error('Error loading from cloud:', error);
     } finally {
-      syncInProgress.current = false;
+      globalState.syncInProgress = false;
       // Mark initial load as complete after a short delay
       setTimeout(() => {
-        isInitialLoad.current = false;
-      }, 1000);
+        globalState.isInitialLoad = false;
+      }, 500);
     }
-  }, [user]);
+  }, []);
   
   // Save profile to cloud
   const saveProfile = useCallback(async (profileData: Partial<User>) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     const { error } = await supabase
       .from('profiles')
@@ -334,17 +330,18 @@ export const useCloudSync = () => {
         birth_date: profileData.birthDate,
         photo: profileData.photo,
       })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error saving profile:', error);
       toast({ title: 'Erro ao salvar perfil', variant: 'destructive' });
     }
-  }, [user]);
+  }, []);
   
   // Save draco state to cloud
   const saveDraco = useCallback(async (dracoData: Partial<DracoState>) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     const { error } = await supabase
       .from('draco_state')
@@ -356,16 +353,17 @@ export const useCloudSync = () => {
         name: dracoData.name,
         color: dracoData.color,
       })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error saving draco:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save settings to cloud
   const saveSettings = useCallback(async (settingsData: Partial<AppSettings>) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     const { error } = await supabase
       .from('user_settings')
@@ -380,16 +378,17 @@ export const useCloudSync = () => {
         max_phone_hours: settingsData.maxPhoneHours,
         last_daily_log_date: settingsData.lastDailyLogDate,
       })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error saving settings:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save goal to cloud
   const saveGoal = useCallback(async (goal: Goal) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(goal.id)) {
@@ -401,7 +400,7 @@ export const useCloudSync = () => {
       .from('goals')
       .upsert({
         id: goal.id,
-        user_id: user.id,
+        user_id: userId,
         name: goal.name,
         emoji: goal.emoji,
         type: goal.type,
@@ -415,11 +414,12 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving goal:', error);
     }
-  }, [user]);
+  }, []);
   
   // Delete goal from cloud
   const deleteGoal = useCallback(async (goalId: string) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(goalId)) {
@@ -430,16 +430,17 @@ export const useCloudSync = () => {
       .from('goals')
       .delete()
       .eq('id', goalId)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error deleting goal:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save habit to cloud
   const saveHabit = useCallback(async (habit: Habit) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(habit.id)) {
@@ -451,7 +452,7 @@ export const useCloudSync = () => {
       .from('habits')
       .upsert({
         id: habit.id,
-        user_id: user.id,
+        user_id: userId,
         name: habit.name,
         emoji: habit.emoji,
         goal_id: habit.goalId && isValidUUID(habit.goalId) ? habit.goalId : null,
@@ -468,11 +469,12 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving habit:', error);
     }
-  }, [user]);
+  }, []);
   
   // Delete habit from cloud
   const deleteHabit = useCallback(async (habitId: string) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(habitId)) {
@@ -484,22 +486,23 @@ export const useCloudSync = () => {
       .from('habit_checks')
       .delete()
       .eq('habit_id', habitId)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     const { error } = await supabase
       .from('habits')
       .delete()
       .eq('id', habitId)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error deleting habit:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save habit check to cloud
   const saveHabitCheck = useCallback(async (habitId: string, date: string, completed: boolean) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if habit ID is not a valid UUID
     if (!isValidUUID(habitId)) {
@@ -510,7 +513,7 @@ export const useCloudSync = () => {
     const { error } = await supabase
       .from('habit_checks')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         habit_id: habitId,
         date: date,
         completed: completed,
@@ -521,16 +524,17 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving habit check:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save daily log to cloud
   const saveDailyLog = useCallback(async (log: DailyLog) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     const { error } = await supabase
       .from('daily_logs')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         date: log.date,
         sleep_hours: log.sleepHours,
         phone_usage_hours: log.phoneUsageHours,
@@ -541,11 +545,12 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving daily log:', error);
     }
-  }, [user]);
+  }, []);
   
   // Save custom category to cloud
   const saveCustomCategory = useCallback(async (category: CustomCategory) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(category.id)) {
@@ -557,7 +562,7 @@ export const useCloudSync = () => {
       .from('custom_categories')
       .upsert({
         id: category.id,
-        user_id: user.id,
+        user_id: userId,
         name: category.name,
         emoji: category.emoji,
         xp_reward: category.xpReward,
@@ -566,11 +571,12 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving category:', error);
     }
-  }, [user]);
+  }, []);
   
   // Delete custom category from cloud
   const deleteCustomCategory = useCallback(async (categoryId: string) => {
-    if (!user) return;
+    const userId = userIdRef.current;
+    if (!userId) return;
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(categoryId)) {
@@ -581,41 +587,45 @@ export const useCloudSync = () => {
       .from('custom_categories')
       .delete()
       .eq('id', categoryId)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     
     if (error) {
       console.error('Error deleting category:', error);
     }
-  }, [user]);
+  }, []);
   
-  // Initial load when authenticated - track user ID to detect user changes
-  const lastLoadedUserId = useRef<string | null>(null);
-  
+  // Initial load when authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      // If user changed, force reload
-      if (lastLoadedUserId.current !== user.id) {
-        lastLoadedUserId.current = user.id;
-        syncInProgress.current = false; // Reset sync flag for new user
-        loadFromCloud();
+    if (isAuthenticated && user?.id) {
+      // Only load if user changed
+      if (globalState.lastLoadedUserId !== user.id) {
+        globalState.lastLoadedUserId = user.id;
+        globalState.syncInProgress = false;
+        globalState.isInitialLoad = true;
+        loadFromCloud(user.id);
       }
-    } else {
-      lastLoadedUserId.current = null;
+    } else if (!isAuthenticated) {
+      globalState.lastLoadedUserId = null;
+      globalState.isInitialLoad = true;
     }
-  }, [isAuthenticated, user, loadFromCloud]);
+  }, [isAuthenticated, user?.id, loadFromCloud]);
   
   // Subscribe to store changes and sync to cloud
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     
     const unsubscribe = useAppStore.subscribe((state, prevState) => {
-      if (isInitialLoad.current) return;
+      // Skip during initial load
+      if (globalState.isInitialLoad) return;
+      
+      const userId = userIdRef.current;
+      if (!userId) return;
       
       // Sync habits
       if (state.habits !== prevState.habits) {
         const currentHabitsStr = JSON.stringify(state.habits);
-        if (currentHabitsStr !== lastSyncedData.current.habits) {
-          const previousHabits: Habit[] = lastSyncedData.current.habits ? JSON.parse(lastSyncedData.current.habits) : [];
+        if (currentHabitsStr !== globalState.lastSyncedData.habits) {
+          const previousHabits: Habit[] = globalState.lastSyncedData.habits ? JSON.parse(globalState.lastSyncedData.habits) : [];
           const currentIds = new Set(state.habits.map(h => h.id));
           
           // Save new and updated habits
@@ -634,15 +644,15 @@ export const useCloudSync = () => {
             }
           });
           
-          lastSyncedData.current.habits = currentHabitsStr;
+          globalState.lastSyncedData.habits = currentHabitsStr;
         }
       }
       
       // Sync goals
       if (state.goals !== prevState.goals) {
         const currentGoalsStr = JSON.stringify(state.goals);
-        if (currentGoalsStr !== lastSyncedData.current.goals) {
-          const previousGoals: Goal[] = lastSyncedData.current.goals ? JSON.parse(lastSyncedData.current.goals) : [];
+        if (currentGoalsStr !== globalState.lastSyncedData.goals) {
+          const previousGoals: Goal[] = globalState.lastSyncedData.goals ? JSON.parse(globalState.lastSyncedData.goals) : [];
           const currentIds = new Set(state.goals.map(g => g.id));
           
           // Save new and updated goals
@@ -661,15 +671,15 @@ export const useCloudSync = () => {
             }
           });
           
-          lastSyncedData.current.goals = currentGoalsStr;
+          globalState.lastSyncedData.goals = currentGoalsStr;
         }
       }
       
       // Sync habit checks
       if (state.habitChecks !== prevState.habitChecks) {
         const currentChecksStr = JSON.stringify(state.habitChecks);
-        if (currentChecksStr !== lastSyncedData.current.habitChecks) {
-          const previousChecks: HabitCheck[] = lastSyncedData.current.habitChecks ? JSON.parse(lastSyncedData.current.habitChecks) : [];
+        if (currentChecksStr !== globalState.lastSyncedData.habitChecks) {
+          const previousChecks: HabitCheck[] = globalState.lastSyncedData.habitChecks ? JSON.parse(globalState.lastSyncedData.habitChecks) : [];
           
           // Save new and updated checks
           state.habitChecks.forEach(check => {
@@ -680,15 +690,15 @@ export const useCloudSync = () => {
             }
           });
           
-          lastSyncedData.current.habitChecks = currentChecksStr;
+          globalState.lastSyncedData.habitChecks = currentChecksStr;
         }
       }
       
       // Sync custom categories
       if (state.customCategories !== prevState.customCategories) {
         const currentCategoriesStr = JSON.stringify(state.customCategories);
-        if (currentCategoriesStr !== lastSyncedData.current.customCategories) {
-          const previousCategories: CustomCategory[] = lastSyncedData.current.customCategories ? JSON.parse(lastSyncedData.current.customCategories) : [];
+        if (currentCategoriesStr !== globalState.lastSyncedData.customCategories) {
+          const previousCategories: CustomCategory[] = globalState.lastSyncedData.customCategories ? JSON.parse(globalState.lastSyncedData.customCategories) : [];
           const currentIds = new Set(state.customCategories.map(c => c.id));
           
           // Save new and updated categories
@@ -707,22 +717,22 @@ export const useCloudSync = () => {
             }
           });
           
-          lastSyncedData.current.customCategories = currentCategoriesStr;
+          globalState.lastSyncedData.customCategories = currentCategoriesStr;
         }
       }
       
       // Sync draco
       if (state.draco !== prevState.draco) {
         const currentDracoStr = JSON.stringify(state.draco);
-        if (currentDracoStr !== lastSyncedData.current.draco) {
+        if (currentDracoStr !== globalState.lastSyncedData.draco) {
           saveDraco(state.draco);
-          lastSyncedData.current.draco = currentDracoStr;
+          globalState.lastSyncedData.draco = currentDracoStr;
         }
       }
     });
     
     return () => unsubscribe();
-  }, [user, saveHabit, deleteHabit, saveGoal, deleteGoal, saveHabitCheck, saveCustomCategory, deleteCustomCategory, saveDraco]);
+  }, [user?.id, saveHabit, deleteHabit, saveGoal, deleteGoal, saveHabitCheck, saveCustomCategory, deleteCustomCategory, saveDraco]);
   
   return {
     loadFromCloud,
