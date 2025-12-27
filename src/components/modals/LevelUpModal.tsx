@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Star, Zap } from 'lucide-react';
+import { Sparkles, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { DracoIcon } from '@/components/icons/DracoIcon';
 
 interface LevelUpModalProps {
   isOpen: boolean;
@@ -111,18 +112,19 @@ export const LevelUpModal = ({ isOpen, onClose, newLevel, dracoName }: LevelUpMo
               <Star className="w-28 h-28" />
             </motion.div>
 
-            {/* Icon */}
+            {/* Draco Icon */}
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ delay: 0.2, type: 'spring', damping: 10 }}
-              className="relative mx-auto mb-4 w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center"
+              className="relative mx-auto mb-4 w-28 h-28"
             >
               <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
+                animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-full h-full"
               >
-                <Zap className="w-12 h-12 text-primary-foreground" />
+                <DracoIcon level={newLevel} />
               </motion.div>
               
               {/* Orbiting stars */}
