@@ -612,14 +612,15 @@ export const useCloudSync = () => {
   
   // Subscribe to store changes and sync to cloud
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
     
     const unsubscribe = useAppStore.subscribe((state, prevState) => {
       // Skip during initial load
       if (globalState.isInitialLoad) return;
       
-      const userId = userIdRef.current;
-      if (!userId) return;
+      const currentUserId = userIdRef.current;
+      if (!currentUserId) return;
       
       // Sync habits
       if (state.habits !== prevState.habits) {
