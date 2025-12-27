@@ -9,6 +9,17 @@ import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCat
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type FilterType = 'all' | 'habits' | Goal['type'];
 
@@ -241,6 +252,9 @@ export const GoalsPage = () => {
   
   // Check if user has no goals/habits (first time)
   const isFirstTimeUser = goals.length === 0 && habits.length === 0;
+
+  // Delete confirmation state
+  const [showDeleteGoalConfirmation, setShowDeleteGoalConfirmation] = useState(false);
 
   const getParentGoalOptions = (type: GoalType): Goal[] => {
     const parentType = parentTypeMap[type];
@@ -1876,15 +1890,39 @@ export const GoalsPage = () => {
 
                 {/* Delete */}
                 <button
-                  onClick={() => {
-                    removeGoal(selectedGoal.id);
-                    setSelectedGoal(null);
-                  }}
+                  onClick={() => setShowDeleteGoalConfirmation(true)}
                   className="w-full py-3 flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   <span>Excluir objetivo</span>
                 </button>
+
+                {/* Delete Goal Confirmation Dialog */}
+                <AlertDialog open={showDeleteGoalConfirmation} onOpenChange={setShowDeleteGoalConfirmation}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir objetivo</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir o objetivo "{selectedGoal.name}"? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          const goalName = selectedGoal.name;
+                          removeGoal(selectedGoal.id);
+                          setSelectedGoal(null);
+                          setShowDeleteGoalConfirmation(false);
+                          toast({ title: 'Objetivo excluído!', description: `"${goalName}" foi removido.` });
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </motion.div>
           </motion.div>
