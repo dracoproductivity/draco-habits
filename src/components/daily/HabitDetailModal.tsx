@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Pencil, Tag, Sparkles, Trash2 } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, format, eachDayOfInterval, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 import {
@@ -47,14 +50,16 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     habitChecks, 
     updateHabit, 
     addGoal,
-    settings,
     customCategories,
-    addCustomCategory,
-    updateCustomCategory,
     removeHabit
   } = useAppStore();
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [habitEmoji, setHabitEmoji] = useState(habit.emoji || '');
+  
+  // Progress history view state
+  const [historyView, setHistoryView] = useState<'week' | 'month'>('week');
+  const [historyDate, setHistoryDate] = useState(new Date());
 
   // Get linked goal to find current category
   const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
@@ -71,13 +76,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
   
-  // Category editing state
+  // XP reward state
   const [xpReward, setXpReward] = useState<number>(habit.xpReward || 10);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryEmoji, setNewCategoryEmoji] = useState('⭐');
-  const [newCategoryXP, setNewCategoryXP] = useState(10);
 
   // Calculate habit progress using the new utility
   const habitProgress = useMemo(() => {
@@ -141,8 +141,40 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     );
   };
 
+  // Calculate days to show for history based on view
+  const historyDays = useMemo(() => {
+    if (historyView === 'week') {
+      const weekStart = startOfWeek(historyDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(historyDate, { weekStartsOn: 1 });
+      return eachDayOfInterval({ start: weekStart, end: weekEnd });
+    } else {
+      const monthStart = startOfMonth(historyDate);
+      const monthEnd = endOfMonth(historyDate);
+      return eachDayOfInterval({ start: monthStart, end: monthEnd });
+    }
+  }, [historyView, historyDate]);
+
+  const navigateHistory = (direction: number) => {
+    if (historyView === 'week') {
+      setHistoryDate(addWeeks(historyDate, direction));
+    } else {
+      setHistoryDate(addMonths(historyDate, direction));
+    }
+  };
+
+  const getHistoryLabel = () => {
+    if (historyView === 'week') {
+      const weekStart = startOfWeek(historyDate, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(historyDate, { weekStartsOn: 1 });
+      return `${format(weekStart, 'd MMM', { locale: ptBR })} - ${format(weekEnd, 'd MMM', { locale: ptBR })}`;
+    } else {
+      return format(historyDate, 'MMMM yyyy', { locale: ptBR });
+    }
+  };
+
   const handleSave = () => {
     updateHabit(habit.id, {
+      emoji: habitEmoji || undefined,
       goalId: selectedGoalId || undefined,
       weekDays: isOneTime ? undefined : weekDays,
       monthWeeks: isOneTime ? undefined : (monthWeeks.length > 0 ? monthWeeks : undefined),
@@ -154,43 +186,6 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     });
     toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
     onClose();
-  };
-
-  const handleSaveCategory = () => {
-    if (!newCategoryName.trim()) {
-      toast({ title: 'Erro', description: 'Digite um nome para a categoria', variant: 'destructive' });
-      return;
-    }
-    
-    if (editingCategory) {
-      updateCustomCategory(editingCategory.id, {
-        name: newCategoryName.trim(),
-        emoji: newCategoryEmoji,
-        xpReward: newCategoryXP,
-      });
-      toast({ title: 'Categoria atualizada!' });
-    } else {
-      addCustomCategory({
-        name: newCategoryName.trim(),
-        emoji: newCategoryEmoji,
-        xpReward: newCategoryXP,
-      });
-      toast({ title: 'Categoria criada!' });
-    }
-    
-    setShowCategoryModal(false);
-    setEditingCategory(null);
-    setNewCategoryName('');
-    setNewCategoryEmoji('⭐');
-    setNewCategoryXP(10);
-  };
-
-  const openEditCategory = (category: CustomCategory) => {
-    setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setNewCategoryEmoji(category.emoji || '⭐');
-    setNewCategoryXP(category.xpReward);
-    setShowCategoryModal(true);
   };
 
   const getStepLabel = (step: GoalType) => {
@@ -283,9 +278,12 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
           {/* Header */}
           <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between rounded-t-2xl">
             <div className="flex items-center gap-3">
-              {settings.showEmojis && habit.emoji && (
-                <span className="text-2xl">{habit.emoji}</span>
-              )}
+              <EmojiPickerButton
+                value={habitEmoji}
+                onChange={setHabitEmoji}
+                placeholder={habit.emoji || '🎯'}
+                className="w-12 h-12"
+              />
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
                 <p className="text-sm text-primary font-medium">
@@ -304,34 +302,105 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
           <div className="p-4 space-y-6">
             {/* Progress History */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                <h3 className="font-medium text-foreground">Histórico de Progresso</h3>
-                <span className="ml-auto text-sm text-primary font-semibold">
-                  {habitProgress.completed}/{habitProgress.total}
-                </span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Histórico de Progresso</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setHistoryView(historyView === 'week' ? 'month' : 'week')}
+                    className="px-2 py-1 text-xs font-medium bg-muted/50 hover:bg-muted rounded-lg transition-colors"
+                  >
+                    {historyView === 'week' ? 'Semana' : 'Mês'}
+                  </button>
+                </div>
               </div>
               
-              <div className="grid grid-cols-10 gap-1">
-                {progressHistory.map((day, i) => (
-                  <div
-                    key={day.date}
-                    className={cn(
-                      'w-full aspect-square rounded-sm transition-colors',
-                      day.completed 
-                        ? 'bg-primary' 
-                        : 'bg-muted/30'
-                    )}
-                    title={`${new Date(day.date).toLocaleDateString('pt-BR')} - ${day.completed ? 'Concluído' : 'Não concluído'}`}
-                  />
-                ))}
+              {/* Navigation */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => navigateHistory(-1)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium text-foreground">{getHistoryLabel()}</span>
+                <button
+                  onClick={() => navigateHistory(1)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {progressHistory.length < 30 
-                  ? `${progressHistory.length} dia${progressHistory.length > 1 ? 's' : ''} desde o início`
-                  : 'Últimos 30 dias'
-                }
-              </p>
+              
+              {/* History Grid */}
+              {historyView === 'week' ? (
+                <div className="grid grid-cols-7 gap-2">
+                  {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, i) => (
+                    <span key={day} className="text-xs text-muted-foreground text-center">{day}</span>
+                  ))}
+                  {historyDays.map((day) => {
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
+                    const isCompleted = check?.completed || false;
+                    const isToday = isSameDay(day, new Date());
+                    
+                    return (
+                      <div
+                        key={dateStr}
+                        className={cn(
+                          'aspect-square rounded-lg flex items-center justify-center transition-all',
+                          isCompleted 
+                            ? 'bg-primary' 
+                            : 'bg-muted/30',
+                          isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
+                        )}
+                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${isCompleted ? 'Concluído' : 'Não concluído'}`}
+                      >
+                        {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-7 gap-1">
+                  {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
+                    <span key={day} className="text-[10px] text-muted-foreground text-center">{day}</span>
+                  ))}
+                  {/* Add empty cells for alignment */}
+                  {(() => {
+                    const monthStart = startOfMonth(historyDate);
+                    const dayOfWeek = monthStart.getDay();
+                    const emptyDays = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                    return Array.from({ length: emptyDays }).map((_, i) => (
+                      <div key={`empty-${i}`} className="aspect-square" />
+                    ));
+                  })()}
+                  {historyDays.map((day) => {
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
+                    const isCompleted = check?.completed || false;
+                    const isToday = isSameDay(day, new Date());
+                    
+                    return (
+                      <div
+                        key={dateStr}
+                        className={cn(
+                          'aspect-square rounded flex items-center justify-center text-[10px] transition-all',
+                          isCompleted 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted/30 text-muted-foreground',
+                          isToday && 'ring-1 ring-primary'
+                        )}
+                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${isCompleted ? 'Concluído' : 'Não concluído'}`}
+                      >
+                        {isCompleted ? <Check className="w-3 h-3" /> : format(day, 'd')}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Linked Goals Progress */}
@@ -566,50 +635,50 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               </div>
             </div>
 
-            {/* Categories (for custom categories management) */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
+            {/* Category (from linked goal - read-only) */}
+            {linkedGoal && linkedGoal.category && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
                   <Tag className="w-4 h-4 text-primary" />
-                  <h3 className="font-medium text-foreground">Categorias Personalizadas</h3>
+                  <h3 className="font-medium text-foreground">Categoria</h3>
                 </div>
-                <button
-                  onClick={() => {
-                    setEditingCategory(null);
-                    setNewCategoryName('');
-                    setNewCategoryEmoji('⭐');
-                    setNewCategoryXP(10);
-                    setShowCategoryModal(true);
-                  }}
-                  className="text-xs text-primary hover:text-primary/80"
-                >
-                  + Nova
-                </button>
-              </div>
-              
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {customCategories.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span>{cat.emoji}</span>
-                      <span className="text-sm">{cat.name}</span>
-                      <span className="text-xs text-muted-foreground">({cat.xpReward} XP)</span>
-                    </div>
-                    <button
-                      onClick={() => openEditCategory(cat)}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      <Pencil className="w-3 h-3 text-muted-foreground" />
-                    </button>
+                
+                <div className="p-3 bg-muted/30 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      if (linkedGoal.customCategoryId) {
+                        const customCat = customCategories.find(c => c.id === linkedGoal.customCategoryId);
+                        if (customCat) {
+                          return (
+                            <>
+                              <span className="text-lg">{customCat.emoji}</span>
+                              <span className="text-sm font-medium text-foreground">{customCat.name}</span>
+                              <span className="text-xs text-muted-foreground ml-auto">{customCat.xpReward} XP</span>
+                            </>
+                          );
+                        }
+                      }
+                      const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === linkedGoal.category);
+                      if (defaultCat) {
+                        return (
+                          <>
+                            <span className="text-lg">{defaultCat.emoji}</span>
+                            <span className="text-sm font-medium text-foreground">{defaultCat.name}</span>
+                            {linkedGoal.categoryXP !== undefined && (
+                              <span className="text-xs text-muted-foreground ml-auto">{linkedGoal.categoryXP} XP</span>
+                            )}
+                          </>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
-                ))}
-                {customCategories.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-2">
-                    Nenhuma categoria personalizada
+                  <p className="text-xs text-muted-foreground mt-2">
+                    A categoria é definida pelo objetivo vinculado. Edite o objetivo para alterar.
                   </p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Notifications */}
             <div>
@@ -645,85 +714,6 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 )}
               </div>
             </div>
-
-            {/* Category Edit Modal */}
-            <AnimatePresence>
-              {showCategoryModal && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
-                  onClick={() => setShowCategoryModal(false)}
-                >
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="w-full max-w-sm bg-card border border-border rounded-2xl p-4 space-y-4"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <h3 className="font-semibold text-foreground">
-                      {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-                    </h3>
-                    
-                    <input
-                      type="text"
-                      placeholder="Nome da categoria"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    />
-                    
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Emoji</label>
-                      <input
-                        type="text"
-                        value={newCategoryEmoji}
-                        onChange={(e) => setNewCategoryEmoji(e.target.value)}
-                        className="w-20 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-center text-xl focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        maxLength={2}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">XP Padrão</label>
-                      <div className="grid grid-cols-6 gap-2">
-                        {XP_OPTIONS.map((xp) => (
-                          <button
-                            key={xp}
-                            onClick={() => setNewCategoryXP(xp)}
-                            className={cn(
-                              'py-2 rounded-lg text-sm font-medium transition-all',
-                              newCategoryXP === xp
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                            )}
-                          >
-                            {xp}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowCategoryModal(false)}
-                        className="flex-1 py-2 bg-muted/50 text-foreground rounded-xl font-medium"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={handleSaveCategory}
-                        className="flex-1 py-2 gradient-primary text-primary-foreground rounded-xl font-medium"
-                      >
-                        Salvar
-                      </button>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Save Button */}
             <button
