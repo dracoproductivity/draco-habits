@@ -3,11 +3,9 @@ import { useAppStore } from '@/store/useAppStore';
 import { GoalType, Goal } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
-  calculateGoalProgress, 
-  getPeriodBoundaries,
-  isHabitScheduledForDate
+  calculateHierarchicalPeriodProgress,
+  getPeriodBoundaries
 } from '@/utils/habitInstanceCalculator';
-import { eachDayOfInterval, parseISO, isWithinInterval, getDay } from 'date-fns';
 
 interface PeriodCardProps {
   title: string;
@@ -112,110 +110,29 @@ const ProgressCircle = ({ progress }: { progress: number }) => {
   );
 };
 
-// Calculate period progress based on goal percentages and child periods
-const calculatePeriodProgressWithChildren = (
+/**
+ * Calculate period progress using X/N method (total checked / total scheduled)
+ * This is the hierarchical sum - ALL habits that fall within the period boundaries
+ */
+const calculatePeriodProgressXN = (
   type: GoalType,
   period: string,
-  goals: Goal[],
   habits: any[],
-  habitChecks: any[],
-  displayYear?: number
-): number => {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const currentQuarter = Math.ceil((currentMonth + 1) / 3);
-  const yearToCheck = displayYear || currentYear;
-
-  // Helper to check if a goal/period has started
-  const hasStarted = (goalType: GoalType, goalPeriod: string): boolean => {
-    if (yearToCheck > currentYear) return false;
-    if (yearToCheck < currentYear) return true;
-    
-    if (goalType === 'yearly') return true;
-    
-    if (goalType === 'quarterly') {
-      const quarterMatch = goalPeriod.match(/(\d+)º Tri/);
-      if (quarterMatch) {
-        const quarter = parseInt(quarterMatch[1]);
-        return quarter <= currentQuarter;
-      }
-    }
-    
-    if (goalType === 'monthly') {
-      const monthName = goalPeriod.split(' ')[0];
-      const monthIndex = MONTH_NAMES.indexOf(monthName);
-      if (monthIndex !== -1) {
-        return monthIndex <= currentMonth;
-      }
-    }
-    
-    return true;
-  };
-
-  // For yearly: sum of annual goals progress + quarterly goals progress / count of started items
-  if (type === 'yearly') {
-    const annualGoals = goals.filter((g) => g.type === 'yearly' && g.period === period);
-    const quarterlyGoals = goals.filter((g) => {
-      if (g.type !== 'quarterly') return false;
-      const yearMatch = g.period.match(/(\d{4})/);
-      return yearMatch && parseInt(yearMatch[1]) === yearToCheck;
-    });
-
-    // Filter only items that have started (not "Não iniciado")
-    const startedAnnualGoals = annualGoals.filter(g => hasStarted(g.type as GoalType, g.period));
-    const startedQuarterlyGoals = quarterlyGoals.filter(g => hasStarted(g.type as GoalType, g.period));
-
-    const allStartedItems = [...startedAnnualGoals, ...startedQuarterlyGoals];
-    
-    if (allStartedItems.length === 0) return 0;
-
-    const totalProgress = allStartedItems.reduce((sum, g) => sum + (g.progress || 0), 0);
-    return Math.round(totalProgress / allStartedItems.length);
-  }
-
-  // For quarterly: sum of quarterly goals + monthly goals / count of started items
-  if (type === 'quarterly') {
-    const directGoals = goals.filter((g) => g.type === type && g.period === period);
-    const boundaries = getPeriodBoundaries(type, period);
-    
-    const monthlyGoals = boundaries ? goals.filter((g) => {
-      if (g.type !== 'monthly') return false;
-      const childBounds = getPeriodBoundaries(g.type, g.period);
-      return childBounds && childBounds.start >= boundaries.start && childBounds.end <= boundaries.end;
-    }) : [];
-
-    const startedDirect = directGoals.filter(g => hasStarted(g.type as GoalType, g.period));
-    const startedMonthly = monthlyGoals.filter(g => hasStarted(g.type as GoalType, g.period));
-    
-    const allStartedItems = [...startedDirect, ...startedMonthly];
-    
-    if (allStartedItems.length === 0) return 0;
-
-    const totalProgress = allStartedItems.reduce((sum, g) => sum + (g.progress || 0), 0);
-    return Math.round(totalProgress / allStartedItems.length);
-  }
-
-  // For monthly/weekly: just average direct goals
-  const directGoals = goals.filter((g) => g.type === type && g.period === period);
-  const startedGoals = directGoals.filter(g => hasStarted(g.type as GoalType, g.period));
-  
-  if (startedGoals.length === 0) return 0;
-
-  const totalProgress = startedGoals.reduce((sum, g) => sum + (g.progress || 0), 0);
-  return Math.round(totalProgress / startedGoals.length);
+  goals: any[],
+  habitChecks: any[]
+): { progress: number; completed: number; total: number } => {
+  return calculateHierarchicalPeriodProgress(type, period, habits, goals, habitChecks);
 };
 
 export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
   const { goals, settings, habits, habitChecks } = useAppStore();
 
-  const averageProgress = calculatePeriodProgressWithChildren(
+  const { progress: averageProgress } = calculatePeriodProgressXN(
     type, 
     period, 
-    goals, 
     habits, 
-    habitChecks,
-    displayYear
+    goals, 
+    habitChecks
   );
 
   const isCircular = settings.progressDisplayMode === 'circular';
@@ -230,13 +147,12 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
     const monthPeriod = `${monthName} ${year}`;
     const status = getPeriodStatus('monthly', monthPeriod, year);
     
-    const progress = calculatePeriodProgressWithChildren(
+    const { progress } = calculatePeriodProgressXN(
       'monthly',
       monthPeriod,
-      goals,
       habits,
-      habitChecks,
-      year
+      goals,
+      habitChecks
     );
     
     return { progress, status };

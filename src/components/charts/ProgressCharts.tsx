@@ -102,7 +102,8 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
         };
       });
     } else {
-      // For goals, show the progression of goal percentage over time
+      // For goals, calculate progress using X/N method (total checked / total scheduled)
+      // For "all goals": sum all X / sum all N across all goals
       const filteredGoals = selectedGoalId === 'all' 
         ? goals 
         : goals.filter((g) => g.id === selectedGoalId);
@@ -126,20 +127,14 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
           };
         }
 
-        // Calculate goal progress up to this specific day
-        // This shows how the goal's percentage evolved over time
-        let totalProgress = 0;
-        let validGoalsCount = 0;
+        // Calculate cumulative X/N up to this day across ALL selected goals
+        // X = total completed checks, N = total scheduled instances
+        let totalX = 0; // Total completed
+        let totalN = 0; // Total scheduled
 
         filteredGoals.forEach(goal => {
           const goalHabits = habits.filter(h => h.goalId === goal.id);
           
-          if (goalHabits.length === 0) return;
-
-          // Calculate cumulative progress for this goal up to this day
-          let goalTotalScheduled = 0;
-          let goalTotalCompleted = 0;
-
           goalHabits.forEach(habit => {
             const habitCreated = new Date(habit.createdAt);
             const habitStart = habitCreated > accountStartDate ? habitCreated : accountStartDate;
@@ -154,26 +149,21 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
 
             daysToCheck.forEach(checkDay => {
               if (isHabitScheduledForDate(habit, checkDay, goal)) {
-                goalTotalScheduled++;
+                totalN++; // Increment total scheduled
                 const checkDateStr = format(checkDay, 'yyyy-MM-dd');
                 const isCompleted = habitChecks.some(
                   hc => hc.habitId === habit.id && hc.date === checkDateStr && hc.completed
                 );
                 if (isCompleted) {
-                  goalTotalCompleted++;
+                  totalX++; // Increment total completed
                 }
               }
             });
           });
-
-          if (goalTotalScheduled > 0) {
-            totalProgress += (goalTotalCompleted / goalTotalScheduled) * 100;
-            validGoalsCount++;
-          }
         });
 
-        // Average progress across all selected goals
-        const progress = validGoalsCount > 0 ? Math.round(totalProgress / validGoalsCount) : 0;
+        // Progress = X / N (no averaging of percentages)
+        const progress = totalN > 0 ? Math.round((totalX / totalN) * 100) : 0;
 
         return {
           date: format(day, 'dd/MM'),
