@@ -57,6 +57,9 @@ const DRACO_OPTIONS: { id: DracoState['color']; name: string }[] = [
   { id: 'black', name: 'Preto' },
   { id: 'silver', name: 'Prata' },
   { id: 'gold', name: 'Dourado' },
+  { id: 'rainbow', name: 'Arco-íris' },
+  { id: 'green', name: 'Verde' },
+  { id: 'blue', name: 'Azul' },
 ];
 
 const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
