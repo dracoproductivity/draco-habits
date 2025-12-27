@@ -102,7 +102,7 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
         };
       });
     } else {
-      // For goals, calculate cumulative progress over time
+      // For goals, show the progression of goal percentage over time
       const filteredGoals = selectedGoalId === 'all' 
         ? goals 
         : goals.filter((g) => g.id === selectedGoalId);
@@ -116,7 +116,6 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
       }
 
       return days.map((day) => {
-        const dateStr = format(day, 'yyyy-MM-dd');
         const isBeforeAccount = day < accountStartDate;
         
         if (isBeforeAccount) {
@@ -127,39 +126,54 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
           };
         }
 
-        // Calculate cumulative progress: total completed checks up to this day / total scheduled up to this day
-        let totalCompleted = 0;
-        let totalScheduled = 0;
+        // Calculate goal progress up to this specific day
+        // This shows how the goal's percentage evolved over time
+        let totalProgress = 0;
+        let validGoalsCount = 0;
 
         filteredGoals.forEach(goal => {
           const goalHabits = habits.filter(h => h.goalId === goal.id);
           
+          if (goalHabits.length === 0) return;
+
+          // Calculate cumulative progress for this goal up to this day
+          let goalTotalScheduled = 0;
+          let goalTotalCompleted = 0;
+
           goalHabits.forEach(habit => {
-            // Check all days from habit creation to current day
             const habitCreated = new Date(habit.createdAt);
-            const startDate = habitCreated > accountStartDate ? habitCreated : accountStartDate;
+            const habitStart = habitCreated > accountStartDate ? habitCreated : accountStartDate;
             
+            // Only count days up to the current day in the loop
+            if (day < habitStart) return;
+
             const daysToCheck = eachDayOfInterval({
-              start: startDate,
+              start: habitStart,
               end: day,
             });
 
             daysToCheck.forEach(checkDay => {
               if (isHabitScheduledForDate(habit, checkDay, goal)) {
-                totalScheduled++;
+                goalTotalScheduled++;
                 const checkDateStr = format(checkDay, 'yyyy-MM-dd');
                 const isCompleted = habitChecks.some(
                   hc => hc.habitId === habit.id && hc.date === checkDateStr && hc.completed
                 );
                 if (isCompleted) {
-                  totalCompleted++;
+                  goalTotalCompleted++;
                 }
               }
             });
           });
+
+          if (goalTotalScheduled > 0) {
+            totalProgress += (goalTotalCompleted / goalTotalScheduled) * 100;
+            validGoalsCount++;
+          }
         });
 
-        const progress = totalScheduled > 0 ? Math.round((totalCompleted / totalScheduled) * 100) : 0;
+        // Average progress across all selected goals
+        const progress = validGoalsCount > 0 ? Math.round(totalProgress / validGoalsCount) : 0;
 
         return {
           date: format(day, 'dd/MM'),
