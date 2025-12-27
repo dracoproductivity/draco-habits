@@ -115,6 +115,8 @@ const globalState = {
     habitChecks: '',
     customCategories: '',
     draco: '',
+    user: '',
+    settings: '',
   },
 };
 
@@ -304,6 +306,8 @@ export const useCloudSync = () => {
         habitChecks: JSON.stringify(habitChecks),
         customCategories: JSON.stringify(customCategories),
         draco: JSON.stringify(dracoData),
+        user: JSON.stringify(profile),
+        settings: JSON.stringify(settingsData),
       };
       
     } catch (error) {
@@ -730,10 +734,28 @@ export const useCloudSync = () => {
           globalState.lastSyncedData.draco = currentDracoStr;
         }
       }
+      
+      // Sync user profile
+      if (state.user !== prevState.user && state.user) {
+        const currentUserStr = JSON.stringify(state.user);
+        if (currentUserStr !== globalState.lastSyncedData.user) {
+          saveProfile(state.user);
+          globalState.lastSyncedData.user = currentUserStr;
+        }
+      }
+      
+      // Sync settings
+      if (state.settings !== prevState.settings) {
+        const currentSettingsStr = JSON.stringify(state.settings);
+        if (currentSettingsStr !== globalState.lastSyncedData.settings) {
+          saveSettings(state.settings);
+          globalState.lastSyncedData.settings = currentSettingsStr;
+        }
+      }
     });
     
     return () => unsubscribe();
-  }, [user?.id, saveHabit, deleteHabit, saveGoal, deleteGoal, saveHabitCheck, saveCustomCategory, deleteCustomCategory, saveDraco]);
+  }, [user?.id, saveHabit, deleteHabit, saveGoal, deleteGoal, saveHabitCheck, saveCustomCategory, deleteCustomCategory, saveDraco, saveProfile, saveSettings]);
   
   return {
     loadFromCloud,

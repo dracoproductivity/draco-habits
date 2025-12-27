@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalType } from '@/types';
 import { cn } from '@/lib/utils';
+import { calculateHierarchicalPeriodProgress } from '@/utils/habitInstanceCalculator';
+import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 
 interface PeriodItemProps {
   title: string;
@@ -13,12 +15,19 @@ interface PeriodItemProps {
 }
 
 export const PeriodItem = ({ title, subtitle, type, period, className, onClick }: PeriodItemProps) => {
-  const { goals, settings } = useAppStore();
+  const { goals, settings, habits, habitChecks } = useAppStore();
 
-  const periodGoals = goals.filter((g) => g.type === type && g.period === period);
-  const averageProgress = periodGoals.length > 0
-    ? Math.round(periodGoals.reduce((acc, g) => acc + g.progress, 0) / periodGoals.length)
-    : 0;
+  // Use hierarchical X/N calculation
+  const { completed, total } = calculateHierarchicalPeriodProgress(
+    type,
+    period,
+    habits,
+    goals,
+    habitChecks
+  );
+  
+  const averageProgress = calculateRawPercentage(completed, total);
+  const formattedProgress = formatPercentage(averageProgress);
 
   const isCircular = settings.progressDisplayMode === 'circular';
 
@@ -67,18 +76,18 @@ export const PeriodItem = ({ title, subtitle, type, period, className, onClick }
               transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           </svg>
-          <span className="absolute text-xl font-bold text-gradient-primary">{averageProgress}%</span>
+          <span className="absolute text-xl font-bold text-gradient-primary">{formattedProgress}%</span>
         </div>
       ) : (
         <div className="text-4xl font-bold text-gradient-primary mb-2">
-          {averageProgress}%
+          {formattedProgress}%
         </div>
       )}
 
       {/* Goals count */}
-      {periodGoals.length > 0 && (
+      {total > 0 && (
         <p className="text-xs text-muted-foreground">
-          {periodGoals.length} objetivo{periodGoals.length !== 1 ? 's' : ''}
+          {completed}/{total} hábitos
         </p>
       )}
     </motion.div>
