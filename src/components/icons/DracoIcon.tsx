@@ -11,6 +11,9 @@ import dracoRed from '@/assets/dragons/draco-red.jpg';
 import dracoBlack from '@/assets/dragons/draco-black.jpg';
 import dracoSilver from '@/assets/dragons/draco-silver.jpg';
 import dracoGold from '@/assets/dragons/draco-gold.jpg';
+import dracoRainbow from '@/assets/dragons/draco-rainbow.jpg';
+import dracoGreen from '@/assets/dragons/draco-green.jpg';
+import dracoBlue from '@/assets/dragons/draco-blue.jpg';
 
 export type DracoColorType = 
   | 'white' 
@@ -23,9 +26,10 @@ export type DracoColorType =
   | 'black' 
   | 'silver' 
   | 'gold'
+  | 'rainbow'
+  | 'green'
+  | 'blue'
   // Legacy colors - map to new ones
-  | 'blue' 
-  | 'green' 
   | 'yellow' 
   | 'neutral' 
   | 'lilac' 
@@ -42,13 +46,14 @@ export const DRACO_IMAGES: Record<string, string> = {
   black: dracoBlack,
   silver: dracoSilver,
   gold: dracoGold,
+  rainbow: dracoRainbow,
+  green: dracoGreen,
+  blue: dracoBlue,
   // Legacy mappings
-  blue: dracoSilver,
-  green: dracoGold,
   yellow: dracoGold,
   neutral: dracoWhite,
   lilac: dracoLavender,
-  mint: dracoSilver,
+  mint: dracoGreen,
 };
 
 interface DracoIconProps {
