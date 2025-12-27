@@ -731,20 +731,30 @@ export const HabitList = () => {
           {/* Day navigation and Add button */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1" />
-            <div className="flex items-center gap-1 bg-muted/20 rounded-xl px-2 py-1">
-              <button
-                onClick={() => navigateDay(-1)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm text-foreground font-medium min-w-[80px] text-center">{formatViewDate()}</span>
-              <button
-                onClick={() => navigateDay(1)}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+          <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/20 rounded-xl px-2 py-1">
+                <button
+                  onClick={() => navigateDay(-1)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm text-foreground font-medium min-w-[80px] text-center">{formatViewDate()}</span>
+                <button
+                  onClick={() => navigateDay(1)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              {!isToday && (
+                <button
+                  onClick={() => setViewDate(new Date())}
+                  className="px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors"
+                >
+                  Hoje
+                </button>
+              )}
             </div>
             <div className="flex-1 flex justify-end">
               <button
