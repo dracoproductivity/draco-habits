@@ -81,8 +81,11 @@ export const SettingsPage = () => {
   const { signOut } = useAuth();
   const { saveProfile, saveDraco, saveSettings } = useCloudSync();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAddReminder, setShowAddReminder] = useState(false);
   const [newReminderTime, setNewReminderTime] = useState('09:00');
+  const [newReminderMessage, setNewReminderMessage] = useState('');
+  const [editingReminder, setEditingReminder] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   
   // Ensure notificationReminders is always an array
@@ -133,6 +136,7 @@ export const SettingsPage = () => {
   const handleLogout = async () => {
     await signOut();
     logout();
+    setShowLogoutConfirm(false);
     toast({
       title: 'Até logo!',
       description: 'Você foi desconectado',
@@ -197,11 +201,11 @@ export const SettingsPage = () => {
   };
 
   const addReminder = () => {
-    const randomMessage = FRIENDLY_MESSAGES[Math.floor(Math.random() * FRIENDLY_MESSAGES.length)];
+    const message = newReminderMessage.trim() || FRIENDLY_MESSAGES[Math.floor(Math.random() * FRIENDLY_MESSAGES.length)];
     const newReminder: NotificationReminder = {
       id: Date.now().toString(),
       time: newReminderTime,
-      message: randomMessage,
+      message: message,
       enabled: true,
     };
     updateSettings({
@@ -209,9 +213,18 @@ export const SettingsPage = () => {
     });
     setShowAddReminder(false);
     setNewReminderTime('09:00');
+    setNewReminderMessage('');
     toast({
       title: 'Lembrete adicionado! 🎉',
       description: `Você será lembrado às ${newReminderTime}`,
+    });
+  };
+
+  const updateReminderTime = (id: string, time: string) => {
+    updateSettings({
+      notificationReminders: reminders.map((r) =>
+        r.id === id ? { ...r, time } : r
+      ),
     });
   };
 
@@ -614,7 +627,12 @@ export const SettingsPage = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <Clock className="w-4 h-4 text-primary" />
-                            <span className="font-semibold text-foreground">{reminder.time}</span>
+                            <input
+                              type="time"
+                              value={reminder.time}
+                              onChange={(e) => updateReminderTime(reminder.id, e.target.value)}
+                              className="font-semibold text-foreground bg-transparent border-none outline-none w-20"
+                            />
                           </div>
                           <div className="flex items-center gap-1">
                             <button
@@ -667,23 +685,33 @@ export const SettingsPage = () => {
                             <X className="w-4 h-4" />
                           </button>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="time"
-                            value={newReminderTime}
-                            onChange={(e) => setNewReminderTime(e.target.value)}
-                            className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                          />
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Horário</label>
+                            <input
+                              type="time"
+                              value={newReminderTime}
+                              onChange={(e) => setNewReminderTime(e.target.value)}
+                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">Mensagem (opcional)</label>
+                            <input
+                              type="text"
+                              value={newReminderMessage}
+                              onChange={(e) => setNewReminderMessage(e.target.value)}
+                              placeholder="Deixe vazio para mensagem automática"
+                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                            />
+                          </div>
                           <button
                             onClick={addReminder}
-                            className="px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                            className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
                           >
                             Adicionar
                           </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          💡 A mensagem será gerada automaticamente de forma divertida!
-                        </p>
                       </motion.div>
                     ) : (
                       <motion.button
@@ -723,13 +751,35 @@ export const SettingsPage = () => {
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
 
-            <button
-              onClick={handleLogout}
-              className="w-full py-3 flex items-center gap-3 text-left hover:bg-muted/30 rounded-xl transition-colors px-3"
-            >
-              <LogOut className="w-5 h-5 text-foreground" />
-              <span className="text-foreground">Sair da conta</span>
-            </button>
+            {showLogoutConfirm ? (
+              <div className="p-3 border border-border/50 rounded-xl space-y-3 bg-muted/30">
+                <p className="text-sm text-foreground">
+                  Tem certeza que deseja sair da conta?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 py-2 bg-muted/50 text-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 py-2 gradient-primary text-primary-foreground rounded-xl text-sm font-medium"
+                  >
+                    Sair
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="w-full py-3 flex items-center gap-3 text-left hover:bg-muted/30 rounded-xl transition-colors px-3"
+              >
+                <LogOut className="w-5 h-5 text-foreground" />
+                <span className="text-foreground">Sair da conta</span>
+              </button>
+            )}
 
             {showDeleteConfirm ? (
               <div className="p-3 border border-destructive/50 rounded-xl space-y-3 bg-destructive/5">
