@@ -6,6 +6,7 @@ import {
   calculateHierarchicalPeriodProgress,
   getPeriodBoundaries
 } from '@/utils/habitInstanceCalculator';
+import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 
 interface PeriodCardProps {
   title: string;
@@ -127,13 +128,16 @@ const calculatePeriodProgressXN = (
 export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
   const { goals, settings, habits, habitChecks } = useAppStore();
 
-  const { progress: averageProgress } = calculatePeriodProgressXN(
+  const { completed, total } = calculatePeriodProgressXN(
     type, 
     period, 
     habits, 
     goals, 
     habitChecks
   );
+  
+  const averageProgress = calculateRawPercentage(completed, total);
+  const formattedProgress = formatPercentage(averageProgress);
 
   const isCircular = settings.progressDisplayMode === 'circular';
   const periodStatus = getPeriodStatus(type, period, displayYear);
@@ -147,7 +151,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
     const monthPeriod = `${monthName} ${year}`;
     const status = getPeriodStatus('monthly', monthPeriod, year);
     
-    const { progress } = calculatePeriodProgressXN(
+    const { completed: monthCompleted, total: monthTotal } = calculatePeriodProgressXN(
       'monthly',
       monthPeriod,
       habits,
@@ -155,7 +159,10 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
       habitChecks
     );
     
-    return { progress, status };
+    const progress = calculateRawPercentage(monthCompleted, monthTotal);
+    const formatted = formatPercentage(progress);
+    
+    return { progress, formatted, status };
   };
 
   return (
@@ -196,10 +203,10 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
             ) : isCircular ? (
               <div className="relative flex items-center justify-center">
                 <ProgressCircle progress={averageProgress} />
-                <span className="absolute text-xs font-bold">{averageProgress}%</span>
+                <span className="absolute text-xs font-bold">{formattedProgress}%</span>
               </div>
             ) : (
-              <span className="text-2xl font-bold text-gradient-primary">{averageProgress}%</span>
+              <span className="text-2xl font-bold text-gradient-primary">{formattedProgress}%</span>
             )}
           </div>
         </div>
@@ -217,7 +224,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
         {quarterMonths && quarterMonths.length > 0 && (
           <div className="space-y-2 mt-3 pt-3 border-t border-border/20">
             {quarterMonths.map((month) => {
-              const { progress: monthProgress, status: monthStatus } = getMonthProgress(month);
+              const { progress: monthProgress, formatted: monthFormatted, status: monthStatus } = getMonthProgress(month);
               return (
                 <div key={month} className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground flex-1">{month}</span>
@@ -233,7 +240,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
                           style={{ width: `${monthProgress}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-primary w-8 text-right">{monthProgress}%</span>
+                      <span className="text-xs font-medium text-primary w-10 text-right">{monthFormatted}%</span>
                     </>
                   )}
                 </div>

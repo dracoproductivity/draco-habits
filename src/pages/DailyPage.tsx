@@ -4,6 +4,7 @@ import { HabitList } from '@/components/daily/HabitList';
 import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
+import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { useResponsive } from '@/hooks/useResponsive';
 import { cn } from '@/lib/utils';
 
@@ -27,43 +28,47 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: Habits on left, Timeline + Radar on right */}
-            <div className="grid grid-cols-2 gap-8">
-              {/* Left column: Habit checklist with progress */}
-              <HabitList />
-              
-              {/* Right column: Progress timeline + floating radar */}
-              <div className="flex gap-6 items-stretch">
-                <div className="flex-1">
-                  <ProgressTimeline />
-                </div>
-                {/* Floating Radar Chart - centered vertically */}
-                <div className="flex flex-col justify-center items-center w-48">
-                  <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
-                  <CategoryRadarChart className="h-[180px] w-full" compact />
-                </div>
+            {/* Desktop: Habits centered, then progress indicators + radar below */}
+            <div className="max-w-2xl mx-auto">
+              <HabitList showProgressIndicators={false} />
+            </div>
+            
+            {/* Progress indicators: day, week, month, quarter, year */}
+            <div className="mt-6">
+              <PeriodProgressIndicators />
+            </div>
+            
+            {/* Radar chart below progress indicators */}
+            <div className="mt-6 flex justify-center">
+              <div className="w-64">
+                <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
+                <CategoryRadarChart className="h-[180px] w-full" compact />
               </div>
             </div>
             
-            {/* Calendar below, full width */}
-            <div className="mt-8">
+            {/* Timeline and Calendar */}
+            <div className="mt-8 grid grid-cols-2 gap-8">
+              <ProgressTimeline />
               <HabitCalendar />
             </div>
           </>
         ) : (
           /* Mobile/Tablet: Vertical stack */
-          <div className="space-y-8">
-            <HabitList />
-            <div className="flex gap-4 items-stretch">
-              <div className="flex-1">
-                <ProgressTimeline />
-              </div>
-              {/* Floating Radar Chart on mobile - centered vertically */}
-              <div className="w-40 flex flex-col justify-center items-center">
+          <div className="space-y-6">
+            <HabitList showProgressIndicators={false} centerTitle />
+            
+            {/* Progress indicators: day, week, month, quarter, year */}
+            <PeriodProgressIndicators />
+            
+            {/* Radar chart */}
+            <div className="flex justify-center">
+              <div className="w-48">
                 <h4 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h4>
                 <CategoryRadarChart compact className="h-[140px] w-full" />
               </div>
             </div>
+            
+            <ProgressTimeline />
             <HabitCalendar />
           </div>
         )}

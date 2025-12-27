@@ -6,6 +6,8 @@ import { GoalType } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
+import { calculateHierarchicalPeriodProgress } from '@/utils/habitInstanceCalculator';
+import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 
 interface PeriodModalProps {
   isOpen: boolean;
@@ -50,16 +52,24 @@ const ProgressCircle = ({ progress, size = 60 }: { progress: number; size?: numb
 };
 
 export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, quarterMonths }: PeriodModalProps) => {
-  const { goals, addGoal, updateGoal, removeGoal, settings } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, habits, habitChecks } = useAppStore();
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalEmoji, setNewGoalEmoji] = useState('');
   const [expandedMonths, setExpandedMonths] = useState<string[]>([]);
 
   const periodGoals = goals.filter((g) => g.type === type && g.period === period);
-  const averageProgress = periodGoals.length > 0
-    ? Math.round(periodGoals.reduce((acc, g) => acc + g.progress, 0) / periodGoals.length)
-    : 0;
+  
+  // Use hierarchical X/N calculation
+  const { completed, total } = calculateHierarchicalPeriodProgress(
+    type,
+    period,
+    habits,
+    goals,
+    habitChecks
+  );
+  const averageProgress = calculateRawPercentage(completed, total);
+  const formattedProgress = formatPercentage(averageProgress);
 
   // Extract year from period
   const extractYear = () => {
@@ -97,14 +107,29 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
     return 'started';
   };
 
-  // Calculate monthly progress
+  // Calculate monthly progress using X/N hierarchical method
   const getMonthProgress = (monthName: string) => {
+    const monthPeriod = `${monthName} ${displayYear}`;
     const monthGoals = getMonthlyGoals(monthName);
     const status = getMonthStatus(monthName);
-    if (monthGoals.length === 0) return { progress: 0, status };
+    
+    const { completed: monthCompleted, total: monthTotal } = calculateHierarchicalPeriodProgress(
+      'monthly',
+      monthPeriod,
+      habits,
+      goals,
+      habitChecks
+    );
+    
+    const progress = calculateRawPercentage(monthCompleted, monthTotal);
+    const formatted = formatPercentage(progress);
+    
     return { 
-      progress: Math.round(monthGoals.reduce((acc, g) => acc + g.progress, 0) / monthGoals.length),
-      status
+      progress,
+      formatted,
+      status,
+      completed: monthCompleted,
+      total: monthTotal
     };
   };
 
@@ -189,13 +214,13 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
               {isCircular ? (
                 <div className="relative flex items-center justify-center">
                   <ProgressCircle progress={averageProgress} />
-                  <span className="absolute text-sm font-bold">{averageProgress}%</span>
+                  <span className="absolute text-sm font-bold">{formattedProgress}%</span>
                 </div>
               ) : (
                 <div className="flex-1">
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Progresso médio</span>
-                    <span className="text-lg font-bold text-gradient-primary">{averageProgress}%</span>
+                    <span className="text-sm text-muted-foreground">Progresso ({completed}/{total})</span>
+                    <span className="text-lg font-bold text-gradient-primary">{formattedProgress}%</span>
                   </div>
                   <div className="progress-bar">
                     <motion.div
@@ -213,7 +238,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
               <div className="space-y-3 mb-6">
                 <h3 className="text-sm font-semibold text-muted-foreground">Progresso Mensal</h3>
               {quarterMonths.map((month) => {
-                  const { progress: monthProgress, status: monthStatus } = getMonthProgress(month);
+                  const { progress: monthProgress, formatted: monthFormatted, status: monthStatus, completed: mCompleted, total: mTotal } = getMonthProgress(month);
                   const monthGoals = getMonthlyGoals(month);
                   const isExpanded = expandedMonths.includes(month);
 
@@ -226,7 +251,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                         <div className="flex items-center gap-3">
                           <span className="font-medium text-sm">{month}</span>
                           <span className="text-xs text-muted-foreground">
-                            {monthGoals.length} objetivo{monthGoals.length !== 1 ? 's' : ''}
+                            {mCompleted}/{mTotal} hábitos
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -242,10 +267,10 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                                   style={{ width: `${monthProgress}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-medium text-primary w-10 text-right">{monthProgress}%</span>
+                              <span className="text-sm font-medium text-primary w-12 text-right">{monthFormatted}%</span>
                             </>
                           )}
-                          {monthGoals.length > 0 && (
+                          {(monthGoals.length > 0 || mTotal > 0) && (
                             isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
