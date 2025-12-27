@@ -1357,28 +1357,6 @@ export const HabitList = () => {
                         className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
                       />
                     </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-2 block">XP padrão</label>
-                      <div className="flex gap-1 flex-wrap">
-                        {XP_OPTIONS.map((xp) => (
-                          <button
-                            key={xp}
-                            onClick={() => editingCategory
-                              ? setEditingCategory({...editingCategory, xpReward: xp})
-                              : setNewCategoryXP(xp)
-                            }
-                            className={cn(
-                              'px-3 py-2 rounded-lg text-xs font-medium transition-all',
-                              (editingCategory ? editingCategory.xpReward : newCategoryXP) === xp
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                            )}
-                          >
-                            {xp} XP
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setShowNewCategoryModal(false); setEditingCategory(null); }}

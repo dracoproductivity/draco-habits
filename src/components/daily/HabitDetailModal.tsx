@@ -8,7 +8,7 @@ import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, format, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
-import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
+import { calculateHabitProgress, isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -345,20 +345,24 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
                     const isCompleted = check?.completed || false;
                     const isToday = isSameDay(day, new Date());
+                    const linkedGoalForCheck = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+                    const isScheduled = isHabitScheduledForDate(habit, day, linkedGoalForCheck);
                     
                     return (
                       <div
                         key={dateStr}
                         className={cn(
-                          'aspect-square rounded-lg flex items-center justify-center transition-all',
-                          isCompleted 
-                            ? 'bg-primary' 
-                            : 'bg-muted/30',
+                          'aspect-square rounded-lg flex items-center justify-center transition-all text-[10px] font-medium',
+                          !isScheduled 
+                            ? 'bg-muted/20 text-muted-foreground' 
+                            : isCompleted 
+                              ? 'bg-primary' 
+                              : 'border-2 border-primary/50 bg-transparent',
                           isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
                         )}
-                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${isCompleted ? 'Concluído' : 'Não concluído'}`}
+                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${!isScheduled ? 'Não programado' : isCompleted ? 'Concluído' : 'Não concluído'}`}
                       >
-                        {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
+                        {!isScheduled ? 'N/P' : isCompleted ? <Check className="w-4 h-4 text-primary-foreground" /> : null}
                       </div>
                     );
                   })}
@@ -382,20 +386,24 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
                     const isCompleted = check?.completed || false;
                     const isToday = isSameDay(day, new Date());
+                    const linkedGoalForCheck = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+                    const isScheduled = isHabitScheduledForDate(habit, day, linkedGoalForCheck);
                     
                     return (
                       <div
                         key={dateStr}
                         className={cn(
-                          'aspect-square rounded flex items-center justify-center text-[10px] transition-all',
-                          isCompleted 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted/30 text-muted-foreground',
+                          'aspect-square rounded flex items-center justify-center text-[8px] font-medium transition-all',
+                          !isScheduled 
+                            ? 'bg-muted/20 text-muted-foreground' 
+                            : isCompleted 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'border border-primary/50 bg-transparent text-muted-foreground',
                           isToday && 'ring-1 ring-primary'
                         )}
-                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${isCompleted ? 'Concluído' : 'Não concluído'}`}
+                        title={`${format(day, 'd MMM', { locale: ptBR })} - ${!isScheduled ? 'Não programado' : isCompleted ? 'Concluído' : 'Não concluído'}`}
                       >
-                        {isCompleted ? <Check className="w-3 h-3" /> : format(day, 'd')}
+                        {!isScheduled ? 'N/P' : isCompleted ? <Check className="w-3 h-3" /> : format(day, 'd')}
                       </div>
                     );
                   })}
