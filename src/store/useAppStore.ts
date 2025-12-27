@@ -12,6 +12,15 @@ import {
   PeriodProgress
 } from '@/utils/habitInstanceCalculator';
 
+// Generate a proper UUID v4
+const generateUUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 interface AppStore {
   // Auth
   isAuthenticated: boolean;
@@ -196,7 +205,7 @@ export const useAppStore = create<AppStore>()(
       addHabit: (habit) => {
         const newHabit: Habit = {
           ...habit,
-          id: Date.now().toString(),
+          id: generateUUID(),
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ habits: [...state.habits, newHabit] }));
@@ -345,7 +354,7 @@ export const useAppStore = create<AppStore>()(
       addGoal: (goal) => {
         const newGoal: Goal = {
           ...goal,
-          id: Date.now().toString(),
+          id: generateUUID(),
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ goals: [...state.goals, newGoal] }));
@@ -369,7 +378,7 @@ export const useAppStore = create<AppStore>()(
       addCustomCategory: (category) => {
         const newCategory: CustomCategory = {
           ...category,
-          id: Date.now().toString(),
+          id: generateUUID(),
         };
         set((state) => ({ customCategories: [...state.customCategories, newCategory] }));
         return newCategory;
