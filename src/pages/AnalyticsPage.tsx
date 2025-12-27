@@ -84,7 +84,8 @@ export const AnalyticsPage = () => {
         date: format(day, 'dd/MM'),
         dayName: format(day, 'EEE', { locale: ptBR }),
         hours: log?.sleepHours ?? null,
-        isBelowMin: log ? log.sleepHours < minSleepHours : false,
+        // For sleep: below minimum is bad (red), at minimum is warning (yellow), above is good (green)
+        status: log ? (log.sleepHours < minSleepHours ? 'bad' : log.sleepHours === minSleepHours ? 'warning' : 'good') : null,
       };
     });
   }, [dailyLogs, sleepTimeRange, minSleepHours]);
@@ -100,7 +101,8 @@ export const AnalyticsPage = () => {
         date: format(day, 'dd/MM'),
         dayName: format(day, 'EEE', { locale: ptBR }),
         hours: log?.phoneUsageHours ?? null,
-        isAboveMax: log ? log.phoneUsageHours > maxPhoneHours : false,
+        // For phone: above maximum is bad (red), at maximum is warning (yellow), below is good (green)
+        status: log ? (log.phoneUsageHours > maxPhoneHours ? 'bad' : log.phoneUsageHours === maxPhoneHours ? 'warning' : 'good') : null,
       };
     });
   }, [dailyLogs, phoneTimeRange, maxPhoneHours]);
@@ -341,14 +343,21 @@ export const AnalyticsPage = () => {
                         dot={(props: any) => {
                           const { cx, cy, payload } = props;
                           if (payload.hours === null) return null;
+                          // Colors: good (green) = above min, warning (yellow) = at min, bad (red) = below min
+                          const colorMap = {
+                            good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
+                            warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
+                            bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
+                          };
+                          const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
                           return (
                             <circle
                               key={`sleep-dot-${payload.date || payload.dayName}`}
                               cx={cx}
                               cy={cy}
                               r={5}
-                              fill={payload.isBelowMin ? 'hsl(0 80% 55%)' : 'hsl(210 90% 60%)'}
-                              stroke={payload.isBelowMin ? 'hsl(0 80% 45%)' : 'hsl(210 90% 50%)'}
+                              fill={colors.fill}
+                              stroke={colors.stroke}
                               strokeWidth={2}
                             />
                           );
@@ -452,14 +461,21 @@ export const AnalyticsPage = () => {
                         dot={(props: any) => {
                           const { cx, cy, payload } = props;
                           if (payload.hours === null) return null;
+                          // Colors: good (green) = below max, warning (yellow) = at max, bad (red) = above max
+                          const colorMap = {
+                            good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
+                            warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
+                            bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
+                          };
+                          const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
                           return (
                             <circle
                               key={`phone-dot-${payload.date || payload.dayName}`}
                               cx={cx}
                               cy={cy}
                               r={5}
-                              fill={payload.isAboveMax ? 'hsl(0 80% 55%)' : 'hsl(25 95% 55%)'}
-                              stroke={payload.isAboveMax ? 'hsl(0 80% 45%)' : 'hsl(25 95% 45%)'}
+                              fill={colors.fill}
+                              stroke={colors.stroke}
                               strokeWidth={2}
                             />
                           );

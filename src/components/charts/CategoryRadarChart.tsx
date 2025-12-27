@@ -65,14 +65,15 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
       }));
   }, [goals, habits, customCategories]);
 
-  // Calculate max value for proper grid scaling
+  // Calculate max value for proper grid scaling - dynamically increase based on max goals per category
   const maxValue = useMemo(() => {
-    if (radarData.length === 0) return 5;
+    if (radarData.length === 0) return 3;
     const max = Math.max(...radarData.map(d => d.value));
-    return Math.max(max, 3); // Minimum of 3 for nice display
+    // If any category has more than 3 goals, use that as max, otherwise minimum of 3
+    return Math.max(max, 3);
   }, [radarData]);
 
-  // Generate tick values for concentric circles
+  // Generate tick values for concentric circles - one circle per level
   const gridTicks = useMemo(() => {
     const ticks: number[] = [];
     for (let i = 1; i <= maxValue; i++) {

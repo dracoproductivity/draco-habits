@@ -1333,26 +1333,6 @@ export const GoalsPage = () => {
                   )}
                 </div>
 
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito</label>
-                  <div className="flex gap-2">
-                    {XP_OPTIONS.map((xp) => (
-                      <button
-                        key={xp}
-                        onClick={() => setNewCategoryXP(xp)}
-                        className={cn(
-                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                          newCategoryXP === xp
-                            ? 'gradient-fire text-primary-foreground'
-                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                        )}
-                      >
-                        {xp}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <button
                   onClick={handleCreateCustomCategory}
                   disabled={!newCategoryName.trim()}
@@ -1424,26 +1404,6 @@ export const GoalsPage = () => {
                       className="w-full"
                     />
                   )}
-                </div>
-
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">XP por hábito</label>
-                  <div className="flex gap-2">
-                    {XP_OPTIONS.map((xp) => (
-                      <button
-                        key={xp}
-                        onClick={() => setEditCategoryXP(xp)}
-                        className={cn(
-                          'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                          editCategoryXP === xp
-                            ? 'gradient-fire text-primary-foreground'
-                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                        )}
-                      >
-                        {xp}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="flex gap-2">
