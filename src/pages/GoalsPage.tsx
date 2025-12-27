@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
@@ -974,13 +975,9 @@ export const GoalsPage = () => {
                 <div className="space-y-4">
                   {/* Emoji and Name */}
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="🎯"
+                    <EmojiPickerButton
                       value={newGoalEmoji}
-                      onChange={(e) => setNewGoalEmoji(e.target.value)}
-                      className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
-                      maxLength={2}
+                      onChange={setNewGoalEmoji}
                     />
                     <input
                       type="text"
@@ -1064,13 +1061,9 @@ export const GoalsPage = () => {
                   </h5>
 
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="🎯"
+                    <EmojiPickerButton
                       value={newGoalEmoji}
-                      onChange={(e) => setNewGoalEmoji(e.target.value)}
-                      className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
-                      maxLength={2}
+                      onChange={setNewGoalEmoji}
                     />
                     <input
                       type="text"
@@ -1332,12 +1325,10 @@ export const GoalsPage = () => {
                     </button>
                   </div>
                   {newCategoryHasEmoji && (
-                    <input
-                      type="text"
+                    <EmojiPickerButton
                       value={newCategoryEmoji}
-                      onChange={(e) => setNewCategoryEmoji(e.target.value.slice(-2))}
-                      placeholder="🎯"
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
+                      onChange={setNewCategoryEmoji}
+                      className="w-full"
                     />
                   )}
                 </div>
@@ -1427,12 +1418,10 @@ export const GoalsPage = () => {
                     </button>
                   </div>
                   {editCategoryHasEmoji && (
-                    <input
-                      type="text"
+                    <EmojiPickerButton
                       value={editCategoryEmoji}
-                      onChange={(e) => setEditCategoryEmoji(e.target.value.slice(-2))}
-                      placeholder="🎯"
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-2xl"
+                      onChange={setEditCategoryEmoji}
+                      className="w-full"
                     />
                   )}
                 </div>

@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { GoalType } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 
 interface PeriodModalProps {
   isOpen: boolean;
@@ -421,13 +422,9 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
             {showAddGoal ? (
               <div className="bg-muted/30 rounded-xl p-3 space-y-3">
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="🎯"
+                  <EmojiPickerButton
                     value={newGoalEmoji}
-                    onChange={(e) => setNewGoalEmoji(e.target.value)}
-                    className="w-12 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-center text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                    maxLength={2}
+                    onChange={setNewGoalEmoji}
                   />
                   <input
                     type="text"

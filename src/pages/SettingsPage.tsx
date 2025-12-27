@@ -78,7 +78,7 @@ const FRIENDLY_MESSAGES = [
 
 export const SettingsPage = () => {
   const { settings, updateSettings, logout, user, updateUser, draco, updateDraco } = useAppStore();
-  const { signOut } = useAuth();
+  const { signOut, user: authUser } = useAuth();
   const { saveProfile, saveDraco, saveSettings } = useCloudSync();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -473,22 +473,49 @@ export const SettingsPage = () => {
 
             <div className="pt-4 border-t border-border/30">
               <p className="text-sm text-muted-foreground mb-3">Exibição do progresso</p>
-              <div className="grid grid-cols-2 gap-2">
-                {PROGRESS_DISPLAY_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => updateSettings({ progressDisplayMode: option.id })}
-                    className={cn(
-                      'flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all',
-                      settings.progressDisplayMode === option.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-transparent bg-muted/30 hover:bg-muted/50'
-                    )}
-                  >
-                    <option.icon className="w-5 h-5" />
-                    <span className="text-sm font-medium">{option.name}</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Linear option */}
+                <button
+                  onClick={() => updateSettings({ progressDisplayMode: 'linear' })}
+                  className={cn(
+                    'flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all',
+                    settings.progressDisplayMode === 'linear' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                  )}
+                >
+                  {/* Linear example */}
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full w-3/4 rounded-full" style={{ background: 'var(--gradient-progress)' }} />
+                  </div>
+                  <span className="text-sm font-medium">Linear</span>
+                </button>
+                
+                {/* Circular option */}
+                <button
+                  onClick={() => updateSettings({ progressDisplayMode: 'circular' })}
+                  className={cn(
+                    'flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all',
+                    settings.progressDisplayMode === 'circular' 
+                      ? 'border-primary bg-primary/10' 
+                      : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                  )}
+                >
+                  {/* Circular example */}
+                  <svg width={40} height={40} className="transform -rotate-90">
+                    <circle cx={20} cy={20} r={16} stroke="hsl(var(--muted))" strokeWidth="4" fill="none" />
+                    <circle 
+                      cx={20} cy={20} r={16} 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth="4" 
+                      fill="none" 
+                      strokeLinecap="round"
+                      strokeDasharray={100.53}
+                      strokeDashoffset={25.13}
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">Circular</span>
+                </button>
               </div>
             </div>
 
@@ -743,7 +770,7 @@ export const SettingsPage = () => {
           <div className="space-y-1">
             <div className="py-2 px-1">
               <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium text-foreground">{user?.email || 'usuario@email.com'}</p>
+              <p className="font-medium text-foreground">{authUser?.email || user?.email || 'Não informado'}</p>
             </div>
 
             <button className="w-full py-3 flex items-center justify-between text-left hover:bg-muted/30 rounded-xl transition-colors px-3">

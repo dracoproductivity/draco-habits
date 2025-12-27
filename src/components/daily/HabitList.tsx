@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
+import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { isHabitScheduledForDate, calculateHabitProgress } from '@/utils/habitInstanceCalculator';
@@ -766,13 +767,10 @@ export const HabitList = () => {
                 {!showGoalCreation ? (
                   <>
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Emoji"
+                      <EmojiPickerButton
                         value={newHabitEmoji}
-                        onChange={(e) => setNewHabitEmoji(e.target.value)}
-                        className="w-14 bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-center text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        maxLength={2}
+                        onChange={setNewHabitEmoji}
+                        placeholder="😊"
                       />
                       <input
                         type="text"
@@ -1331,16 +1329,12 @@ export const HabitList = () => {
                   <h3 className="text-lg font-bold mb-4">{editingCategory ? 'Editar Categoria' : 'Nova Categoria'}</h3>
                   <div className="space-y-4">
                     <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="🎯"
+                      <EmojiPickerButton
                         value={editingCategory ? editingCategory.emoji || '' : newCategoryEmoji}
-                        onChange={(e) => editingCategory 
-                          ? setEditingCategory({...editingCategory, emoji: e.target.value})
-                          : setNewCategoryEmoji(e.target.value)
+                        onChange={(emoji) => editingCategory 
+                          ? setEditingCategory({...editingCategory, emoji})
+                          : setNewCategoryEmoji(emoji)
                         }
-                        className="w-14 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-center text-xl"
-                        maxLength={2}
                       />
                       <input
                         type="text"
