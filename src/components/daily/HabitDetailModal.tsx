@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Pencil, Tag, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { Habit, GoalType } from '@/types';
+import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 
@@ -37,8 +37,14 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     habitChecks, 
     updateHabit, 
     addGoal,
-    settings 
+    settings,
+    customCategories,
+    addCustomCategory,
+    updateCustomCategory
   } = useAppStore();
+
+  // Get linked goal to find current category
+  const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
 
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(habit.goalId || null);
   const [showGoalCreation, setShowGoalCreation] = useState(false);
@@ -51,6 +57,14 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(habit.repeatFrequency || 1);
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
+  
+  // Category editing state
+  const [xpReward, setXpReward] = useState<number>(habit.xpReward || 10);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryEmoji, setNewCategoryEmoji] = useState('⭐');
+  const [newCategoryXP, setNewCategoryXP] = useState(10);
 
   // Calculate habit progress using the new utility
   const habitProgress = useMemo(() => {
@@ -123,9 +137,47 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       repeatFrequency: isOneTime ? undefined : repeatFrequency,
       notificationEnabled,
       notificationTime,
+      xpReward,
     });
     toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
     onClose();
+  };
+
+  const handleSaveCategory = () => {
+    if (!newCategoryName.trim()) {
+      toast({ title: 'Erro', description: 'Digite um nome para a categoria', variant: 'destructive' });
+      return;
+    }
+    
+    if (editingCategory) {
+      updateCustomCategory(editingCategory.id, {
+        name: newCategoryName.trim(),
+        emoji: newCategoryEmoji,
+        xpReward: newCategoryXP,
+      });
+      toast({ title: 'Categoria atualizada!' });
+    } else {
+      addCustomCategory({
+        name: newCategoryName.trim(),
+        emoji: newCategoryEmoji,
+        xpReward: newCategoryXP,
+      });
+      toast({ title: 'Categoria criada!' });
+    }
+    
+    setShowCategoryModal(false);
+    setEditingCategory(null);
+    setNewCategoryName('');
+    setNewCategoryEmoji('⭐');
+    setNewCategoryXP(10);
+  };
+
+  const openEditCategory = (category: CustomCategory) => {
+    setEditingCategory(category);
+    setNewCategoryName(category.name);
+    setNewCategoryEmoji(category.emoji || '⭐');
+    setNewCategoryXP(category.xpReward);
+    setShowCategoryModal(true);
   };
 
   const getStepLabel = (step: GoalType) => {
@@ -476,6 +528,76 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               </div>
             </div>
 
+            {/* XP Reward */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <h3 className="font-medium text-foreground">XP por Conclusão</h3>
+              </div>
+              
+              <div className="grid grid-cols-6 gap-2">
+                {XP_OPTIONS.map((xp) => (
+                  <button
+                    key={xp}
+                    onClick={() => setXpReward(xp)}
+                    className={cn(
+                      'py-2 rounded-xl text-sm font-medium transition-all',
+                      xpReward === xp
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
+                    )}
+                  >
+                    {xp}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Categories (for custom categories management) */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Categorias Personalizadas</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setNewCategoryName('');
+                    setNewCategoryEmoji('⭐');
+                    setNewCategoryXP(10);
+                    setShowCategoryModal(true);
+                  }}
+                  className="text-xs text-primary hover:text-primary/80"
+                >
+                  + Nova
+                </button>
+              </div>
+              
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {customCategories.map((cat) => (
+                  <div key={cat.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span>{cat.emoji}</span>
+                      <span className="text-sm">{cat.name}</span>
+                      <span className="text-xs text-muted-foreground">({cat.xpReward} XP)</span>
+                    </div>
+                    <button
+                      onClick={() => openEditCategory(cat)}
+                      className="p-1 hover:bg-muted rounded"
+                    >
+                      <Pencil className="w-3 h-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                ))}
+                {customCategories.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Nenhuma categoria personalizada
+                  </p>
+                )}
+              </div>
+            </div>
+
             {/* Notifications */}
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -510,6 +632,85 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 )}
               </div>
             </div>
+
+            {/* Category Edit Modal */}
+            <AnimatePresence>
+              {showCategoryModal && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+                  onClick={() => setShowCategoryModal(false)}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="w-full max-w-sm bg-card border border-border rounded-2xl p-4 space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="font-semibold text-foreground">
+                      {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+                    </h3>
+                    
+                    <input
+                      type="text"
+                      placeholder="Nome da categoria"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    />
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Emoji</label>
+                      <input
+                        type="text"
+                        value={newCategoryEmoji}
+                        onChange={(e) => setNewCategoryEmoji(e.target.value)}
+                        className="w-20 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-center text-xl focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        maxLength={2}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">XP Padrão</label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {XP_OPTIONS.map((xp) => (
+                          <button
+                            key={xp}
+                            onClick={() => setNewCategoryXP(xp)}
+                            className={cn(
+                              'py-2 rounded-lg text-sm font-medium transition-all',
+                              newCategoryXP === xp
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            {xp}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowCategoryModal(false)}
+                        className="flex-1 py-2 bg-muted/50 text-foreground rounded-xl font-medium"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveCategory}
+                        className="flex-1 py-2 gradient-primary text-primary-foreground rounded-xl font-medium"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Save Button */}
             <button
