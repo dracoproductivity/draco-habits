@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Moon, Smartphone, Target, ListTodo, CalendarDays, BarChart3, ChevronLeft, ChevronRight, Plus, Edit3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addWeeks, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -18,6 +18,7 @@ import {
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
+import { HealthLogModal } from '@/components/analytics/HealthLogModal';
 import { cn } from '@/lib/utils';
 
 type TimeRange = 'weekly' | 'monthly';
@@ -36,6 +37,16 @@ export const AnalyticsPage = () => {
   const [progressTimeRange, setProgressTimeRange] = useState<ProgressTimeRange>('month');
   const [selectedHabitId, setSelectedHabitId] = useState<string>('all');
   const [selectedGoalId, setSelectedGoalId] = useState<string>('all');
+  
+  // Health log modal state
+  const [showSleepModal, setShowSleepModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  
+  // Check if today has logs
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayLog = dailyLogs.find(l => l.date === todayStr);
+  const hasTodaySleep = todayLog?.sleepHours !== undefined && todayLog?.sleepHours !== null;
+  const hasTodayPhone = todayLog?.phoneUsageHours !== undefined && todayLog?.phoneUsageHours !== null;
 
   const minSleepHours = settings.minSleepHours || 7;
   const maxPhoneHours = settings.maxPhoneHours || 2;
@@ -273,6 +284,24 @@ export const AnalyticsPage = () => {
                   </div>
                 </div>
 
+                {/* Register/Edit Button */}
+                <button
+                  onClick={() => setShowSleepModal(true)}
+                  className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  {hasTodaySleep ? (
+                    <>
+                      <Edit3 className="w-4 h-4" />
+                      Alterar registro (hoje: {todayLog?.sleepHours}h)
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Registrar hoje
+                    </>
+                  )}
+                </button>
+
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={getSleepData}>
@@ -365,6 +394,24 @@ export const AnalyticsPage = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Register/Edit Button */}
+                <button
+                  onClick={() => setShowPhoneModal(true)}
+                  className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
+                >
+                  {hasTodayPhone ? (
+                    <>
+                      <Edit3 className="w-4 h-4" />
+                      Alterar registro (hoje: {todayLog?.phoneUsageHours}h)
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Registrar hoje
+                    </>
+                  )}
+                </button>
 
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
@@ -639,6 +686,18 @@ export const AnalyticsPage = () => {
           </>
         )}
       </div>
+      
+      {/* Health Log Modals */}
+      <HealthLogModal
+        isOpen={showSleepModal}
+        onClose={() => setShowSleepModal(false)}
+        type="sleep"
+      />
+      <HealthLogModal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        type="phone"
+      />
     </motion.div>
   );
 };
