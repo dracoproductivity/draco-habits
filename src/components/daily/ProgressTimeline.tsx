@@ -24,16 +24,27 @@ export const ProgressTimeline = () => {
 
   const today = new Date();
   
-  const getWeekDays = () => {
-    const days: { name: string; progress: number }[] = [];
-    
-    // Get Monday of current week
+  const getWeekMonday = () => {
     const currentDay = today.getDay();
-    const diffToMonday = currentDay === 0 ? 6 : currentDay - 1; // Sunday = 0, so go back 6 days
+    const diffToMonday = currentDay === 0 ? 6 : currentDay - 1;
     const monday = new Date(today);
     monday.setDate(today.getDate() - diffToMonday - (weekOffset * 7));
+    return monday;
+  };
+
+  const getWeekDateRange = () => {
+    const monday = getWeekMonday();
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
     
-    // Monday to Sunday (7 days)
+    const formatDate = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+    return `${formatDate(monday)} - ${formatDate(sunday)}`;
+  };
+  
+  const getWeekDays = () => {
+    const days: { name: string; progress: number }[] = [];
+    const monday = getWeekMonday();
+    
     const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
@@ -64,7 +75,10 @@ export const ProgressTimeline = () => {
     return days;
   };
 
-  const chartData = viewMode === 'week' ? getWeekDays() : getMonthDays();
+  // Recalculate chart data when dependencies change
+  const chartData = viewMode === 'week' 
+    ? getWeekDays() 
+    : getMonthDays();
 
   const handlePrevMonth = () => {
     if (selectedMonth === 0) {
@@ -130,8 +144,16 @@ export const ProgressTimeline = () => {
 
       {chartMode === 'evolution' && (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-foreground">Evolução</h3>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h3 className="font-semibold text-foreground">Evolução</h3>
+              <p className="text-xs text-muted-foreground">
+                {viewMode === 'week' 
+                  ? getWeekDateRange()
+                  : `${MONTHS[selectedMonth]} ${selectedYear}`
+                }
+              </p>
+            </div>
             <div className="flex items-center gap-1 bg-muted/50 rounded-xl p-1">
               <button
                 onClick={() => setViewMode('week')}
@@ -167,12 +189,11 @@ export const ProgressTimeline = () => {
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-sm text-muted-foreground">
-                {weekOffset === 0 ? 'Esta semana' : `${weekOffset} semana(s) atrás`}
+                {weekOffset === 0 ? 'Esta semana' : weekOffset > 0 ? `${weekOffset} semana(s) atrás` : `${Math.abs(weekOffset)} semana(s) à frente`}
               </span>
               <button
-                onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all disabled:opacity-40"
-                disabled={weekOffset === 0}
+                onClick={() => setWeekOffset(weekOffset - 1)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
