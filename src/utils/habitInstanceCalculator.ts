@@ -278,7 +278,7 @@ export const calculateHabitProgress = (
   return { completed, total, percentage };
 };
 
-// Calculate goal progress based on its linked habits
+// Calculate goal progress based on its linked habits (X/N method)
 export const calculateGoalProgress = (
   goal: Goal,
   habits: Habit[],
@@ -321,6 +321,8 @@ export interface PeriodProgress {
   progress: number;
   isPhantom: boolean; // true if no explicit goal exists
   hasStarted: boolean;
+  completed: number; // X - total completed checks
+  total: number; // N - total scheduled checks
 }
 
 // Get the period identifier for a date
@@ -342,6 +344,81 @@ export const getPeriodIdentifier = (date: Date, type: GoalType): string => {
   }
 };
 
+// Interface for X/N counts by period
+export interface PeriodXN {
+  completed: number; // X
+  total: number; // N
+}
+
+/**
+ * Calculate X (completed) and N (total) for a specific period
+ * This counts ALL habit instances that fall within the period boundaries
+ * regardless of what type of goal they're linked to
+ */
+export const calculatePeriodXN = (
+  type: GoalType,
+  period: string,
+  habits: Habit[],
+  goals: Goal[],
+  habitChecks: HabitCheck[]
+): PeriodXN => {
+  const boundaries = getPeriodBoundaries(type, period);
+  if (!boundaries) return { completed: 0, total: 0 };
+
+  let totalCompleted = 0;
+  let totalScheduled = 0;
+
+  // Iterate through ALL habits and count instances within this period
+  for (const habit of habits) {
+    const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+    
+    // Get all instances for this habit
+    const instances = calculateHabitInstances(habit, linkedGoal);
+    
+    for (const instance of instances) {
+      const instDate = parseISO(instance.date);
+      
+      // Check if this instance falls within the period boundaries
+      if (isWithinInterval(instDate, { start: boundaries.start, end: boundaries.end })) {
+        totalScheduled++;
+        
+        const isCompleted = habitChecks.some(
+          hc => hc.habitId === habit.id && hc.date === instance.date && hc.completed
+        );
+        
+        if (isCompleted) {
+          totalCompleted++;
+        }
+      }
+    }
+  }
+
+  return { completed: totalCompleted, total: totalScheduled };
+};
+
+/**
+ * Calculate hierarchical period progress using X/N method
+ * For yearly: sum of ALL habit checks in the year / total habit instances in the year
+ * For quarterly: sum of ALL habit checks in the quarter / total habit instances in the quarter
+ * etc.
+ */
+export const calculateHierarchicalPeriodProgress = (
+  type: GoalType,
+  period: string,
+  habits: Habit[],
+  goals: Goal[],
+  habitChecks: HabitCheck[]
+): { progress: number; completed: number; total: number } => {
+  const xn = calculatePeriodXN(type, period, habits, goals, habitChecks);
+  const progress = xn.total > 0 ? Math.round((xn.completed / xn.total) * 100) : 0;
+  
+  return {
+    progress,
+    completed: xn.completed,
+    total: xn.total
+  };
+};
+
 // Calculate progress for all periods (including phantom goals)
 export const calculateAllPeriodProgress = (
   habits: Habit[],
@@ -351,9 +428,16 @@ export const calculateAllPeriodProgress = (
   const periodProgressMap = new Map<string, PeriodProgress>();
   const now = new Date();
   
-  // First, process all explicit goals
+  // First, process all explicit goals using X/N method
   for (const goal of goals) {
-    const progress = calculateGoalProgress(goal, habits, habitChecks);
+    const { progress, completed, total } = calculateHierarchicalPeriodProgress(
+      goal.type,
+      goal.period,
+      habits.filter(h => h.goalId === goal.id), // Only habits linked to this goal
+      [goal],
+      habitChecks
+    );
+    
     const boundaries = getPeriodBoundaries(goal.type, goal.period);
     const hasStarted = boundaries ? now >= boundaries.start : false;
     
@@ -362,132 +446,69 @@ export const calculateAllPeriodProgress = (
       period: goal.period,
       progress,
       isPhantom: false,
-      hasStarted
+      hasStarted,
+      completed,
+      total
     });
   }
   
-  // Then, calculate phantom progress for periods without explicit goals
-  // This cascades from habits up through the hierarchy
+  // Calculate phantom progress for periods without explicit goals
+  // This uses X/N across ALL habits that fall within the period
+  const allInstances: { date: Date; habitId: string; instanceDate: string }[] = [];
+  
   for (const habit of habits) {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-    const habitProgress = calculateHabitProgress(habit, linkedGoal, habitChecks);
-    
-    if (habitProgress.total === 0) continue;
-    
-    // Get the period for this habit's goal (or current period if no goal)
     const instances = calculateHabitInstances(habit, linkedGoal);
     
     for (const instance of instances) {
-      const instDate = parseISO(instance.date);
-      const isCompleted = habitChecks.some(
-        hc => hc.habitId === habit.id && hc.date === instance.date && hc.completed
-      );
-      
-      // Update phantom progress for all period types
-      const periodTypes: GoalType[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
-      
-      for (const pType of periodTypes) {
-        const periodId = getPeriodIdentifier(instDate, pType);
-        const key = `${pType}-${periodId}`;
-        
-        if (!periodProgressMap.has(key)) {
-          const boundaries = getPeriodBoundaries(pType, periodId);
-          const hasStarted = boundaries ? now >= boundaries.start : false;
-          
-          periodProgressMap.set(key, {
-            type: pType,
-            period: periodId,
-            progress: 0,
-            isPhantom: true,
-            hasStarted
-          });
-        }
-        
-        // Accumulate progress (we'll normalize at the end)
-        const current = periodProgressMap.get(key)!;
-        // Mark if any check was made in this period
-        if (isCompleted && !current.hasStarted) {
-          current.hasStarted = true;
-        }
-      }
+      allInstances.push({
+        date: parseISO(instance.date),
+        habitId: habit.id,
+        instanceDate: instance.date
+      });
     }
   }
   
-  // Recalculate phantom goal progress
-  for (const [key, periodData] of periodProgressMap.entries()) {
-    if (periodData.isPhantom) {
-      // Calculate progress based on all habits that fall within this period
-      let totalCompleted = 0;
-      let totalOccurrences = 0;
+  // Group instances by period and calculate X/N for each
+  const periodTypes: GoalType[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
+  
+  for (const instance of allInstances) {
+    for (const pType of periodTypes) {
+      const periodId = getPeriodIdentifier(instance.date, pType);
+      const key = `${pType}-${periodId}`;
       
-      const boundaries = getPeriodBoundaries(periodData.type, periodData.period);
-      if (!boundaries) continue;
-      
-      for (const habit of habits) {
-        const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-        const instances = calculateHabitInstances(habit, linkedGoal);
+      // Only create phantom periods (explicit goals are already handled)
+      if (!periodProgressMap.has(key)) {
+        const boundaries = getPeriodBoundaries(pType, periodId);
+        const hasStarted = boundaries ? now >= boundaries.start : false;
         
-        for (const instance of instances) {
-          const instDate = parseISO(instance.date);
-          
-          if (isWithinInterval(instDate, { start: boundaries.start, end: boundaries.end })) {
-            totalOccurrences++;
-            const isCompleted = habitChecks.some(
-              hc => hc.habitId === habit.id && hc.date === instance.date && hc.completed
-            );
-            if (isCompleted) totalCompleted++;
-          }
-        }
+        // Calculate X/N for this phantom period
+        const xn = calculatePeriodXN(pType, periodId, habits, goals, habitChecks);
+        const progress = xn.total > 0 ? Math.round((xn.completed / xn.total) * 100) : 0;
+        
+        periodProgressMap.set(key, {
+          type: pType,
+          period: periodId,
+          progress,
+          isPhantom: true,
+          hasStarted,
+          completed: xn.completed,
+          total: xn.total
+        });
       }
-      
-      periodData.progress = totalOccurrences > 0 
-        ? Math.round((totalCompleted / totalOccurrences) * 100) 
-        : 0;
     }
   }
   
   return periodProgressMap;
 };
 
-// Calculate hierarchical progress (year from quarters, quarters from months, etc.)
+// Calculate hierarchical progress using pure X/N (no averaging of percentages)
 export const calculateHierarchicalProgress = (
   periodProgressMap: Map<string, PeriodProgress>,
   type: GoalType,
   period: string
 ): number => {
-  const childTypes: Record<GoalType, GoalType | null> = {
-    yearly: 'quarterly',
-    quarterly: 'monthly',
-    monthly: 'weekly',
-    weekly: null
-  };
-  
-  const childType = childTypes[type];
-  if (!childType) {
-    // Weekly - get direct progress
-    return periodProgressMap.get(`${type}-${period}`)?.progress || 0;
-  }
-  
-  // Get boundaries for this period
-  const boundaries = getPeriodBoundaries(type, period);
-  if (!boundaries) return 0;
-  
-  // Find all child periods within this period
-  const childProgresses: number[] = [];
-  
-  for (const [key, data] of periodProgressMap.entries()) {
-    if (data.type === childType) {
-      const childBoundaries = getPeriodBoundaries(data.type, data.period);
-      if (childBoundaries && 
-          childBoundaries.start >= boundaries.start && 
-          childBoundaries.end <= boundaries.end) {
-        childProgresses.push(data.progress);
-      }
-    }
-  }
-  
-  if (childProgresses.length === 0) return 0;
-  
-  // Average of child progresses
-  return Math.round(childProgresses.reduce((a, b) => a + b, 0) / childProgresses.length);
+  // Simply return the direct X/N progress for this period
+  const periodData = periodProgressMap.get(`${type}-${period}`);
+  return periodData?.progress || 0;
 };
