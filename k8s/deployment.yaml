@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: draco-finance
-  namespace: draco-finance
+  name: draco-habits
+  namespace: draco-habits
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: draco-finance
+      app: draco-habits
   template:
     metadata:
       labels:
-        app: draco-finance
+        app: draco-habits
     spec:
       containers:
-      - name: draco-finance
+      - name: draco-habits
         image: felipebg1/draco-finance:d5847fb6222b74b86f13ba7ae17aebff3fc363a7
         ports:
 
