@@ -1,4 +1,4 @@
-name: Deploy Draco Finance
+name: Deploy Draco Habits
 
 on:
   push:
@@ -30,17 +30,17 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
         with:
-          context: .
-          push: true
-          platforms: linux/arm64 
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/draco-finance:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/draco-habits:${{ github.sha }}
+          
+      - name: Update Kubernetes Manifest
+        run: |
+          sed -i "s|image: .*|image: ${{ secrets.DOCKERHUB_USERNAME }}/draco-habits:${{ github.sha }}|g" k8s/deployment.yaml
 
       - name: Update Kubernetes Manifest
         run: |
           # Atualiza a tag da imagem no manifest do K8s
-          sed -i "s|image: .*|image: ${{ secrets.DOCKERHUB_USERNAME }}/draco-finance:${{ github.sha }}|g" k8s/deployment.yaml
+          sed -i "s|image: .*|image: ${{ secrets.DOCKERHUB_USERNAME }}/draco-habits:${{ github.sha }}|g" k8s/deployment.yaml
           
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
