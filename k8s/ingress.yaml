@@ -15,7 +15,7 @@ spec:
     - habits.dracohub.com.br
     secretName: draco-habits-tls
   rules:
-  - host: finance.dracohub.com.br
+  - host: habits.dracohub.com.br
     http:
       paths:
       - path: /
