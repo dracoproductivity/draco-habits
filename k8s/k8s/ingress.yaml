@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: draco-ingress
+  namespace: draco-finance
+  annotations:
+    # Vincula o certificado à API da Cloudflare que configuramos
+    cert-manager.io/cluster-issuer: cloudflare-dns-issuer 
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - finance.dracohub.com.br
+    secretName: draco-finance-tls
+  rules:
+  - host: finance.dracohub.com.br
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: draco-service
+            port:
+              number: 80
