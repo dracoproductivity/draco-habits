@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: draco-service
-  namespace: draco-finance # ADICIONE ESTA LINHA
+  name: habits-service
+  namespace: draco-habits # ADICIONE ESTA LINHA
 spec:
   selector:
-    app: draco-finance
+    app: draco-habits
   ports:
     - protocol: TCP
       port: 80
