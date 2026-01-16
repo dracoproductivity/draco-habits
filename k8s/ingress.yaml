@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: draco-ingress
-  namespace: draco-finance
+  name: habits-ingress
+  namespace: draco-habits
   annotations:
     # Vincula o certificado à API da Cloudflare que configuramos
     cert-manager.io/cluster-issuer: cloudflare-dns-issuer 
@@ -12,8 +12,8 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - finance.dracohub.com.br
-    secretName: draco-finance-tls
+    - habits.dracohub.com.br
+    secretName: draco-habits-tls
   rules:
   - host: finance.dracohub.com.br
     http:
@@ -22,6 +22,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: draco-service
+            name: habits-service
             port:
               number: 80
