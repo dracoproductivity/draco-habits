@@ -81,7 +81,7 @@ const FRIENDLY_MESSAGES = [
 
 export const SettingsPage = () => {
   const { settings, updateSettings, logout, user, updateUser, draco, updateDraco } = useAppStore();
-  const { signOut, user: authUser } = useAuth();
+  const { signOut, user: authUser, resetPassword } = useAuth();
   const { saveProfile, saveDraco, saveSettings } = useCloudSync();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -90,6 +90,7 @@ export const SettingsPage = () => {
   const [newReminderMessage, setNewReminderMessage] = useState('');
   const [editingReminder, setEditingReminder] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [sendingPasswordReset, setSendingPasswordReset] = useState(false);
   
   // Ensure notificationReminders is always an array
   const getReminders = (): NotificationReminder[] => {
@@ -201,6 +202,35 @@ export const SettingsPage = () => {
       title: 'Perfil atualizado!',
       description: 'Suas informações foram salvas na nuvem',
     });
+  };
+
+  const handlePasswordReset = async () => {
+    const email = authUser?.email || user?.email;
+    if (!email) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhum email encontrado para enviar a redefinição',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingPasswordReset(true);
+    const { error } = await resetPassword(email);
+    setSendingPasswordReset(false);
+
+    if (error) {
+      toast({
+        title: 'Erro ao enviar email',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Email enviado! 📧',
+        description: `Enviamos um link de redefinição para ${email}`,
+      });
+    }
   };
 
   const addReminder = () => {
@@ -781,9 +811,16 @@ export const SettingsPage = () => {
               <p className="font-medium text-foreground">{authUser?.email || user?.email || 'Não informado'}</p>
             </div>
 
-            <button className="w-full py-3 flex items-center justify-between text-left hover:bg-muted/30 rounded-xl transition-colors px-3">
-              <span className="text-foreground">Alterar senha</span>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <button 
+              onClick={handlePasswordReset}
+              disabled={sendingPasswordReset}
+              className="w-full py-3 flex items-center justify-between text-left hover:bg-muted/30 rounded-xl transition-colors px-3 disabled:opacity-50"
+            >
+              <span className="text-foreground flex items-center gap-2">
+                {sendingPasswordReset && <Loader2 className="w-4 h-4 animate-spin" />}
+                {sendingPasswordReset ? 'Enviando...' : 'Alterar senha'}
+              </span>
+              {!sendingPasswordReset && <ChevronRight className="w-5 h-5 text-muted-foreground" />}
             </button>
 
             {showLogoutConfirm ? (
