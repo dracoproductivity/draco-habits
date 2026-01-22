@@ -20,7 +20,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
+import { isHabitScheduledForDate, calculateHabitInstances } from '@/utils/habitInstanceCalculator';
 import { formatPercentage } from '@/utils/formatPercentage';
 
 type ProgressFilter = 'habits' | 'goals';
@@ -118,8 +118,9 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
         };
       });
     } else {
-      // For goals: Show the goal's completion percentage snapshot at each day
-      // This shows how the goal's % completion evolved over time
+      // For goals: Show the goal's TOTAL completion percentage at each day
+      // This means: X completed / N total for the ENTIRE goal period
+      // Example: Goal with 365 habits total -> day 10 shows 10/365 = 2.7%
       const filteredGoals = selectedGoalId === 'all' 
         ? goals 
         : goals.filter((g) => g.id === selectedGoalId);
@@ -132,6 +133,21 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
         }));
       }
 
+      // Pre-calculate the TOTAL N for each goal (all scheduled instances for the entire goal period)
+      const goalTotals = new Map<string, number>();
+      
+      filteredGoals.forEach(goal => {
+        const goalHabits = habits.filter(h => h.goalId === goal.id);
+        let totalN = 0;
+        
+        goalHabits.forEach(habit => {
+          const instances = calculateHabitInstances(habit, goal);
+          totalN += instances.length;
+        });
+        
+        goalTotals.set(goal.id, totalN);
+      });
+
       return days.map((day) => {
         const isBeforeAccount = day < accountStartDate;
         
@@ -143,28 +159,23 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
           };
         }
 
-        // For each day, calculate the goal's completion % as a snapshot up to that day
-        // This means: how much of the goal was completed BY this day
+        // For each day, calculate how many habits were completed UP TO this day
+        // divided by the TOTAL habits for the entire goal
         let totalGoalProgress = 0;
         let goalsWithHabits = 0;
 
         filteredGoals.forEach(goal => {
           const goalHabits = habits.filter(h => h.goalId === goal.id);
+          const totalN = goalTotals.get(goal.id) || 0;
           
-          // Only count goals that have habits and those habits existed by this day
-          const activeHabits = goalHabits.filter(h => {
-            const habitCreated = new Date(h.createdAt);
-            return habitCreated <= day;
-          });
+          if (totalN === 0) return;
 
-          if (activeHabits.length === 0) return;
+          // Count how many habits were completed UP TO this day
+          let completedX = 0;
 
-          // Calculate cumulative X/N for this goal up to this day
-          let goalX = 0;
-          let goalN = 0;
-
-          activeHabits.forEach(habit => {
+          goalHabits.forEach(habit => {
             const habitCreated = new Date(habit.createdAt);
+            if (day < habitCreated) return;
             
             const daysToCheck = eachDayOfInterval({
               start: habitCreated,
@@ -173,22 +184,21 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
 
             daysToCheck.forEach(checkDay => {
               if (isHabitScheduledForDate(habit, checkDay, goal)) {
-                goalN++;
                 const checkDateStr = format(checkDay, 'yyyy-MM-dd');
                 const isCompleted = habitChecks.some(
                   hc => hc.habitId === habit.id && hc.date === checkDateStr && hc.completed
                 );
                 if (isCompleted) {
-                  goalX++;
+                  completedX++;
                 }
               }
             });
           });
 
-          if (goalN > 0) {
-            totalGoalProgress += (goalX / goalN) * 100;
-            goalsWithHabits++;
-          }
+          // Calculate % as completed / total for entire goal
+          const goalProgress = (completedX / totalN) * 100;
+          totalGoalProgress += goalProgress;
+          goalsWithHabits++;
         });
 
         // If viewing all goals, show the average % across all goals
