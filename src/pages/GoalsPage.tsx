@@ -4,6 +4,7 @@ import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, 
 import { useAppStore } from '@/store/useAppStore';
 import { GoalCard } from '@/components/goals/GoalCard';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
+import { HabitCreationForm } from '@/components/goals/HabitCreationForm';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
@@ -1431,124 +1432,16 @@ export const GoalsPage = () => {
         )}
       </AnimatePresence>
 
-      {/* Weekly Goal Prompt Modal */}
+      {/* Habit Creation Modal */}
       <AnimatePresence>
         {showWeeklyGoalPrompt && parentGoalForWeekly && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={() => setShowWeeklyGoalPrompt(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Criar Hábito Semanal</h3>
-                <button onClick={() => setShowWeeklyGoalPrompt(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 mb-4">
-                <p className="text-sm text-muted-foreground">
-                  Vinculado a: <span className="font-semibold text-foreground">{parentGoalForWeekly.name}</span>
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Nome do hábito</label>
-                  <input
-                    type="text"
-                    value={weeklyGoalName}
-                    onChange={(e) => setWeeklyGoalName(e.target.value)}
-                    placeholder="Ex: Ler 30 minutos"
-                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Dias da semana</label>
-                  <div className="flex gap-1.5">
-                    {weekDayLabels.map((label, index) => (
-                      <button
-                        key={index}
-                        onClick={() => toggleWeekDay(index)}
-                        className={cn(
-                          'flex-1 py-2 rounded-lg text-xs font-medium transition-all',
-                          weeklyGoalDays.includes(index)
-                            ? 'gradient-fire text-primary-foreground'
-                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Repeat className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">Repetir toda semana</span>
-                  </div>
-                  <button
-                    onClick={() => setWeeklyGoalRepeat(!weeklyGoalRepeat)}
-                    className={cn(
-                      'w-10 h-5 rounded-full transition-all relative',
-                      weeklyGoalRepeat ? 'bg-primary' : 'bg-muted'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
-                        weeklyGoalRepeat ? 'right-0.5' : 'left-0.5'
-                      )}
-                    />
-                  </button>
-                </div>
-
-                {!weeklyGoalRepeat && (
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Selecione a semana</label>
-                    <select
-                      value={weeklyGoalPeriod}
-                      onChange={(e) => setWeeklyGoalPeriod(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                    >
-                      {generateWeekOptions().map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowWeeklyGoalPrompt(false)}
-                    className="flex-1 py-3 bg-muted/50 text-foreground rounded-xl font-semibold hover:bg-muted/70 transition-colors"
-                  >
-                    Pular
-                  </button>
-                  <button
-                    onClick={handleCreateWeeklyGoal}
-                    disabled={!weeklyGoalName.trim()}
-                    className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Criar
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <HabitCreationForm
+            parentGoal={parentGoalForWeekly}
+            onClose={() => {
+              setShowWeeklyGoalPrompt(false);
+              setParentGoalForWeekly(null);
+            }}
+          />
         )}
       </AnimatePresence>
 
