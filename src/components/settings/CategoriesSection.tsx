@@ -1,20 +1,49 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tag, Plus, Edit3, Trash2, Check, X, Save } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { DEFAULT_CATEGORIES, CustomCategory } from '@/types';
+import { DEFAULT_CATEGORIES, CustomCategory, GoalCategory } from '@/types';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { toast } from '@/hooks/use-toast';
+
+// Default categories that can be customized
+const EDITABLE_DEFAULT_CATEGORIES = DEFAULT_CATEGORIES.map(cat => ({
+  ...cat,
+  isDefault: true,
+}));
 
 export const CategoriesSection = () => {
   const { customCategories, addCustomCategory, updateCustomCategory, removeCustomCategory } = useAppStore();
   
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDefaultId, setEditingDefaultId] = useState<GoalCategory | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('🏷️');
   const [editName, setEditName] = useState('');
   const [editEmoji, setEditEmoji] = useState('');
+  
+  // Merge default categories with any custom overrides
+  const defaultCategoriesWithOverrides = useMemo(() => {
+    return EDITABLE_DEFAULT_CATEGORIES.map(defaultCat => {
+      // Check if there's a custom category that overrides this default
+      const override = customCategories.find(c => c.id === `default_${defaultCat.id}`);
+      if (override) {
+        return {
+          ...defaultCat,
+          name: override.name,
+          emoji: override.emoji || '',
+          overrideId: override.id,
+        };
+      }
+      return defaultCat;
+    });
+  }, [customCategories]);
+  
+  // Filter out custom categories that are overrides of defaults
+  const pureCustomCategories = useMemo(() => {
+    return customCategories.filter(c => !c.id.startsWith('default_'));
+  }, [customCategories]);
 
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) {
@@ -46,6 +75,55 @@ export const CategoriesSection = () => {
     setEditingId(category.id);
     setEditName(category.name);
     setEditEmoji(category.emoji || '');
+  };
+
+  const handleStartEditDefault = (cat: typeof EDITABLE_DEFAULT_CATEGORIES[0] & { overrideId?: string }) => {
+    setEditingDefaultId(cat.id);
+    setEditName(cat.name);
+    setEditEmoji(cat.emoji);
+  };
+
+  const handleSaveEditDefault = (defaultCatId: GoalCategory, originalCat: typeof EDITABLE_DEFAULT_CATEGORIES[0]) => {
+    if (!editName.trim()) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'Digite um nome para a categoria',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const overrideId = `default_${defaultCatId}`;
+    const existingOverride = customCategories.find(c => c.id === overrideId);
+    
+    if (existingOverride) {
+      updateCustomCategory(overrideId, {
+        name: editName.trim(),
+        emoji: editEmoji || undefined,
+      });
+    } else {
+      // Create a new custom category as an override
+      addCustomCategory({
+        name: editName.trim(),
+        emoji: editEmoji || undefined,
+        xpReward: 10,
+      }, overrideId); // Pass custom ID
+    }
+
+    setEditingDefaultId(null);
+    toast({
+      title: 'Categoria atualizada!',
+    });
+  };
+
+  const handleResetDefault = (defaultCatId: GoalCategory) => {
+    const overrideId = `default_${defaultCatId}`;
+    removeCustomCategory(overrideId);
+    setEditingDefaultId(null);
+    toast({
+      title: 'Categoria restaurada',
+      description: 'A categoria foi restaurada ao padrão',
+    });
   };
 
   const handleSaveEdit = (id: string) => {
@@ -98,26 +176,82 @@ export const CategoriesSection = () => {
       </div>
 
       <div className="space-y-3">
-        {/* Default Categories */}
+        {/* Default Categories - Now Editable */}
         <div className="text-xs text-muted-foreground mb-2">Categorias padrão</div>
-        {DEFAULT_CATEGORIES.map((cat) => (
-          <div
-            key={cat.id}
-            className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30"
-          >
-            <span className="text-xl">{cat.emoji}</span>
-            <span className="flex-1 font-medium text-foreground">{cat.name}</span>
-            <span className="text-xs text-muted-foreground">Padrão</span>
-          </div>
-        ))}
+        {defaultCategoriesWithOverrides.map((cat) => {
+          const originalCat = EDITABLE_DEFAULT_CATEGORIES.find(c => c.id === cat.id)!;
+          const hasOverride = 'overrideId' in cat;
+          
+          return (
+            <motion.div
+              key={cat.id}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30"
+            >
+              {editingDefaultId === cat.id ? (
+                <>
+                  <EmojiPickerButton
+                    value={editEmoji}
+                    onChange={setEditEmoji}
+                    placeholder={originalCat.emoji}
+                    className="w-10 p-2 text-lg"
+                  />
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 px-2 py-1 rounded-lg bg-background/50 border border-border/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Nome da categoria"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => handleSaveEditDefault(cat.id, originalCat)}
+                    className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    <Check className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setEditingDefaultId(null)}
+                    className="p-2 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="text-xl">{cat.emoji || originalCat.emoji}</span>
+                  <span className="flex-1 font-medium text-foreground">{cat.name}</span>
+                  <div className="flex items-center gap-1">
+                    {hasOverride && (
+                      <button
+                        onClick={() => handleResetDefault(cat.id)}
+                        className="px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        title="Restaurar padrão"
+                      >
+                        Restaurar
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleStartEditDefault(cat)}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          );
+        })}
 
         {/* Custom Categories */}
-        {customCategories.length > 0 && (
+        {pureCustomCategories.length > 0 && (
           <div className="text-xs text-muted-foreground mt-4 mb-2">Suas categorias</div>
         )}
         
         <AnimatePresence>
-          {customCategories.map((cat) => (
+          {pureCustomCategories.map((cat) => (
             <motion.div
               key={cat.id}
               initial={{ opacity: 0, y: -10 }}
