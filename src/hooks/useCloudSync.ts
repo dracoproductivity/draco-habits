@@ -57,6 +57,7 @@ interface GoalRow {
   parent_goal_id: string | null;
   category: string | null;
   category_xp: number | null;
+  custom_category_id: string | null;
   created_at: string;
 }
 
@@ -229,6 +230,7 @@ export const useCloudSync = () => {
         parentGoalId: g.parent_goal_id || undefined,
         category: g.category as Goal['category'],
         categoryXP: g.category_xp || undefined,
+        customCategoryId: g.custom_category_id || undefined,
         createdAt: g.created_at,
       }));
       
@@ -426,6 +428,7 @@ export const useCloudSync = () => {
         parent_goal_id: goal.parentGoalId && isValidUUID(goal.parentGoalId) ? goal.parentGoalId : null,
         category: goal.category,
         category_xp: goal.categoryXP,
+        custom_category_id: goal.customCategoryId && isValidUUID(goal.customCategoryId) ? goal.customCategoryId : null,
       });
     
     if (error) {
