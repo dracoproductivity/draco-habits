@@ -87,10 +87,11 @@ export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicators
   // Day progress
   const dailyProgress = getDailyProgress(todayStr);
 
-  // Week, Month, Quarter, Year progress using hierarchical X/N for consistency
+  // Week, Month, Quarter, Semester, Year progress using hierarchical X/N for consistency
   const weekPeriod = getPeriodIdentifier(today, 'weekly');
   const monthPeriod = getPeriodIdentifier(today, 'monthly');
   const quarterPeriod = getPeriodIdentifier(today, 'quarterly');
+  const semesterPeriod = getPeriodIdentifier(today, 'semestral');
   const yearPeriod = getPeriodIdentifier(today, 'yearly');
 
   const { completed: weekCompleted, total: weekTotal } = calculateHierarchicalPeriodProgress(
@@ -120,6 +121,15 @@ export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicators
   );
   const quarterProgress = calculateRawPercentage(quarterCompleted, quarterTotal);
 
+  const { completed: semesterCompleted, total: semesterTotal } = calculateHierarchicalPeriodProgress(
+    'semestral',
+    semesterPeriod,
+    habits,
+    goals,
+    habitChecks
+  );
+  const semesterProgress = calculateRawPercentage(semesterCompleted, semesterTotal);
+
   const { completed: yearCompleted, total: yearTotal } = calculateHierarchicalPeriodProgress(
     'yearly',
     yearPeriod,
@@ -134,7 +144,8 @@ export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicators
     { label: 'Semana', value: weekProgress, delay: 0.05 },
     { label: 'Mês', value: monthProgress, delay: 0.1 },
     { label: 'Trimestre', value: quarterProgress, delay: 0.15 },
-    { label: 'Ano', value: yearProgress, delay: 0.2 },
+    { label: 'Semestre', value: semesterProgress, delay: 0.2 },
+    { label: 'Ano', value: yearProgress, delay: 0.25 },
   ];
 
   return (
