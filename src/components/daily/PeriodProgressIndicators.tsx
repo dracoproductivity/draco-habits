@@ -78,28 +78,29 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 };
 
 export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicatorsProps) => {
-  const { habits, goals, habitChecks, settings, getDailyProgress, getWeeklyProgress } = useAppStore();
+  const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
   
   const isCircular = settings.progressDisplayMode === 'circular';
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  
-  const getWeekStart = () => {
-    const d = new Date(today);
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-    d.setDate(diff);
-    return d.toISOString().split('T')[0];
-  };
 
-  // Day and Week progress
+  // Day progress
   const dailyProgress = getDailyProgress(todayStr);
-  const weeklyProgress = getWeeklyProgress(getWeekStart());
 
-  // Month, Quarter, Year progress using hierarchical X/N
+  // Week, Month, Quarter, Year progress using hierarchical X/N for consistency
+  const weekPeriod = getPeriodIdentifier(today, 'weekly');
   const monthPeriod = getPeriodIdentifier(today, 'monthly');
   const quarterPeriod = getPeriodIdentifier(today, 'quarterly');
   const yearPeriod = getPeriodIdentifier(today, 'yearly');
+
+  const { completed: weekCompleted, total: weekTotal } = calculateHierarchicalPeriodProgress(
+    'weekly',
+    weekPeriod,
+    habits,
+    goals,
+    habitChecks
+  );
+  const weekProgress = calculateRawPercentage(weekCompleted, weekTotal);
 
   const { completed: monthCompleted, total: monthTotal } = calculateHierarchicalPeriodProgress(
     'monthly',
@@ -130,7 +131,7 @@ export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicators
 
   const periods = [
     { label: 'Dia', value: dailyProgress, delay: 0 },
-    { label: 'Semana', value: weeklyProgress, delay: 0.05 },
+    { label: 'Semana', value: weekProgress, delay: 0.05 },
     { label: 'Mês', value: monthProgress, delay: 0.1 },
     { label: 'Trimestre', value: quarterProgress, delay: 0.15 },
     { label: 'Ano', value: yearProgress, delay: 0.2 },
