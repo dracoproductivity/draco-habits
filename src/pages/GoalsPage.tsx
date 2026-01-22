@@ -33,6 +33,7 @@ const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'weekly', label: 'Semanal' },
   { value: 'monthly', label: 'Mensal' },
   { value: 'quarterly', label: 'Trimestral' },
+  { value: 'semestral', label: 'Semestral' },
   { value: 'yearly', label: 'Anual' },
 ];
 
@@ -40,6 +41,7 @@ const typeLabels: Record<GoalType, string> = {
   weekly: 'Semanal',
   monthly: 'Mensal',
   quarterly: 'Trimestral',
+  semestral: 'Semestral',
   yearly: 'Anual',
 };
 
@@ -47,13 +49,15 @@ const typeColors: Record<GoalType, string> = {
   weekly: 'bg-success/10 text-success border border-success/30',
   monthly: 'bg-primary/10 text-primary border border-primary/30',
   quarterly: 'bg-secondary/10 text-secondary border border-secondary/30',
+  semestral: 'bg-orange-500/10 text-orange-500 border border-orange-500/30',
   yearly: 'gradient-fire text-primary-foreground',
 };
 
 const parentTypeMap: Record<GoalType, GoalType | null> = {
   weekly: 'monthly',
   monthly: 'quarterly',
-  quarterly: 'yearly',
+  quarterly: 'semestral',
+  semestral: 'yearly',
   yearly: null,
 };
 
@@ -228,6 +232,7 @@ export const GoalsPage = () => {
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, { name: string; periods: string[] }>>({
     yearly: { name: '', periods: [] },
+    semestral: { name: '', periods: [] },
     quarterly: { name: '', periods: [] },
     monthly: { name: '', periods: [] },
     weekly: { name: '', periods: [] },
@@ -417,6 +422,7 @@ export const GoalsPage = () => {
     setShowCategoryStep(false);
     setGoalCreationData({
       yearly: { name: '', periods: [] },
+      semestral: { name: '', periods: [] },
       quarterly: { name: '', periods: [] },
       monthly: { name: '', periods: [] },
       weekly: { name: '', periods: [] },
@@ -445,6 +451,7 @@ export const GoalsPage = () => {
   const getStepLabel = (step: GoalType) => {
     const labels: Record<GoalType, string> = {
       yearly: 'Anual',
+      semestral: 'Semestral',
       quarterly: 'Trimestral',
       monthly: 'Mensal',
       weekly: 'Semanal',

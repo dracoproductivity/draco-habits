@@ -20,6 +20,11 @@ const QUARTER_MONTH_ARRAYS: Record<number, string[]> = {
   4: ['Outubro', 'Novembro', 'Dezembro'],
 };
 
+const SEMESTER_MONTHS: Record<number, string> = {
+  1: 'Janeiro a Junho',
+  2: 'Julho a Dezembro',
+};
+
 export const AnnualProgressView = () => {
   const { goals, habits } = useAppStore();
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
@@ -132,6 +137,19 @@ export const AnnualProgressView = () => {
             quarterMonths={QUARTER_MONTH_ARRAYS[q]}
             displayYear={year}
             onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
+          />
+        ))}
+
+        {/* Semesters */}
+        {[1, 2].map((s) => (
+          <PeriodCard
+            key={`sem-${s}`}
+            title={`${s}º Semestre`}
+            subtitle={SEMESTER_MONTHS[s]}
+            type="semestral"
+            period={`${s}º Sem - ${year}`}
+            displayYear={year}
+            onClick={() => openPeriodModal(`${s}º Semestre`, 'semestral', `${s}º Sem - ${year}`, SEMESTER_MONTHS[s])}
           />
         ))}
 

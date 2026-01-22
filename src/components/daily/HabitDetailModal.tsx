@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { calculateHabitProgress, isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
+import { formatPercentage } from '@/utils/formatPercentage';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -192,6 +193,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const getStepLabel = (step: GoalType) => {
     const labels: Record<GoalType, string> = {
       yearly: 'Anual',
+      semestral: 'Semestral',
       quarterly: 'Trimestral',
       monthly: 'Mensal',
       weekly: 'Semanal',
@@ -200,7 +202,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
     const idx = sequence.indexOf(current);
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
@@ -209,7 +211,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     const map: Record<GoalType, GoalType> = {
       weekly: 'monthly',
       monthly: 'quarterly',
-      quarterly: 'yearly',
+      quarterly: 'semestral',
+      semestral: 'yearly',
       yearly: 'yearly',
     };
     return map[current];
@@ -226,8 +229,10 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     const month = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     const week = Math.ceil((new Date().getDate() + new Date(year, new Date().getMonth(), 1).getDay()) / 7);
 
+    const semester = new Date().getMonth() < 6 ? 1 : 2;
     const periods: Record<GoalType, string> = {
       yearly: year.toString(),
+      semestral: `${semester}º Sem - ${year}`,
       quarterly: `${quarter}º Tri - ${year}`,
       monthly: month,
       weekly: `Semana ${week} - ${new Date().toLocaleDateString('pt-BR', { month: 'long' })}`,
@@ -289,7 +294,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-primary font-medium">
-                    {habitProgress.completed}/{habitProgress.total} ({habitProgress.percentage}%)
+                    {habitProgress.completed}/{habitProgress.total} ({formatPercentage(habitProgress.percentage)})
                   </p>
                   {(() => {
                     const streak = calculateHabitStreak(habit, habitChecks, linkedGoal);
@@ -438,7 +443,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm text-foreground">{goal.name}</span>
-                          <span className="text-xs font-semibold text-primary">{goal.progress}%</span>
+                          <span className="text-xs font-semibold text-primary">{formatPercentage(goal.progress)}</span>
                         </div>
                         <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
                           <motion.div
