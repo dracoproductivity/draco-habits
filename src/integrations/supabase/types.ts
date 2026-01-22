@@ -115,6 +115,7 @@ export type Database = {
           category: string | null
           category_xp: number | null
           created_at: string
+          custom_category_id: string | null
           emoji: string | null
           id: string
           name: string
@@ -129,6 +130,7 @@ export type Database = {
           category?: string | null
           category_xp?: number | null
           created_at?: string
+          custom_category_id?: string | null
           emoji?: string | null
           id?: string
           name: string
@@ -143,6 +145,7 @@ export type Database = {
           category?: string | null
           category_xp?: number | null
           created_at?: string
+          custom_category_id?: string | null
           emoji?: string | null
           id?: string
           name?: string
@@ -154,6 +157,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "goals_custom_category_id_fkey"
+            columns: ["custom_category_id"]
+            isOneToOne: false
+            referencedRelation: "custom_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "goals_parent_goal_id_fkey"
             columns: ["parent_goal_id"]
