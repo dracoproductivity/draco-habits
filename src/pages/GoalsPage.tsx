@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
+import { calculateGoalXN } from '@/utils/habitInstanceCalculator';
+import { formatPercentage } from '@/utils/formatPercentage';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -203,7 +205,7 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, addGoal, updateGoal, removeGoal, settings, habits, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
   
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
@@ -1475,21 +1477,35 @@ export const GoalsPage = () => {
               </div>
 
               <div className="space-y-4">
-                {/* Progress */}
+                {/* Progress with X/N */}
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ background: 'var(--gradient-progress)' }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${selectedGoal.progress}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                    <span className="font-bold text-lg">{selectedGoal.progress}%</span>
-                  </div>
+                  {(() => {
+                    const { completed, total } = calculateGoalXN(selectedGoal, habits, habitChecks);
+                    const percentage = total > 0 ? (completed / total) * 100 : 0;
+                    return (
+                      <>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ background: 'var(--gradient-progress)' }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </div>
+                          <span className="font-bold text-lg">{formatPercentage(percentage)}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/30">
+                          <span className="text-2xl font-bold text-primary">{completed}</span>
+                          <span className="text-muted-foreground">/</span>
+                          <span className="text-2xl font-bold text-foreground">{total}</span>
+                          <span className="text-sm text-muted-foreground ml-2">hábitos concluídos</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Type */}
