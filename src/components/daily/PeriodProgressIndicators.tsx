@@ -44,7 +44,7 @@ const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: s
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-foreground">{formatPercentage(value)}%</span>
+          <span className="text-[10px] font-bold text-foreground">{formatPercentage(value)}</span>
         </div>
       </div>
       <span className="text-[10px] text-muted-foreground mt-1">{label}</span>
@@ -62,7 +62,7 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground">{label}</span>
-        <span className="text-xs font-bold text-foreground">{formatPercentage(value)}%</span>
+        <span className="text-xs font-bold text-foreground">{formatPercentage(value)}</span>
       </div>
       <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
         <motion.div

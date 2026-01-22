@@ -76,11 +76,11 @@ export const PeriodItem = ({ title, subtitle, type, period, className, onClick }
               transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           </svg>
-          <span className="absolute text-xl font-bold text-gradient-primary">{formattedProgress}%</span>
+          <span className="absolute text-xl font-bold text-gradient-primary">{formattedProgress}</span>
         </div>
       ) : (
         <div className="text-4xl font-bold text-gradient-primary mb-2">
-          {formattedProgress}%
+          {formattedProgress}
         </div>
       )}
 
