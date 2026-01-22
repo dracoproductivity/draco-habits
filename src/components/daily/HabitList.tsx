@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -10,6 +10,7 @@ import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { isHabitScheduledForDate, calculateHabitProgress } from '@/utils/habitInstanceCalculator';
+import { calculateHabitStreak } from '@/utils/calculateStreak';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -352,6 +353,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
     removeHabit, 
     toggleHabitCheck, 
     getHabitCheckForDate,
+    habitChecks,
     addGoal,
     updateHabit,
     getDailyProgress,
@@ -1465,6 +1467,15 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {(() => {
+                      const streak = calculateHabitStreak(habit, habitChecks, linkedGoal);
+                      return streak > 0 ? (
+                        <div className="flex items-center gap-0.5 text-muted-foreground">
+                          <Flame className="w-3.5 h-3.5 text-orange-400" />
+                          <span className="text-xs">{streak}</span>
+                        </div>
+                      ) : null;
+                    })()}
                     {habit.notificationEnabled && (
                       <Bell className="w-3.5 h-3.5 text-primary" />
                     )}

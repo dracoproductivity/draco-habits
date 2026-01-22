@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
@@ -9,6 +9,7 @@ import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, 
 import { ptBR } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { calculateHabitProgress, isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
+import { calculateHabitStreak } from '@/utils/calculateStreak';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -284,11 +285,22 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 placeholder={habit.emoji || '🎯'}
                 className="w-12 h-12"
               />
-              <div>
+              <div className="flex-1">
                 <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
-                <p className="text-sm text-primary font-medium">
-                  {habitProgress.completed}/{habitProgress.total} ({habitProgress.percentage}%)
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-primary font-medium">
+                    {habitProgress.completed}/{habitProgress.total} ({habitProgress.percentage}%)
+                  </p>
+                  {(() => {
+                    const streak = calculateHabitStreak(habit, habitChecks, linkedGoal);
+                    return streak > 0 ? (
+                      <div className="flex items-center gap-1 text-orange-400">
+                        <Flame className="w-4 h-4" />
+                        <span className="text-sm font-medium">{streak} dias</span>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
               </div>
             </div>
             <button
