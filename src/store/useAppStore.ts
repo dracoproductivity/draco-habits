@@ -67,7 +67,7 @@ interface AppStore {
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
   
-  addCustomCategory: (category: Omit<CustomCategory, 'id'>) => CustomCategory;
+  addCustomCategory: (category: Omit<CustomCategory, 'id'>, customId?: string) => CustomCategory;
   updateCustomCategory: (id: string, updates: Partial<CustomCategory>) => void;
   removeCustomCategory: (id: string) => void;
   
@@ -388,10 +388,10 @@ export const useAppStore = create<AppStore>()(
         }));
       },
 
-      addCustomCategory: (category) => {
+      addCustomCategory: (category, customId) => {
         const newCategory: CustomCategory = {
           ...category,
-          id: generateUUID(),
+          id: customId || generateUUID(),
         };
         set((state) => ({ customCategories: [...state.customCategories, newCategory] }));
         return newCategory;
