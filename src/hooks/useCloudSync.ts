@@ -323,8 +323,11 @@ export const useCloudSync = () => {
   
   // Save profile to cloud
   const saveProfile = useCallback(async (profileData: Partial<User>) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveProfile: No user ID available');
+      return;
+    }
     
     const { error } = await supabase
       .from('profiles')
@@ -340,12 +343,15 @@ export const useCloudSync = () => {
       console.error('Error saving profile:', error);
       toast({ title: 'Erro ao salvar perfil', variant: 'destructive' });
     }
-  }, []);
+  }, [user?.id]);
   
   // Save draco state to cloud
   const saveDraco = useCallback(async (dracoData: Partial<DracoState>) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveDraco: No user ID available');
+      return;
+    }
     
     const { error } = await supabase
       .from('draco_state')
@@ -362,12 +368,16 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving draco:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save settings to cloud
   const saveSettings = useCallback(async (settingsData: Partial<AppSettings>) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    // Try ref first, then fall back to user?.id from auth
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveSettings: No user ID available');
+      return;
+    }
     
     const { error } = await supabase
       .from('user_settings')
@@ -387,12 +397,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving settings:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save goal to cloud
   const saveGoal = useCallback(async (goal: Goal) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveGoal: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(goal.id)) {
@@ -418,12 +431,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving goal:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Delete goal from cloud
   const deleteGoal = useCallback(async (goalId: string) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('deleteGoal: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(goalId)) {
@@ -439,12 +455,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error deleting goal:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save habit to cloud
   const saveHabit = useCallback(async (habit: Habit) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveHabit: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(habit.id)) {
@@ -473,12 +492,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving habit:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Delete habit from cloud
   const deleteHabit = useCallback(async (habitId: string) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('deleteHabit: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(habitId)) {
@@ -501,12 +523,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error deleting habit:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save habit check to cloud
   const saveHabitCheck = useCallback(async (habitId: string, date: string, completed: boolean) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveHabitCheck: No user ID available');
+      return;
+    }
     
     // Skip if habit ID is not a valid UUID
     if (!isValidUUID(habitId)) {
@@ -528,12 +553,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving habit check:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save daily log to cloud
   const saveDailyLog = useCallback(async (log: DailyLog) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveDailyLog: No user ID available');
+      return;
+    }
     
     const { error } = await supabase
       .from('daily_logs')
@@ -549,12 +577,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving daily log:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Save custom category to cloud
   const saveCustomCategory = useCallback(async (category: CustomCategory) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('saveCustomCategory: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(category.id)) {
@@ -575,12 +606,15 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error saving category:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Delete custom category from cloud
   const deleteCustomCategory = useCallback(async (categoryId: string) => {
-    const userId = userIdRef.current;
-    if (!userId) return;
+    const userId = userIdRef.current || user?.id;
+    if (!userId) {
+      console.warn('deleteCustomCategory: No user ID available');
+      return;
+    }
     
     // Skip if ID is not a valid UUID
     if (!isValidUUID(categoryId)) {
@@ -596,7 +630,7 @@ export const useCloudSync = () => {
     if (error) {
       console.error('Error deleting category:', error);
     }
-  }, []);
+  }, [user?.id]);
   
   // Initial load when authenticated
   useEffect(() => {
@@ -623,7 +657,8 @@ export const useCloudSync = () => {
       // Skip during initial load
       if (globalState.isInitialLoad) return;
       
-      const currentUserId = userIdRef.current;
+      // Use the userId from closure, fallback to ref
+      const currentUserId = userId || userIdRef.current;
       if (!currentUserId) return;
       
       // Sync habits
