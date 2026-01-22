@@ -56,7 +56,7 @@ export const EmojiPickerButton: React.FC<EmojiPickerButtonProps> = ({
       </button>
 
       {showPicker && (
-        <div className="absolute z-[100] top-full left-0 mt-2">
+        <div className="fixed z-[9999] mt-2" style={{ top: 'auto', left: 'auto' }}>
           <EmojiPicker
             onEmojiClick={handleEmojiClick}
             theme={settings.darkMode ? Theme.DARK : Theme.LIGHT}
