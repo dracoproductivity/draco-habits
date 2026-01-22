@@ -396,6 +396,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
   // Multi-select periods for hierarchical creation
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
     yearly: { name: '', periods: [] },
+    semestral: { name: '', periods: [] },
     quarterly: { name: '', periods: [] },
     monthly: { name: '', periods: [] },
     weekly: { name: '', periods: [] },
@@ -681,6 +682,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
     setShowCategoryStep(false);
     setGoalCreationData({
       yearly: { name: '', periods: [] },
+      semestral: { name: '', periods: [] },
       quarterly: { name: '', periods: [] },
       monthly: { name: '', periods: [] },
       weekly: { name: '', periods: [] },
@@ -688,13 +690,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
     const idx = sequence.indexOf(current);
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
 
   const getPrevStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
     const idx = sequence.indexOf(current);
     return idx > 0 ? sequence[idx - 1] : null;
   };
@@ -702,6 +704,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
   const getStepLabel = (step: GoalType) => {
     const labels: Record<GoalType, string> = {
       yearly: 'Anual',
+      semestral: 'Semestral',
       quarterly: 'Trimestral',
       monthly: 'Mensal',
       weekly: 'Semanal',

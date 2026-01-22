@@ -214,13 +214,13 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
               {isCircular ? (
                 <div className="relative flex items-center justify-center">
                   <ProgressCircle progress={averageProgress} />
-                  <span className="absolute text-sm font-bold">{formattedProgress}%</span>
+                  <span className="absolute text-sm font-bold">{formattedProgress}</span>
                 </div>
               ) : (
                 <div className="flex-1">
                   <div className="flex justify-between mb-2">
                     <span className="text-sm text-muted-foreground">Progresso ({completed}/{total})</span>
-                    <span className="text-lg font-bold text-gradient-primary">{formattedProgress}%</span>
+                    <span className="text-lg font-bold text-gradient-primary">{formattedProgress}</span>
                   </div>
                   <div className="progress-bar">
                     <motion.div
@@ -267,7 +267,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                                   style={{ width: `${monthProgress}%` }}
                                 />
                               </div>
-                              <span className="text-sm font-medium text-primary w-12 text-right">{monthFormatted}%</span>
+                              <span className="text-sm font-medium text-primary w-12 text-right">{monthFormatted}</span>
                             </>
                           )}
                           {(monthGoals.length > 0 || mTotal > 0) && (
@@ -298,7 +298,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                                       style={{ width: `${goal.progress}%` }}
                                     />
                                   </div>
-                                  <span className="text-xs font-medium text-primary w-8 text-right">{goal.progress}%</span>
+                                  <span className="text-xs font-medium text-primary w-8 text-right">{formatPercentage(goal.progress)}</span>
                                 </div>
                               ))}
                             </div>
@@ -342,7 +342,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                             transition={{ duration: 0.3 }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-12 text-right">{goal.progress}%</span>
+                        <span className="text-sm font-medium w-12 text-right">{formatPercentage(goal.progress)}</span>
                       </div>
                     </div>
                   ))
@@ -387,7 +387,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                             transition={{ duration: 0.3 }}
                           />
                         </div>
-                        <span className="text-sm font-medium w-12 text-right">{goal.progress}%</span>
+                        <span className="text-sm font-medium w-12 text-right">{formatPercentage(goal.progress)}</span>
                       </div>
                     </div>
                   ))
@@ -430,7 +430,7 @@ export const PeriodModal = ({ isOpen, onClose, title, subtitle, type, period, qu
                           transition={{ duration: 0.3 }}
                         />
                       </div>
-                      <span className="text-sm font-medium w-12 text-right">{goal.progress}%</span>
+                      <span className="text-sm font-medium w-12 text-right">{formatPercentage(goal.progress)}</span>
                     </div>
                   </div>
                 ))}

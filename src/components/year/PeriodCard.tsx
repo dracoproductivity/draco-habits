@@ -37,6 +37,17 @@ const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 
   
   if (type === 'yearly') return 'started';
   
+  if (type === 'semestral') {
+    const semMatch = period.match(/(\d+)º Sem/);
+    if (semMatch) {
+      const semester = parseInt(semMatch[1]);
+      const currentSemester = currentMonth < 6 ? 1 : 2;
+      if (semester < currentSemester) return 'past';
+      if (semester === currentSemester) return 'started';
+      return 'not_started';
+    }
+  }
+  
   if (type === 'quarterly') {
     const quarterMatch = period.match(/(\d+)º Tri/);
     if (quarterMatch) {
@@ -203,10 +214,10 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
             ) : isCircular ? (
               <div className="relative flex items-center justify-center">
                 <ProgressCircle progress={averageProgress} />
-                <span className="absolute text-xs font-bold">{formattedProgress}%</span>
+                <span className="absolute text-xs font-bold">{formattedProgress}</span>
               </div>
             ) : (
-              <span className="text-2xl font-bold text-gradient-primary">{formattedProgress}%</span>
+              <span className="text-2xl font-bold text-gradient-primary">{formattedProgress}</span>
             )}
           </div>
         </div>
@@ -240,7 +251,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
                           style={{ width: `${monthProgress}%` }}
                         />
                       </div>
-                      <span className="text-xs font-medium text-primary w-10 text-right">{monthFormatted}%</span>
+                      <span className="text-xs font-medium text-primary w-10 text-right">{monthFormatted}</span>
                     </>
                   )}
                 </div>
@@ -257,7 +268,7 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
                   <span className="text-xs">{goal.emoji}</span>
                 )}
                 <span className="text-muted-foreground truncate flex-1">{goal.name}</span>
-                <span className="text-xs font-medium text-primary">{goal.progress}%</span>
+                <span className="text-xs font-medium text-primary">{formatPercentage(goal.progress)}</span>
               </div>
             ))}
             {remainingCount > 0 && (

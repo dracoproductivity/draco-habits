@@ -45,6 +45,23 @@ export const getPeriodBoundaries = (type: GoalType, period: string): { start: Da
         end: endOfYear(new Date(year, 0, 1))
       };
     }
+    case 'semestral': {
+      // Format: "1º Sem - 2025" or "2º Sem - 2025"
+      const match = period.match(/(\d+)º Sem - (\d+)/);
+      if (!match) return null;
+      const semester = parseInt(match[1]);
+      const year = parseInt(match[2]);
+      const semesterStart = semester === 1 
+        ? new Date(year, 0, 1) // January 1st
+        : new Date(year, 6, 1); // July 1st
+      const semesterEnd = semester === 1
+        ? new Date(year, 5, 30) // June 30th
+        : new Date(year, 11, 31); // December 31st
+      return {
+        start: semesterStart,
+        end: semesterEnd
+      };
+    }
     case 'quarterly': {
       // Format: "1º Tri - 2025"
       const match = period.match(/(\d+)º Tri - (\d+)/);
@@ -344,6 +361,9 @@ export const getPeriodIdentifier = (date: Date, type: GoalType): string => {
   switch (type) {
     case 'yearly':
       return date.getFullYear().toString();
+    case 'semestral':
+      const semester = date.getMonth() < 6 ? 1 : 2;
+      return `${semester}º Sem - ${date.getFullYear()}`;
     case 'quarterly':
       const quarter = Math.ceil((date.getMonth() + 1) / 3);
       return `${quarter}º Tri - ${date.getFullYear()}`;
@@ -481,7 +501,7 @@ export const calculateAllPeriodProgress = (
   }
   
   // Group instances by period and calculate X/N for each
-  const periodTypes: GoalType[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
+  const periodTypes: GoalType[] = ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly'];
   
   for (const instance of allInstances) {
     for (const pType of periodTypes) {

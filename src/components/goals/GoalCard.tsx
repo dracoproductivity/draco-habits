@@ -15,6 +15,7 @@ const typeLabels: Record<Goal['type'], string> = {
   weekly: 'Semanal',
   monthly: 'Mensal',
   quarterly: 'Trimestral',
+  semestral: 'Semestral',
   yearly: 'Anual',
 };
 
@@ -22,6 +23,7 @@ const typeColors: Record<Goal['type'], string> = {
   weekly: 'bg-success/20 text-success',
   monthly: 'bg-primary/20 text-primary',
   quarterly: 'bg-secondary/20 text-secondary',
+  semestral: 'bg-orange-500/20 text-orange-500',
   yearly: 'gradient-fire text-primary-foreground',
 };
 

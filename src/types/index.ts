@@ -28,7 +28,7 @@ export interface HabitCheck {
   completed: boolean;
 }
 
-export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'semestral' | 'yearly';
 
 export type GoalCategory = 
   | 'physical_health' 
