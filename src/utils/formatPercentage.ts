@@ -1,21 +1,22 @@
 /**
  * Format percentage with one decimal place, but remove .0 decimals
+ * Always includes the % symbol
  * Examples: 
- * - 2.0 -> "2"
- * - 2.3 -> "2,3"
- * - 100.0 -> "100"
- * - 33.333 -> "33,3"
+ * - 2.0 -> "2%"
+ * - 2.3 -> "2,3%"
+ * - 100.0 -> "100%"
+ * - 33.333 -> "33,3%"
  */
 export const formatPercentage = (value: number): string => {
   const rounded = Math.round(value * 10) / 10;
   
   // If the decimal is .0, return without decimals
   if (rounded % 1 === 0) {
-    return Math.floor(rounded).toString();
+    return `${Math.floor(rounded)}%`;
   }
   
   // Otherwise return with one decimal, using comma for Brazilian locale
-  return rounded.toFixed(1).replace('.', ',');
+  return `${rounded.toFixed(1).replace('.', ',')}%`;
 };
 
 /**
