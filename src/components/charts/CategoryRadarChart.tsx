@@ -82,11 +82,11 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
     return ticks;
   }, [maxValue]);
 
-  if (radarData.length < 3) {
+  if (radarData.length === 0) {
     return (
       <div className={className}>
         <p className="text-xs text-muted-foreground text-center py-4">
-          Adicione pelo menos 3 categorias para visualizar o gráfico de radar
+          Adicione categorias aos seus objetivos para visualizar o gráfico
         </p>
       </div>
     );
