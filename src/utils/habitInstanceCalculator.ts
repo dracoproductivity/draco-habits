@@ -284,9 +284,22 @@ export const calculateGoalProgress = (
   habits: Habit[],
   habitChecks: HabitCheck[]
 ): number => {
+  const { completed, total } = calculateGoalXN(goal, habits, habitChecks);
+  
+  if (total === 0) return 0;
+  
+  return Math.round((completed / total) * 100);
+};
+
+// Calculate goal X/N (completed / total instances across all linked habits)
+export const calculateGoalXN = (
+  goal: Goal,
+  habits: Habit[],
+  habitChecks: HabitCheck[]
+): { completed: number; total: number } => {
   const linkedHabits = habits.filter(h => h.goalId === goal.id);
   
-  if (linkedHabits.length === 0) return 0;
+  if (linkedHabits.length === 0) return { completed: 0, total: 0 };
   
   let totalCompleted = 0;
   let totalOccurrences = 0;
@@ -297,9 +310,7 @@ export const calculateGoalProgress = (
     totalOccurrences += progress.total;
   }
   
-  if (totalOccurrences === 0) return 0;
-  
-  return Math.round((totalCompleted / totalOccurrences) * 100);
+  return { completed: totalCompleted, total: totalOccurrences };
 };
 
 // Get all habits that should appear on a specific date

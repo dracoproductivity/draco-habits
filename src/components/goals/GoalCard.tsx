@@ -3,6 +3,8 @@ import { Link2 } from 'lucide-react';
 import { Goal } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
+import { calculateGoalXN } from '@/utils/habitInstanceCalculator';
+import { formatPercentage } from '@/utils/formatPercentage';
 
 interface GoalCardProps {
   goal: Goal;
@@ -25,11 +27,15 @@ const typeColors: Record<Goal['type'], string> = {
 };
 
 export const GoalCard = ({ goal, index, onClick }: GoalCardProps) => {
-  const { settings, goals } = useAppStore();
+  const { settings, goals, habits, habitChecks } = useAppStore();
 
   const parentGoal = goal.parentGoalId 
     ? goals.find(g => g.id === goal.parentGoalId)
     : null;
+
+  // Calculate X/N for this goal
+  const { completed, total } = calculateGoalXN(goal, habits, habitChecks);
+  const percentage = total > 0 ? (completed / total) * 100 : 0;
 
   return (
     <motion.button
@@ -66,11 +72,16 @@ export const GoalCard = ({ goal, index, onClick }: GoalCardProps) => {
               <motion.div
                 className="progress-fill"
                 initial={{ width: 0 }}
-                animate={{ width: `${goal.progress}%` }}
+                animate={{ width: `${percentage}%` }}
                 transition={{ delay: index * 0.05 + 0.2 }}
               />
             </div>
-            <span className="text-sm font-medium">{goal.progress}%</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {completed}/{total}
+              </span>
+              <span className="text-sm font-medium">{formatPercentage(percentage)}</span>
+            </div>
           </div>
         </div>
       </div>
