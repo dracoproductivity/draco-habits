@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Check, Repeat, Bell } from 'lucide-react';
+import { X, Calendar, Check, Repeat, Bell, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
@@ -33,6 +33,8 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [notificationTime, setNotificationTime] = useState('08:00');
+  const [hasMicroGoals, setHasMicroGoals] = useState(false);
+  const [microGoalsCount, setMicroGoalsCount] = useState(4);
 
   const toggleWeekDay = (day: number) => {
     if (selectedWeekDays.includes(day)) {
@@ -62,6 +64,8 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       repeatFrequency: isOneTimeHabit ? undefined : repeatFrequency,
       notificationEnabled,
       notificationTime: notificationEnabled ? notificationTime : undefined,
+      hasMicroGoals,
+      microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
     });
 
     toast({
@@ -199,6 +203,58 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
               </div>
             </>
           )}
+
+          {/* Micro Goals */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm">Hábito com Micro Objetivos</span>
+              </div>
+              <button
+                onClick={() => setHasMicroGoals(!hasMicroGoals)}
+                className={cn(
+                  'w-10 h-5 rounded-full transition-all relative',
+                  hasMicroGoals ? 'bg-primary' : 'bg-muted'
+                )}
+              >
+                <div
+                  className={cn(
+                    'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                    hasMicroGoals ? 'right-0.5' : 'left-0.5'
+                  )}
+                />
+              </button>
+            </div>
+            
+            {hasMicroGoals && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                  💡 Ex: Beber 2L de água, com micro objetivos de 250ml. Cada vez que você beber 250ml, marca uma parte do hábito.
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Quantidade:</span>
+                  <div className="flex gap-1">
+                    {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => setMicroGoalsCount(count)}
+                        className={cn(
+                          'w-7 h-7 rounded-lg text-xs font-medium transition-all',
+                          microGoalsCount === count
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                      >
+                        {count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Notification */}
           <div className="space-y-2">

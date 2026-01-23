@@ -20,12 +20,16 @@ export interface Habit {
   repeatFrequency?: 1 | 2 | 3 | 4; // Repeats every X weeks (1=every week, 2=every 2 weeks, etc.)
   monthWeeks?: number[]; // 1-5, specific weeks of month (1=first week, 2=second week, etc.)
   createdAt: string;
+  order?: number; // For custom ordering in the list
+  hasMicroGoals?: boolean; // If true, habit is divided into micro goals
+  microGoalsCount?: number; // Number of micro goals (1-10)
 }
 
 export interface HabitCheck {
   habitId: string;
   date: string;
   completed: boolean;
+  microGoalsCompleted?: number; // Number of micro goals completed for this date (0 to microGoalsCount)
 }
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'semestral' | 'yearly';
