@@ -11,16 +11,19 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { DesktopBottomNav } from '@/components/layout/DesktopBottomNav';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
 import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
+import { DailyLogReminder } from '@/components/daily/DailyLogReminder';
 import { useResponsive } from '@/hooks/useResponsive';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 
 const Index = () => {
   const { activeTab, settings } = useAppStore();
   const { isAuthenticated, loading, user } = useAuth();
   const { isDesktop, isTablet } = useResponsive();
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
+  const [showDailyLogReminder, setShowDailyLogReminder] = useState(false);
   const prevUserIdRef = useRef<string | null>(null);
   
   // Initialize cloud sync - this handles loading data from cloud
@@ -59,8 +62,23 @@ const Index = () => {
     // The lastDailyLogDate check ensures it only shows once per day
     if (currentHour >= 5 && settings.lastDailyLogDate !== today) {
       setShowMorningCheckIn(true);
+      setShowDailyLogReminder(false);
     }
   }, [isAuthenticated]); // Only run on mount/auth change, not on every settings change
+
+  const handleMorningCheckInClose = () => {
+    setShowMorningCheckIn(false);
+    // Check if user actually logged - if not, show reminder
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (settings.lastDailyLogDate !== today) {
+      setShowDailyLogReminder(true);
+    }
+  };
+
+  const handleReminderClick = () => {
+    setShowDailyLogReminder(false);
+    setShowMorningCheckIn(true);
+  };
 
   // Show loading state
   if (loading) {
@@ -109,8 +127,13 @@ const Index = () => {
       <WelcomeModal />
       <MorningCheckInModal 
         isOpen={showMorningCheckIn} 
-        onClose={() => setShowMorningCheckIn(false)} 
+        onClose={handleMorningCheckInClose} 
       />
+      <AnimatePresence>
+        {showDailyLogReminder && activeTab === 'daily' && (
+          <DailyLogReminder onClick={handleReminderClick} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
