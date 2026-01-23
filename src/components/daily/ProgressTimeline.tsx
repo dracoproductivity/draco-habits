@@ -16,7 +16,11 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-export const ProgressTimeline = () => {
+interface ProgressTimelineProps {
+  className?: string;
+}
+
+export const ProgressTimeline = ({ className }: ProgressTimelineProps) => {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [chartMode, setChartMode] = useState<ChartMode>('evolution');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -144,7 +148,7 @@ export const ProgressTimeline = () => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-hover rounded-2xl p-5"
+      className={cn("glass-hover rounded-2xl p-5", className)}
     >
       {/* Chart Mode Toggle */}
       <div className="flex items-center gap-1 mb-4 bg-muted/30 rounded-xl p-1">

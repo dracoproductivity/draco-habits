@@ -29,22 +29,20 @@ export const DailyPage = () => {
         {isDesktop ? (
           <>
             {/* Desktop: 3-column layout - Habits | Timeline | Calendar - Equal heights */}
-            <div className="grid grid-cols-3 gap-6 items-stretch">
+            <div className="grid grid-cols-3 gap-6" style={{ minHeight: '450px' }}>
               {/* Left column - Habits */}
-              <div className="flex flex-col">
-                <div className="flex-1 flex flex-col">
-                  <HabitList showProgressIndicators={false} />
-                </div>
+              <div className="flex flex-col h-full">
+                <HabitList showProgressIndicators={false} className="h-full" />
               </div>
               
               {/* Middle column - Timeline */}
-              <div className="flex flex-col">
-                <ProgressTimeline />
+              <div className="flex flex-col h-full">
+                <ProgressTimeline className="h-full" />
               </div>
               
               {/* Right column - Calendar */}
-              <div className="flex flex-col">
-                <HabitCalendar />
+              <div className="flex flex-col h-full">
+                <HabitCalendar className="h-full" />
               </div>
             </div>
             
