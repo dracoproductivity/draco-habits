@@ -17,7 +17,7 @@ export const DailyPage = () => {
       animate={{ opacity: 1 }}
       className={cn(
         'min-h-screen',
-        isDesktop ? 'pb-8 pt-6' : 'pb-20'
+        isDesktop ? 'pb-24 pt-6' : 'pb-20'
       )}
     >
       <DailyHeader />
@@ -28,20 +28,22 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: 3-column layout - Habits | Timeline | Calendar */}
-            <div className="grid grid-cols-3 gap-6">
+            {/* Desktop: 3-column layout - Habits | Timeline | Calendar - Equal heights */}
+            <div className="grid grid-cols-3 gap-6 items-stretch">
               {/* Left column - Habits */}
-              <div className="space-y-4">
-                <HabitList showProgressIndicators={false} />
+              <div className="flex flex-col">
+                <div className="flex-1 flex flex-col">
+                  <HabitList showProgressIndicators={false} />
+                </div>
               </div>
               
               {/* Middle column - Timeline */}
-              <div>
+              <div className="flex flex-col">
                 <ProgressTimeline />
               </div>
               
               {/* Right column - Calendar */}
-              <div>
+              <div className="flex flex-col">
                 <HabitCalendar />
               </div>
             </div>

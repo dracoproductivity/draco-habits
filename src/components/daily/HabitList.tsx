@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
+import { AllHabitsModal } from './AllHabitsModal';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -392,6 +393,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
   const [isOneTimeHabit, setIsOneTimeHabit] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  const [showAllHabitsModal, setShowAllHabitsModal] = useState(false);
   
   // Multi-select periods for hierarchical creation
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
@@ -407,6 +409,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   
+  const HABIT_DISPLAY_LIMIT = 5;
   const isToday = viewDateStr === todayStr;
 
   const getWeekStart = () => {
@@ -721,6 +724,11 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
       return isHabitScheduledForDate(habit, viewDate, linkedGoal);
     });
   }, [habits, viewDate, goals]);
+
+  // Limit displayed habits to 5
+  const displayedHabits = visibleHabits.slice(0, HABIT_DISPLAY_LIMIT);
+  const hasMoreHabits = visibleHabits.length > HABIT_DISPLAY_LIMIT;
+  const remainingHabitsCount = visibleHabits.length - HABIT_DISPLAY_LIMIT;
 
   const showProgress = showProgressIndicators !== false;
   const shouldCenterTitle = centerTitle === true;
@@ -1413,7 +1421,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDrag}
           >
-            {visibleHabits.map((habit, index) => {
+            {displayedHabits.map((habit, index) => {
               const check = getHabitCheckForDate(habit.id, viewDateStr);
               const isCompleted = check?.completed ?? false;
               const linkedGoal = goals.find(g => g.id === habit.goalId);
@@ -1488,6 +1496,18 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
               );
             })}
 
+            {/* Ver Mais button */}
+            {hasMoreHabits && (
+              <motion.button
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setShowAllHabitsModal(true)}
+                className="w-full py-3 text-center text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
+              >
+                Ver Mais ({remainingHabitsCount} hábitos restantes)
+              </motion.button>
+            )}
+
             {visibleHabits.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhum hábito para hoje</p>
@@ -1526,6 +1546,15 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
           onClose={() => setSelectedHabit(null)}
         />
       )}
+
+      {/* All Habits Modal */}
+      <AllHabitsModal
+        isOpen={showAllHabitsModal}
+        onClose={() => setShowAllHabitsModal(false)}
+        habits={visibleHabits}
+        viewDateStr={viewDateStr}
+        onHabitClick={(habit) => setSelectedHabit(habit)}
+      />
     </motion.div>
   );
 };

@@ -8,7 +8,7 @@ import { GoalsPage } from './GoalsPage';
 import { AnalyticsPage } from './AnalyticsPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
-import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
+import { DesktopBottomNav } from '@/components/layout/DesktopBottomNav';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
 import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -95,19 +95,16 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      {isDesktop && <DesktopSidebar />}
-      
       {/* Main Content */}
       <main className={cn(
         'transition-all duration-300',
-        isDesktop ? 'ml-64 px-8' : isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
+        isDesktop ? 'max-w-6xl mx-auto px-8 pb-24' : isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
       )}>
         {renderPage()}
       </main>
       
-      {/* Bottom Nav - Only for mobile and tablet */}
-      {!isDesktop && <BottomNav />}
+      {/* Bottom Nav - Desktop uses glass style, mobile/tablet uses regular */}
+      {isDesktop ? <DesktopBottomNav /> : <BottomNav />}
       
       <WelcomeModal />
       <MorningCheckInModal 
