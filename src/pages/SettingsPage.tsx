@@ -109,13 +109,25 @@ export const SettingsPage = () => {
   
   const reminders = getReminders();
   
-  // Profile state
+  // Profile state - initialize with current user/draco data
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [birthDate, setBirthDate] = useState(user?.birthDate || '');
   const [photoPreview, setPhotoPreview] = useState(user?.photo || '');
   const [dracoName, setDracoName] = useState(draco.name || 'Draco');
   const [dracoNameError, setDracoNameError] = useState('');
+
+  // Sync local state when user/draco data changes from cloud
+  useEffect(() => {
+    if (user?.firstName) setFirstName(user.firstName);
+    if (user?.lastName !== undefined) setLastName(user.lastName || '');
+    if (user?.birthDate !== undefined) setBirthDate(user.birthDate || '');
+    if (user?.photo !== undefined) setPhotoPreview(user.photo || '');
+  }, [user?.firstName, user?.lastName, user?.birthDate, user?.photo]);
+
+  useEffect(() => {
+    if (draco.name) setDracoName(draco.name);
+  }, [draco.name]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
@@ -300,7 +312,7 @@ export const SettingsPage = () => {
     >
       <UniversalHeader />
 
-      <div className="p-4">
+      <div className={cn("p-4", isDesktop && "max-w-2xl mx-auto")}>
         <header className="mb-6">
           <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Configurações</h1>
           <p className="text-muted-foreground">Personalize sua experiência</p>
@@ -308,7 +320,7 @@ export const SettingsPage = () => {
 
       <div className="space-y-4">
         {/* Profile Section */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <User className="w-5 h-5 text-primary-foreground" />
@@ -450,7 +462,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* Theme */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Palette className="w-5 h-5 text-primary-foreground" />
@@ -581,7 +593,7 @@ export const SettingsPage = () => {
         <CategoriesSection />
 
         {/* Health Settings */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Moon className="w-5 h-5 text-primary-foreground" />
@@ -635,7 +647,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* Notifications */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Bell className="w-5 h-5 text-primary-foreground" />
@@ -797,7 +809,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* Account */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <User className="w-5 h-5 text-primary-foreground" />
@@ -886,7 +898,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* About */}
-        <section className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Info className="w-5 h-5 text-primary-foreground" />

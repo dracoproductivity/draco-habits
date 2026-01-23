@@ -748,22 +748,22 @@
   }
 
   .glass {
-    background: hsl(var(--card) / 0.6);
+    background: hsl(var(--muted) / 0.3);
     backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--border) / 0.3);
   }
 
   .glass-hover {
     @apply transition-all duration-300;
-    background: hsl(var(--card) / 0.4);
+    background: hsl(var(--muted) / 0.2);
     backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--border) / 0.2);
+    border: 1px solid hsl(var(--border) / 0.3);
   }
 
   .glass-hover:hover {
-    background: hsl(var(--card) / 0.7);
-    border-color: hsl(var(--primary) / 0.3);
-    box-shadow: 0 8px 32px hsl(var(--primary) / 0.15), inset 0 1px 0 hsl(var(--foreground) / 0.05);
+    background: hsl(var(--muted) / 0.35);
+    border-color: hsl(var(--border) / 0.5);
+    box-shadow: 0 8px 32px hsl(var(--muted) / 0.15), inset 0 1px 0 hsl(var(--foreground) / 0.05);
     transform: translateY(-2px);
   }
 

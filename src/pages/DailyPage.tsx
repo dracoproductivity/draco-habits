@@ -28,12 +28,25 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: Habits centered, then progress indicators + radar below */}
-            <div className="max-w-2xl mx-auto">
-              <HabitList showProgressIndicators={false} />
+            {/* Desktop: 3-column layout - Habits | Timeline | Calendar */}
+            <div className="grid grid-cols-3 gap-6">
+              {/* Left column - Habits */}
+              <div className="space-y-4">
+                <HabitList showProgressIndicators={false} />
+              </div>
+              
+              {/* Middle column - Timeline */}
+              <div>
+                <ProgressTimeline />
+              </div>
+              
+              {/* Right column - Calendar */}
+              <div>
+                <HabitCalendar />
+              </div>
             </div>
             
-            {/* Progress indicators: day, week, month, quarter, year */}
+            {/* Progress indicators below */}
             <div className="mt-6">
               <PeriodProgressIndicators />
             </div>
@@ -44,12 +57,6 @@ export const DailyPage = () => {
                 <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
                 <CategoryRadarChart className="h-[180px] w-full" compact />
               </div>
-            </div>
-            
-            {/* Timeline and Calendar */}
-            <div className="mt-8 grid grid-cols-2 gap-8">
-              <ProgressTimeline />
-              <HabitCalendar />
             </div>
           </>
         ) : (
