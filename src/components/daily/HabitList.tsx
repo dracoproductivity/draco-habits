@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
 import { AllHabitsModal } from './AllHabitsModal';
+import { HabitItem } from './HabitItem';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -352,7 +353,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     settings, 
     addHabit, 
     removeHabit, 
-    toggleHabitCheck, 
+    toggleHabitCheck,
+    incrementMicroGoal, 
     getHabitCheckForDate,
     habitChecks,
     addGoal,
@@ -1424,78 +1426,21 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           >
             {displayedHabits.map((habit, index) => {
               const check = getHabitCheckForDate(habit.id, viewDateStr);
-              const isCompleted = check?.completed ?? false;
               const linkedGoal = goals.find(g => g.id === habit.goalId);
 
               return (
-                <motion.div
+                <HabitItem
                   key={habit.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={cn(
-                    'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
-                    isCompleted 
-                      ? 'bg-primary/15 opacity-90' 
-                      : 'hover:bg-muted/20'
-                  )}
+                  habit={habit}
+                  linkedGoal={linkedGoal}
+                  check={check}
+                  showEmojis={settings.showEmojis}
+                  onToggle={() => toggleHabitCheck(habit.id, viewDateStr)}
+                  onIncrementMicroGoal={() => incrementMicroGoal(habit.id, viewDateStr)}
                   onClick={() => setSelectedHabit(habit)}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleHabitCheck(habit.id, viewDateStr);
-                    }}
-                    className={cn(
-                      'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
-                      isCompleted 
-                        ? 'bg-primary border-primary' 
-                        : 'border-muted-foreground/50 hover:border-primary'
-                    )}
-                  >
-                    {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
-                  </button>
-
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
-                      {settings.showEmojis && habit.emoji && (
-                        <span className="text-lg">{habit.emoji}</span>
-                      )}
-                      <span className={cn(
-                        'font-medium transition-all',
-                        isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
-                      )}>
-                        {habit.name}
-                      </span>
-                    </div>
-                    {linkedGoal && (
-                      <span className="text-xs text-muted-foreground">
-                        🎯 {linkedGoal.name}
-                      </span>
-                    )}
-                    {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
-                      <span className="text-xs text-muted-foreground/70">
-                        {habit.weekDays.map(d => WEEK_DAYS[d]?.label).join(', ')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const streak = calculateHabitStreak(habit, habitChecks, linkedGoal);
-                      return streak > 0 ? (
-                        <div className="flex items-center gap-0.5 text-muted-foreground">
-                          <Flame className="w-3.5 h-3.5 text-orange-400" />
-                          <span className="text-xs">{streak}</span>
-                        </div>
-                      ) : null;
-                    })()}
-                    {habit.notificationEnabled && (
-                      <Bell className="w-3.5 h-3.5 text-primary" />
-                    )}
-                    <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
-                  </div>
-                </motion.div>
+                  habitChecks={habitChecks}
+                  delay={index * 0.05}
+                />
               );
             })}
 

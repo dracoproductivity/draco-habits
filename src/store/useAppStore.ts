@@ -62,6 +62,7 @@ interface AppStore {
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   removeHabit: (id: string) => void;
   toggleHabitCheck: (habitId: string, date: string) => void;
+  incrementMicroGoal: (habitId: string, date: string) => void;
   
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Goal;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
@@ -361,6 +362,113 @@ export const useAppStore = create<AppStore>()(
         }
         
         // Recalculate all goal progress after check toggle
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
+      },
+
+      incrementMicroGoal: (habitId, date) => {
+        const { habitChecks, habits } = get();
+        const habit = habits.find((h) => h.id === habitId);
+        
+        if (!habit || !habit.hasMicroGoals || !habit.microGoalsCount) return;
+        
+        const existing = habitChecks.find(
+          (hc) => hc.habitId === habitId && hc.date === date
+        );
+        
+        const microGoalsCount = habit.microGoalsCount;
+        const currentMicroGoals = existing?.microGoalsCompleted || 0;
+        const xpPerMicroGoal = Math.floor((habit.xpReward || 0) / microGoalsCount);
+        
+        if (currentMicroGoals >= microGoalsCount) {
+          // Reset to 0 if already complete
+          set({
+            habitChecks: habitChecks.map((hc) =>
+              hc.habitId === habitId && hc.date === date
+                ? { ...hc, completed: false, microGoalsCompleted: 0 }
+                : hc
+            ),
+          });
+          
+          // Remove all XP for this habit
+          const totalXpToRemove = habit.xpReward || 0;
+          if (totalXpToRemove > 0) {
+            set((state) => {
+              let newTotalXP = Math.max(0, state.draco.totalXP - totalXpToRemove);
+              let level = 1;
+              let xpRemaining = newTotalXP;
+              let xpForLevel = 100;
+              
+              while (xpRemaining >= xpForLevel) {
+                xpRemaining -= xpForLevel;
+                level++;
+                xpForLevel = Math.floor(100 * Math.pow(1.5, level - 1));
+              }
+              
+              return {
+                draco: {
+                  ...state.draco,
+                  level,
+                  currentXP: xpRemaining,
+                  xpToNextLevel: xpForLevel,
+                  totalXP: newTotalXP,
+                },
+              };
+            });
+          }
+        } else {
+          const newMicroGoals = currentMicroGoals + 1;
+          const isNowComplete = newMicroGoals >= microGoalsCount;
+          
+          if (existing) {
+            set({
+              habitChecks: habitChecks.map((hc) =>
+                hc.habitId === habitId && hc.date === date
+                  ? { ...hc, completed: isNowComplete, microGoalsCompleted: newMicroGoals }
+                  : hc
+              ),
+            });
+          } else {
+            set({
+              habitChecks: [...habitChecks, { 
+                habitId, 
+                date, 
+                completed: isNowComplete, 
+                microGoalsCompleted: newMicroGoals 
+              }],
+            });
+          }
+          
+          // Add XP for this micro goal
+          if (xpPerMicroGoal > 0) {
+            set((state) => {
+              const oldLevel = state.draco.level;
+              let newXP = state.draco.currentXP + xpPerMicroGoal;
+              let newLevel = state.draco.level;
+              let xpToNext = state.draco.xpToNextLevel;
+              
+              while (newXP >= xpToNext) {
+                newXP -= xpToNext;
+                newLevel++;
+                xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
+              }
+              
+              const leveledUp = newLevel > oldLevel;
+              
+              return {
+                draco: {
+                  ...state.draco,
+                  level: newLevel,
+                  currentXP: newXP,
+                  xpToNextLevel: xpToNext,
+                  totalXP: state.draco.totalXP + xpPerMicroGoal,
+                },
+                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
+              };
+            });
+          }
+        }
+        
+        // Recalculate all goal progress after micro goal toggle
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
