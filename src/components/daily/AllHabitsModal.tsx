@@ -70,7 +70,9 @@ export const AllHabitsModal = ({ isOpen, onClose, habits, viewDateStr, onHabitCl
                     transition={{ delay: index * 0.03 }}
                     className={cn(
                       'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
-                      isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
+                      isCompleted 
+                        ? 'bg-primary/15 opacity-90' 
+                        : 'hover:bg-muted/20'
                     )}
                     onClick={() => {
                       onHabitClick(habit);
