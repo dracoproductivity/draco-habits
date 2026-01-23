@@ -151,7 +151,7 @@ export const AnalyticsPage = () => {
             {/* Sleep & Phone Charts - Side by Side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {/* Sleep Chart - Line chart with reference area */}
-              <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+              <div className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
@@ -269,7 +269,7 @@ export const AnalyticsPage = () => {
               </div>
 
               {/* Phone Usage Chart - Line chart with reference area */}
-              <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+              <div className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
