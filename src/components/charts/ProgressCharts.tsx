@@ -28,9 +28,10 @@ type ProgressTimeRange = 'week' | 'month';
 
 interface ProgressChartsProps {
   compact?: boolean;
+  hideEmoji?: boolean;
 }
 
-export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
+export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressChartsProps) => {
   const { habits, goals, habitChecks, settings } = useAppStore();
 
   const [progressFilter, setProgressFilter] = useState<ProgressFilter>('habits');
@@ -233,9 +234,11 @@ export const ProgressCharts = ({ compact = false }: ProgressChartsProps) => {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <Target className="w-4 h-4 text-primary-foreground" />
-            </div>
+            {!hideEmoji && (
+              <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+                <Target className="w-4 h-4 text-primary-foreground" />
+              </div>
+            )}
             <div>
               <h3 className="font-semibold text-foreground text-sm">Progresso</h3>
               <p className="text-xs text-muted-foreground">

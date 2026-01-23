@@ -17,17 +17,19 @@ import {
 } from 'recharts';
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
-import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
+import { EvolutionChart } from '@/components/daily/EvolutionChart';
+import { ProgressCharts } from '@/components/charts/ProgressCharts';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { HealthLogModal } from '@/components/analytics/HealthLogModal';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type TimeRange = 'weekly' | 'monthly';
 type AnalyticsView = 'progress' | 'charts';
 
 export const AnalyticsPage = () => {
   const { settings, dailyLogs, habits, goals, habitChecks } = useAppStore();
-  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const { isDesktop } = useResponsive();
 
   const [analyticsView, setAnalyticsView] = useState<AnalyticsView>('progress');
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
@@ -403,8 +405,28 @@ export const AnalyticsPage = () => {
               </div>
             </div>
 
-            {/* Evolution + Progress Timeline (same as Daily page) */}
-            <ProgressTimeline />
+            {/* Evolution + Progress Charts */}
+            {isDesktop ? (
+              // Desktop: Side by side
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="glass-hover rounded-2xl p-5">
+                  <EvolutionChart />
+                </div>
+                <div className="glass-hover rounded-2xl p-5">
+                  <ProgressCharts hideEmoji />
+                </div>
+              </div>
+            ) : (
+              // Mobile: Stacked
+              <div className="space-y-4 mb-6">
+                <div className="glass-hover rounded-2xl p-5">
+                  <EvolutionChart />
+                </div>
+                <div className="glass-hover rounded-2xl p-5">
+                  <ProgressCharts hideEmoji />
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
