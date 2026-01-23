@@ -345,7 +345,7 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
   );
 };
 
-export const HabitList = ({ showProgressIndicators = true, centerTitle = false }: { showProgressIndicators?: boolean; centerTitle?: boolean }) => {
+export const HabitList = ({ showProgressIndicators = true, centerTitle = false, className }: { showProgressIndicators?: boolean; centerTitle?: boolean; className?: string }) => {
   const { 
     habits, 
     goals, 
@@ -737,6 +737,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false }
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      className={className}
     >
       <div className={cn("flex items-start", showProgress ? "gap-6" : "")}>
         {/* Habit list section */}
