@@ -3,15 +3,17 @@ import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
-import { format } from 'date-fns';
+import { format, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { isHabitScheduledForDate } from '@/utils/habitInstanceCalculator';
 
-type ViewMode = 'week' | 'month';
+type ViewMode = 'week' | 'month' | 'year';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
+
+const SHORT_MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 interface EvolutionChartProps {
   className?: string;
@@ -46,6 +48,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
 
   const isCurrentWeek = weekOffset === 0;
   const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
+  const isCurrentYear = selectedYear === today.getFullYear();
   
   // Calculate daily progress for a specific date
   const calculateDailyProgress = (date: Date) => {
@@ -65,6 +68,26 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     ).length;
     
     return Math.round((completedCount / scheduledHabits.length) * 100);
+  };
+
+  // Calculate monthly average progress
+  const calculateMonthlyProgress = (month: number, year: number) => {
+    const monthStart = startOfMonth(new Date(year, month, 1));
+    const monthEnd = endOfMonth(monthStart);
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    
+    let totalProgress = 0;
+    let daysWithData = 0;
+    
+    daysInMonth.forEach(day => {
+      const progress = calculateDailyProgress(day);
+      if (progress >= 0) {
+        totalProgress += progress;
+        daysWithData++;
+      }
+    });
+    
+    return daysWithData > 0 ? Math.round(totalProgress / daysWithData) : 0;
   };
   
   const getWeekDays = useMemo(() => {
@@ -99,9 +122,24 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     return days;
   }, [selectedMonth, selectedYear, habits, goals, habitChecks]);
 
+  const getYearMonths = useMemo(() => {
+    const months: { name: string; progress: number }[] = [];
+    
+    for (let i = 0; i < 12; i++) {
+      months.push({
+        name: SHORT_MONTHS[i],
+        progress: calculateMonthlyProgress(i, selectedYear),
+      });
+    }
+    
+    return months;
+  }, [selectedYear, habits, goals, habitChecks]);
+
   const chartData = viewMode === 'week' 
     ? getWeekDays 
-    : getMonthDays;
+    : viewMode === 'month'
+    ? getMonthDays
+    : getYearMonths;
 
   const handlePrevMonth = () => {
     if (selectedMonth === 0) {
@@ -124,8 +162,10 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const handleReturnToNow = () => {
     if (viewMode === 'week') {
       setWeekOffset(0);
-    } else {
+    } else if (viewMode === 'month') {
       setSelectedMonth(today.getMonth());
+      setSelectedYear(today.getFullYear());
+    } else {
       setSelectedYear(today.getFullYear());
     }
   };
@@ -149,7 +189,9 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
           <p className="text-xs text-muted-foreground">
             {viewMode === 'week' 
               ? getWeekDateRange()
-              : `${MONTHS[selectedMonth]} ${selectedYear}`
+              : viewMode === 'month'
+              ? `${MONTHS[selectedMonth]} ${selectedYear}`
+              : selectedYear.toString()
             }
           </p>
         </div>
@@ -157,7 +199,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
           <button
             onClick={() => setViewMode('week')}
             className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+              'px-2 py-1 rounded-lg text-xs font-medium transition-all',
               viewMode === 'week' 
                 ? 'gradient-primary text-primary-foreground' 
                 : 'text-muted-foreground hover:text-foreground'
@@ -168,13 +210,24 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
           <button
             onClick={() => setViewMode('month')}
             className={cn(
-              'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+              'px-2 py-1 rounded-lg text-xs font-medium transition-all',
               viewMode === 'month' 
                 ? 'gradient-primary text-primary-foreground' 
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             Mês
+          </button>
+          <button
+            onClick={() => setViewMode('year')}
+            className={cn(
+              'px-2 py-1 rounded-lg text-xs font-medium transition-all',
+              viewMode === 'year' 
+                ? 'gradient-primary text-primary-foreground' 
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Ano
           </button>
         </div>
       </div>
@@ -206,7 +259,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
             </button>
           )}
         </div>
-      ) : (
+      ) : viewMode === 'month' ? (
         <div className="flex items-center justify-center gap-4 mb-2">
           <button
             onClick={handlePrevMonth}
@@ -228,6 +281,33 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
               onClick={handleReturnToNow}
               className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-all"
               title="Voltar para este mês"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <button
+            onClick={() => setSelectedYear(selectedYear - 1)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-medium text-foreground min-w-[60px] text-center">
+            {selectedYear}
+          </span>
+          <button
+            onClick={() => setSelectedYear(selectedYear + 1)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          {!isCurrentYear && (
+            <button
+              onClick={handleReturnToNow}
+              className="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-all"
+              title="Voltar para este ano"
             >
               <RotateCcw className="w-4 h-4" />
             </button>

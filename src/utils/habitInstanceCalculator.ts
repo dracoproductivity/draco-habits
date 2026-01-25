@@ -232,38 +232,43 @@ export const isHabitScheduledForDate = (
   const habitCreatedAt = parseISO(habit.createdAt);
   
   // If date is before habit creation, it's not scheduled
-  if (date < habitCreatedAt) return false;
+  // Use date-only comparison to avoid timezone issues
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const createdDateOnly = new Date(habitCreatedAt.getFullYear(), habitCreatedAt.getMonth(), habitCreatedAt.getDate());
+  if (dateOnly < createdDateOnly) return false;
   
-  // Check if date is within the goal's period
+  // Check if date is within the goal's period (only if goal exists)
   if (linkedGoal) {
     const boundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
-    if (!boundaries) return false;
-    if (!isWithinInterval(date, { start: boundaries.start, end: boundaries.end })) {
-      return false;
+    if (boundaries) {
+      if (!isWithinInterval(dateOnly, { start: boundaries.start, end: boundaries.end })) {
+        return false;
+      }
     }
   }
+  // If no linked goal, the habit is valid for all dates after creation
   
   // Handle one-time habits
   if (habit.isOneTime) {
-    return format(date, 'yyyy-MM-dd') === format(habitCreatedAt, 'yyyy-MM-dd');
+    return format(dateOnly, 'yyyy-MM-dd') === format(createdDateOnly, 'yyyy-MM-dd');
   }
   
   // Check weekdays
   if (habit.weekDays && habit.weekDays.length > 0) {
-    const dayOfWeek = getDay(date);
+    const dayOfWeek = getDay(dateOnly);
     if (!habit.weekDays.includes(dayOfWeek)) return false;
   }
   
   // Check week frequency
   if (habit.repeatFrequency && habit.repeatFrequency > 1) {
-    if (!isDateInWeekFrequency(date, habitCreatedAt, habit.repeatFrequency)) {
+    if (!isDateInWeekFrequency(dateOnly, habitCreatedAt, habit.repeatFrequency)) {
       return false;
     }
   }
   
   // Check specific weeks of month
   if (habit.monthWeeks && habit.monthWeeks.length > 0) {
-    const weekOfMonth = getWeekOfMonth(date);
+    const weekOfMonth = getWeekOfMonth(dateOnly);
     if (!habit.monthWeeks.includes(weekOfMonth)) return false;
   }
   

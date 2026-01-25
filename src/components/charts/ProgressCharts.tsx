@@ -8,8 +8,11 @@ import {
   eachDayOfInterval,
   startOfMonth,
   endOfMonth,
+  startOfYear,
+  endOfYear,
   addWeeks,
   addMonths,
+  addYears,
 } from 'date-fns';
 import {
   LineChart,
@@ -24,7 +27,7 @@ import { isHabitScheduledForDate, calculateHabitInstances } from '@/utils/habitI
 import { formatPercentage } from '@/utils/formatPercentage';
 
 type ProgressFilter = 'habits' | 'goals';
-type ProgressTimeRange = 'week' | 'month';
+type ProgressTimeRange = 'week' | 'month' | 'year';
 
 interface ProgressChartsProps {
   compact?: boolean;
@@ -55,11 +58,18 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         start: startOfWeek(baseDate, { weekStartsOn: 1 }),
         end: endOfWeek(baseDate, { weekStartsOn: 1 }),
       });
-    } else {
+    } else if (progressTimeRange === 'month') {
       days = eachDayOfInterval({
         start: startOfMonth(baseDate),
         end: endOfMonth(baseDate),
       });
+    } else {
+      // Year view - sample monthly to avoid too many points
+      const months = [];
+      for (let i = 0; i < 12; i++) {
+        months.push(new Date(baseDate.getFullYear(), i, 1));
+      }
+      days = months;
     }
 
     if (progressFilter === 'habits') {
@@ -71,7 +81,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
       if (filteredHabits.length === 0) {
         return days.map((day) => ({ 
-          date: format(day, 'dd/MM'), 
+          date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'), 
           progress: day < accountStartDate ? null : 0,
           isBeforeAccount: day < accountStartDate 
         }));
@@ -91,11 +101,14 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         
         if (isBeforeAccount) {
           return { 
-            date: format(day, 'dd/MM'), 
+            date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'), 
             progress: null,
             isBeforeAccount: true 
           };
         }
+
+        // For year view, calculate up to end of month
+        const endDate = progressTimeRange === 'year' ? endOfMonth(day) : day;
 
         // For each day, calculate how many habits were completed UP TO this day
         // divided by the TOTAL habits for the entire period
@@ -108,14 +121,14 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
           const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
           const habitCreated = new Date(habit.createdAt);
-          if (day < habitCreated) return;
+          if (endDate < habitCreated) return;
 
-          // Count how many instances were completed UP TO this day
+          // Count how many instances were completed UP TO this day/month
           let completedX = 0;
           
           const daysToCheck = eachDayOfInterval({
             start: habitCreated,
-            end: day,
+            end: endDate,
           });
 
           daysToCheck.forEach(checkDay => {
@@ -141,7 +154,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         const progress = habitsWithInstances > 0 ? totalHabitProgress / habitsWithInstances : 0;
 
         return {
-          date: format(day, 'dd/MM'),
+          date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'),
           progress: Math.round(progress * 10) / 10,
           isBeforeAccount: false,
         };
@@ -156,7 +169,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
       if (filteredGoals.length === 0) {
         return days.map((day) => ({ 
-          date: format(day, 'dd/MM'), 
+          date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'), 
           progress: day < accountStartDate ? null : 0,
           isBeforeAccount: day < accountStartDate 
         }));
@@ -182,13 +195,16 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         
         if (isBeforeAccount) {
           return {
-            date: format(day, 'dd/MM'),
+            date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'),
             progress: null,
             isBeforeAccount: true,
           };
         }
 
-        // For each day, calculate how many habits were completed UP TO this day
+        // For year view, calculate up to end of month
+        const endDate = progressTimeRange === 'year' ? endOfMonth(day) : day;
+
+        // For each day, calculate how many habits were completed UP TO this day/month
         // divided by the TOTAL habits for the entire goal
         let totalGoalProgress = 0;
         let goalsWithHabits = 0;
@@ -199,16 +215,16 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
           
           if (totalN === 0) return;
 
-          // Count how many habits were completed UP TO this day
+          // Count how many habits were completed UP TO this day/month
           let completedX = 0;
 
           goalHabits.forEach(habit => {
             const habitCreated = new Date(habit.createdAt);
-            if (day < habitCreated) return;
+            if (endDate < habitCreated) return;
             
             const daysToCheck = eachDayOfInterval({
               start: habitCreated,
-              end: day,
+              end: endDate,
             });
 
             daysToCheck.forEach(checkDay => {
@@ -235,7 +251,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         const progress = goalsWithHabits > 0 ? totalGoalProgress / goalsWithHabits : 0;
 
         return {
-          date: format(day, 'dd/MM'),
+          date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'),
           progress: Math.round(progress * 10) / 10,
           isBeforeAccount: false,
         };
@@ -272,6 +288,8 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
               <p className="text-xs text-muted-foreground">
                 {progressTimeRange === 'week'
                   ? `Semana de ${format(startOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')} a ${format(endOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+                  : progressTimeRange === 'year'
+                  ? referenceDate.getFullYear().toString()
                   : format(referenceDate, 'MM/yyyy')}
               </p>
             </div>
@@ -303,6 +321,19 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
             >
               Mês
             </button>
+            <button
+              onClick={() => {
+                setProgressTimeRange('year');
+                setReferenceDate(new Date());
+              }}
+              className={`px-2 py-1 text-xs rounded-lg transition-colors ${
+                progressTimeRange === 'year'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+              }`}
+            >
+              Ano
+            </button>
           </div>
         </div>
 
@@ -311,7 +342,11 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
           <button
             onClick={() =>
               setReferenceDate((prev) =>
-                progressTimeRange === 'week' ? addWeeks(prev, -1) : addMonths(prev, -1)
+                progressTimeRange === 'week' 
+                  ? addWeeks(prev, -1) 
+                  : progressTimeRange === 'year'
+                  ? addYears(prev, -1)
+                  : addMonths(prev, -1)
               )
             }
             className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
@@ -322,12 +357,18 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
           <span>
             {progressTimeRange === 'week'
               ? `Semana ${format(startOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
+              : progressTimeRange === 'year'
+              ? referenceDate.getFullYear().toString()
               : format(referenceDate, 'MMMM yyyy')}
           </span>
           <button
             onClick={() =>
               setReferenceDate((prev) =>
-                progressTimeRange === 'week' ? addWeeks(prev, 1) : addMonths(prev, 1)
+                progressTimeRange === 'week' 
+                  ? addWeeks(prev, 1) 
+                  : progressTimeRange === 'year'
+                  ? addYears(prev, 1)
+                  : addMonths(prev, 1)
               )
             }
             className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors"
@@ -337,7 +378,8 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
           </button>
         </div>
 
-        <div className="flex items-center gap-2 mt-1">
+        {/* Filter buttons */}
+        <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex gap-1">
             <button
               onClick={() => {
@@ -368,18 +410,16 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
               Objetivos
             </button>
           </div>
-        </div>
-
-        {!compact && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Filtrar:</span>
+          
+          {/* Filter dropdown - always visible */}
+          <div className="flex-1 max-w-[180px]">
             {progressFilter === 'habits' ? (
               <select
                 value={selectedHabitId}
                 onChange={(e) => setSelectedHabitId(e.target.value)}
-                className="flex-1 px-2 py-1.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                className="w-full px-2 py-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               >
-                <option value="all">Todos os hábitos</option>
+                <option value="all">Todos</option>
                 {habits.map((habit) => (
                   <option key={habit.id} value={habit.id}>
                     {habit.emoji ? `${habit.emoji} ` : ''}{habit.name}
@@ -390,9 +430,9 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
               <select
                 value={selectedGoalId}
                 onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="flex-1 px-2 py-1.5 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                className="w-full px-2 py-1 rounded-lg bg-card/80 backdrop-blur-sm border border-border/50 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               >
-                <option value="all">Todos os objetivos</option>
+                <option value="all">Todos</option>
                 {goals.map((goal) => (
                   <option key={goal.id} value={goal.id}>
                     {goal.emoji ? `${goal.emoji} ` : ''}{goal.name}
@@ -401,7 +441,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
               </select>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className={compact ? "h-32" : "h-48"}>
@@ -412,7 +452,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
               dataKey="date"
               tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
               axisLine={{ stroke: 'hsl(var(--border))' }}
-              interval={progressTimeRange === 'month' ? 6 : 0}
+              interval={progressTimeRange === 'year' ? 0 : progressTimeRange === 'month' ? 6 : 0}
             />
             <YAxis
               domain={[0, 100]}
