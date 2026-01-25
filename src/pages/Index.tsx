@@ -45,7 +45,7 @@ const Index = () => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
 
-  // Check if morning check-in should be shown - only once per day after 5am
+  // Check if morning check-in should be shown - only once per session after 5am
   useEffect(() => {
     if (!isAuthenticated) return;
     
@@ -58,18 +58,25 @@ const Index = () => {
       return;
     }
     
-    // Only show after 5am and if not already filled today
-    // The lastDailyLogDate check ensures it only shows once per day
-    if (currentHour >= 5 && settings.lastDailyLogDate !== today) {
+    // Check if user already dismissed the modal today (stored in sessionStorage)
+    const dismissedToday = sessionStorage.getItem('morningCheckInDismissed') === today;
+    
+    // Only show after 5am and if not already filled today and not dismissed this session
+    if (currentHour >= 5 && settings.lastDailyLogDate !== today && !dismissedToday) {
       setShowMorningCheckIn(true);
       setShowDailyLogReminder(false);
+    } else if (currentHour >= 5 && settings.lastDailyLogDate !== today && dismissedToday) {
+      // User dismissed but didn't log - show reminder
+      setShowDailyLogReminder(true);
     }
   }, [isAuthenticated]); // Only run on mount/auth change, not on every settings change
 
   const handleMorningCheckInClose = () => {
     setShowMorningCheckIn(false);
-    // Check if user actually logged - if not, show reminder
+    // Store in sessionStorage that user dismissed today
     const today = format(new Date(), 'yyyy-MM-dd');
+    sessionStorage.setItem('morningCheckInDismissed', today);
+    // Check if user actually logged - if not, show reminder
     if (settings.lastDailyLogDate !== today) {
       setShowDailyLogReminder(true);
     }
