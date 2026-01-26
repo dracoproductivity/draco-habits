@@ -115,19 +115,19 @@ const PeriodBox = ({ title, progress, isCircular, size = 'small', onClick }: Per
             </span>
           </div>
         ) : (
-          <span className={cn(
-            "font-bold text-primary flex-shrink-0",
-            size === 'small' && 'text-[10px]',
-            size === 'medium' && 'text-xs',
-            size === 'large' && 'text-sm'
-          )}>
-            {formatPercentage(progress)}
-          </span>
+          <div className="flex items-center gap-2 flex-1 max-w-[60%]">
+            <ProgressBar progress={progress} className="flex-1" />
+            <span className={cn(
+              "font-bold text-primary flex-shrink-0",
+              size === 'small' && 'text-[10px]',
+              size === 'medium' && 'text-xs',
+              size === 'large' && 'text-sm'
+            )}>
+              {formatPercentage(progress)}
+            </span>
+          </div>
         )}
       </div>
-      {!isCircular && size !== 'small' && (
-        <ProgressBar progress={progress} className="mt-2" />
-      )}
     </motion.button>
   );
 };
@@ -150,25 +150,32 @@ export const HierarchicalYearProgress = ({ displayYear, displayMode, onPeriodCli
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4"
+      className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4 max-w-3xl mx-auto"
     >
-      {/* Year Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-lg text-foreground">Ano {displayYear}</h3>
-        {isCircular ? (
-          <div className="relative flex items-center justify-center">
-            <ProgressCircle progress={yearProgress} size={50} />
-            <span className="absolute text-xs font-bold">{formatPercentage(yearProgress)}</span>
-          </div>
-        ) : (
-          <span className="text-2xl font-bold text-gradient-primary">{formatPercentage(yearProgress)}</span>
-        )}
-      </div>
+      {/* Year Header - Clickable */}
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={() => onPeriodClick?.(`Ano ${displayYear}`, 'yearly', displayYear.toString())}
+        className="w-full text-left hover:bg-muted/30 rounded-xl p-2 -m-2 transition-colors"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg text-foreground">Ano {displayYear}</h3>
+          {isCircular ? (
+            <div className="relative flex items-center justify-center">
+              <ProgressCircle progress={yearProgress} size={50} />
+              <span className="absolute text-xs font-bold">{formatPercentage(yearProgress)}</span>
+            </div>
+          ) : (
+            <span className="text-2xl font-bold text-gradient-primary">{formatPercentage(yearProgress)}</span>
+          )}
+        </div>
 
-      {!isCircular && <ProgressBar progress={yearProgress} className="mb-4" />}
+        {!isCircular && <ProgressBar progress={yearProgress} className="mb-2" />}
+      </motion.button>
 
       {/* Semesters side by side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 mt-4">
         {[1, 2].map((semester) => {
           const semesterPeriod = `${semester}º Sem - ${displayYear}`;
           const semesterProgress = calculateProgress('semestral', semesterPeriod);
