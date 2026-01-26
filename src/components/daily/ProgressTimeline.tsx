@@ -17,7 +17,7 @@ export const ProgressTimeline = ({ className }: ProgressTimelineProps) => {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("glass-hover rounded-2xl p-5 flex flex-col", className)}
+      className={cn("rounded-2xl p-5 flex flex-col", className)}
     >
       {isDesktop ? (
         // Desktop: Stack Evolution and Progress charts

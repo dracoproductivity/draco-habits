@@ -112,7 +112,7 @@ export const HabitCalendar = ({ className }: HabitCalendarProps) => {
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cn("glass-hover rounded-2xl p-4 space-y-4", className)}
+        className={cn("rounded-2xl p-4 space-y-4", className)}
       >
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Calendário</h3>
