@@ -315,7 +315,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
         </div>
       )}
 
-      <div className={cn(compact ? "h-[120px]" : "h-[140px]", "w-full")}>
+      <div className={cn(compact ? "h-[120px]" : "h-[200px] lg:h-[280px]", "w-full")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>

@@ -444,7 +444,7 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
         </div>
       </div>
 
-      <div className={compact ? "h-32" : "h-48"}>
+      <div className={compact ? "h-32" : "h-48 lg:h-[280px]"}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={getProgressData}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />

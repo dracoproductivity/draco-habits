@@ -4,26 +4,8 @@ import { ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { PeriodCard } from '@/components/year/PeriodCard';
 import { PeriodModal } from '@/components/year/PeriodModal';
+import { HierarchicalYearProgress } from '@/components/analytics/HierarchicalYearProgress';
 import { GoalType } from '@/types';
-
-const QUARTER_MONTHS: Record<number, string> = {
-  1: 'Janeiro, Fevereiro, Março',
-  2: 'Abril, Maio, Junho',
-  3: 'Julho, Agosto, Setembro',
-  4: 'Outubro, Novembro, Dezembro',
-};
-
-const QUARTER_MONTH_ARRAYS: Record<number, string[]> = {
-  1: ['Janeiro', 'Fevereiro', 'Março'],
-  2: ['Abril', 'Maio', 'Junho'],
-  3: ['Julho', 'Agosto', 'Setembro'],
-  4: ['Outubro', 'Novembro', 'Dezembro'],
-};
-
-const SEMESTER_MONTHS: Record<number, string> = {
-  1: 'Janeiro a Junho',
-  2: 'Julho a Dezembro',
-};
 
 export const AnnualProgressView = () => {
   const { goals, habits } = useAppStore();
@@ -42,7 +24,6 @@ export const AnnualProgressView = () => {
   } | null>(null);
   
   const today = new Date();
-  const year = displayYear;
   const month = today.toLocaleDateString('pt-BR', { month: 'long' });
   const weekNumber = Math.ceil(
     (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
@@ -101,9 +82,9 @@ export const AnnualProgressView = () => {
         )}
       </div>
       
-      <div className={`${isDesktop ? 'grid grid-cols-2 gap-4' : 'space-y-3'}`}>
-        {/* Week - only show for current year */}
-        {!isViewingNextYear && (
+      {/* Week and Month cards side by side - only for current year */}
+      {!isViewingNextYear && (
+        <div className={`grid ${isDesktop ? 'grid-cols-2' : 'grid-cols-2'} gap-3 mb-4`}>
           <PeriodCard
             title="Semana"
             subtitle="Semana atual"
@@ -112,10 +93,7 @@ export const AnnualProgressView = () => {
             displayYear={currentYear}
             onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber} - ${currentYear}`, 'Semana atual')}
           />
-        )}
-        
-        {/* Month - only show for current year */}
-        {!isViewingNextYear && (
+          
           <PeriodCard
             title={month.charAt(0).toUpperCase() + month.slice(1)}
             subtitle="Mês atual"
@@ -124,44 +102,16 @@ export const AnnualProgressView = () => {
             displayYear={currentYear}
             onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`, 'Mês atual')}
           />
-        )}
+        </div>
+      )}
 
-        {/* Quarters */}
-        {[1, 2, 3, 4].map((q) => (
-          <PeriodCard
-            key={q}
-            title={`${q}º Trimestre`}
-            subtitle={QUARTER_MONTHS[q]}
-            type="quarterly"
-            period={`${q}º Tri - ${year}`}
-            quarterMonths={QUARTER_MONTH_ARRAYS[q]}
-            displayYear={year}
-            onClick={() => openPeriodModal(`${q}º Trimestre`, 'quarterly', `${q}º Tri - ${year}`, QUARTER_MONTHS[q], QUARTER_MONTH_ARRAYS[q])}
-          />
-        ))}
-
-        {/* Semesters */}
-        {[1, 2].map((s) => (
-          <PeriodCard
-            key={`sem-${s}`}
-            title={`${s}º Semestre`}
-            subtitle={SEMESTER_MONTHS[s]}
-            type="semestral"
-            period={`${s}º Sem - ${year}`}
-            displayYear={year}
-            onClick={() => openPeriodModal(`${s}º Semestre`, 'semestral', `${s}º Sem - ${year}`, SEMESTER_MONTHS[s])}
-          />
-        ))}
-
-        {/* Year */}
-        <PeriodCard
-          title={`Ano ${year}`}
-          type="yearly"
-          period={year.toString()}
-          displayYear={year}
-          onClick={() => openPeriodModal(`Ano ${year}`, 'yearly', year.toString())}
-        />
-      </div>
+      {/* Hierarchical Year Progress - Nested structure */}
+      <HierarchicalYearProgress 
+        displayYear={displayYear}
+        onPeriodClick={(title, type, period, subtitle, quarterMonths) => 
+          openPeriodModal(title, type, period, subtitle, quarterMonths)
+        }
+      />
       
       {/* Button to view next year */}
       {!isViewingNextYear && (

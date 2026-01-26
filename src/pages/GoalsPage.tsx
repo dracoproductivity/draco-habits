@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { GoalCard } from '@/components/goals/GoalCard';
+import { GoalSquareCard } from '@/components/goals/GoalSquareCard';
+import { HabitSquareCard } from '@/components/goals/HabitSquareCard';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
 import { HabitCreationForm } from '@/components/goals/HabitCreationForm';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
@@ -25,11 +26,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-type FilterType = 'all' | 'habits' | Goal['type'];
+type FilterType = 'all' | Goal['type'];
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'Todos' },
-  { value: 'habits', label: 'Hábitos' },
   { value: 'weekly', label: 'Semanal' },
   { value: 'monthly', label: 'Mensal' },
   { value: 'quarterly', label: 'Trimestral' },
@@ -288,7 +288,7 @@ export const GoalsPage = () => {
     return habits.filter(h => h.goalId === goalId);
   };
 
-  const filteredGoals = filter === 'all' || filter === 'habits'
+  const filteredGoals = filter === 'all'
     ? goals
     : goals.filter((g) => g.type === filter);
 
@@ -658,164 +658,106 @@ export const GoalsPage = () => {
         ))}
       </div>
 
-      {/* Content based on filter */}
-      {filter === 'habits' ? (
-        /* Habits List View - Same as Daily */
-        <div className="space-y-2">
-          {habits.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
-                    Cada hábito pode ser vinculado a objetivos de diferentes períodos.
-                  </p>
-                  <button
-                    onClick={() => {
-                      const { setActiveTab } = useAppStore.getState();
-                      setActiveTab('daily');
-                    }}
-                    className="text-sm font-medium text-primary hover:underline"
-                  >
-                    Ir para o Diário →
-                  </button>
-                </div>
+      {/* Goals Grid */}
+      <div className="mb-6">
+        {filteredGoals.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                <Lightbulb className="w-5 h-5 text-primary-foreground" />
               </div>
-            </motion.div>
-          ) : (
-            habits.map((habit, index) => {
-              const todayStr = new Date().toISOString().split('T')[0];
-              const check = getHabitCheckForDate(habit.id, todayStr);
-              const isCompleted = check?.completed ?? false;
-              const linkedGoal = goals.find(g => g.id === habit.goalId);
-
-              return (
-                <motion.div
-                  key={habit.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={cn(
-                    'flex items-center gap-3 p-3 rounded-xl transition-all group cursor-pointer',
-                    isCompleted ? 'opacity-70' : 'hover:bg-muted/20'
-                  )}
-                  onClick={() => setSelectedHabit(habit)}
-                >
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleHabitCheck(habit.id, todayStr);
-                    }}
-                    className={cn(
-                      'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
-                      isCompleted 
-                        ? 'bg-primary border-primary' 
-                        : 'border-muted-foreground/50 hover:border-primary'
-                    )}
-                  >
-                    {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
-                  </button>
-
-                  <div className="flex-1 flex flex-col gap-0.5">
-                    <div className="flex items-center gap-2">
-                      {settings.showEmojis && habit.emoji && (
-                        <span className="text-lg">{habit.emoji}</span>
-                      )}
-                      <span className={cn(
-                        'font-medium transition-all',
-                        isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
-                      )}>
-                        {habit.name}
-                      </span>
-                    </div>
-                    {linkedGoal && (
-                      <span className="text-xs text-muted-foreground">
-                        🎯 {linkedGoal.name}
-                      </span>
-                    )}
-                    {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
-                      <span className="text-xs text-muted-foreground/70">
-                        {habit.weekDays.map(d => weekDayLabels[d]).join(', ')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {habit.notificationEnabled && (
-                      <Bell className="w-3.5 h-3.5 text-primary" />
-                    )}
-                    <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeHabit(habit.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })
-          )}
-        </div>
-      ) : (
-        /* Goals list */
-        <div className="space-y-3">
-          {filteredGoals.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground mb-1">
-                    {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Clique no botão abaixo para criar seu primeiro objetivo 
-                    {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
-                  </p>
-                </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">
+                  {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Clique no botão abaixo para criar seu primeiro objetivo 
+                  {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
+                </p>
               </div>
-            </motion.div>
-          )}
-          
+            </div>
+          </motion.div>
+        )}
+        
+        <div className={cn(
+          "grid gap-3",
+          isDesktop || isTablet ? "grid-cols-3" : "grid-cols-2"
+        )}>
           {filteredGoals.map((goal, index) => (
-            <GoalCard
+            <GoalSquareCard
               key={goal.id}
               goal={goal}
               index={index}
               onClick={() => setSelectedGoal(goal)}
             />
           ))}
-          
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleAddGoalClick}
-            className="w-full py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-medium">
-              Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
-            </span>
-          </motion.button>
         </div>
-      )}
+        
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleAddGoalClick}
+          className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="font-medium">
+            Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
+          </span>
+        </motion.button>
+      </div>
+
+      {/* Habits Section - Separated below goals */}
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-3">Hábitos</h2>
+        
+        {habits.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
+          >
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                <Lightbulb className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
+                  Cada hábito pode ser vinculado a objetivos de diferentes períodos.
+                </p>
+                <button
+                  onClick={() => {
+                    const { setActiveTab } = useAppStore.getState();
+                    setActiveTab('daily');
+                  }}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Ir para o Diário →
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <div className={cn(
+            "grid gap-3",
+            isDesktop || isTablet ? "grid-cols-4" : "grid-cols-2"
+          )}>
+            {habits.map((habit, index) => (
+              <HabitSquareCard
+                key={habit.id}
+                habit={habit}
+                index={index}
+                onClick={() => setSelectedHabit(habit)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
 
       {/* Type Selector Modal */}
