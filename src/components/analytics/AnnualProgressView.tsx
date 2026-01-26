@@ -92,7 +92,7 @@ export const AnnualProgressView = ({ displayMode }: AnnualProgressViewProps) => 
       
       {/* Week and Month cards side by side - only for current year */}
       {!isViewingNextYear && (
-        <div className={`grid ${isDesktopScreen ? 'grid-cols-2' : 'grid-cols-2'} gap-3 mb-4`}>
+        <div className="grid grid-cols-2 gap-3 mb-4 max-w-3xl mx-auto">
           <PeriodCard
             title="Semana"
             subtitle="Semana atual"
@@ -130,7 +130,7 @@ export const AnnualProgressView = ({ displayMode }: AnnualProgressViewProps) => 
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => setDisplayYear(currentYear + 1)}
-          className="w-full mt-4 py-3 px-4 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2"
+          className="w-full max-w-3xl mx-auto mt-4 py-3 px-4 rounded-xl bg-muted/30 border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all flex items-center justify-center gap-2"
         >
           <span>Ver objetivos de {currentYear + 1}</span>
           <ChevronRight className="w-4 h-4" />

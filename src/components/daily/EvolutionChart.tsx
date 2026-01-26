@@ -356,6 +356,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               fill="url(#progressGradient)"
+              connectNulls
             />
           </AreaChart>
         </ResponsiveContainer>

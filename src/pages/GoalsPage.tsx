@@ -707,7 +707,7 @@ export const GoalsPage = () => {
         
         <div className={cn(
           "grid gap-3",
-          isDesktop || isTablet ? "grid-cols-3" : "grid-cols-2"
+          isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
         )}>
           {filteredGoals.map((goal, index) => (
             <GoalSquareCard
@@ -765,19 +765,34 @@ export const GoalsPage = () => {
             </div>
           </motion.div>
         ) : (
-          <div className={cn(
-            "grid gap-3",
-            isDesktop || isTablet ? "grid-cols-4" : "grid-cols-2"
-          )}>
-            {habits.map((habit, index) => (
-              <HabitSquareCard
-                key={habit.id}
-                habit={habit}
-                index={index}
-                onClick={() => setSelectedHabit(habit)}
-              />
-            ))}
-          </div>
+          <>
+            <div className={cn(
+              "grid gap-3",
+              isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
+            )}>
+              {habits.map((habit, index) => (
+                <HabitSquareCard
+                  key={habit.id}
+                  habit={habit}
+                  index={index}
+                  onClick={() => setSelectedHabit(habit)}
+                />
+              ))}
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                const { setActiveTab } = useAppStore.getState();
+                setActiveTab('daily');
+              }}
+              className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="font-medium">Adicionar Hábito</span>
+            </motion.button>
+          </>
         )}
       </div>
 
