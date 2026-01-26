@@ -51,37 +51,37 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: 3-column layout - Charts | Habits | Calendar */}
+            {/* Desktop: 3-column layout - Charts | Habits | Calendar+Radar */}
             <div className="grid grid-cols-3 gap-6" style={{ minHeight: '450px' }}>
               {/* Left column - Charts (Evolution + Progress) */}
               <div className="flex flex-col h-full">
                 <ProgressTimeline className="h-full" />
               </div>
               
-              {/* Middle column - Habits (centered title) */}
+              {/* Middle column - Habits (centered title) + Period Progress */}
               <div className="flex flex-col h-full">
-                <HabitList showProgressIndicators={false} centerTitle className="h-full" />
+                <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
+                
+                {/* Progress indicators below habits with toggle */}
+                <div className="mt-4 relative">
+                  <div className="absolute right-0 top-0">
+                    <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+                  </div>
+                  <PeriodProgressIndicators displayMode={localDisplayMode} />
+                </div>
               </div>
               
-              {/* Right column - Calendar */}
+              {/* Right column - Calendar + Radar */}
               <div className="flex flex-col h-full">
-                <HabitCalendar className="h-full" />
-              </div>
-            </div>
-            
-            {/* Progress indicators below with toggle */}
-            <div className="mt-6 relative">
-              <div className="absolute right-0 top-0">
-                <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
-              </div>
-              <PeriodProgressIndicators displayMode={localDisplayMode} />
-            </div>
-            
-            {/* Radar chart below progress indicators */}
-            <div className="mt-6 flex justify-center">
-              <div className="w-64">
-                <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
-                <CategoryRadarChart className="h-[180px] w-full" compact />
+                <HabitCalendar className="flex-1" />
+                
+                {/* Radar chart below calendar, vertically centered with period indicators */}
+                <div className="mt-4 flex justify-center">
+                  <div className="w-48">
+                    <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
+                    <CategoryRadarChart className="h-[140px] w-full" compact />
+                  </div>
+                </div>
               </div>
             </div>
           </>
