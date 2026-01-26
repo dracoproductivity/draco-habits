@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
-import { GoalType } from '@/types';
+import { GoalType, ProgressDisplayMode } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
   calculateHierarchicalPeriodProgress 
@@ -9,6 +9,7 @@ import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercenta
 
 interface HierarchicalYearProgressProps {
   displayYear: number;
+  displayMode?: ProgressDisplayMode;
   onPeriodClick?: (title: string, type: GoalType, period: string, subtitle?: string, quarterMonths?: string[]) => void;
 }
 
@@ -131,9 +132,12 @@ const PeriodBox = ({ title, progress, isCircular, size = 'small', onClick }: Per
   );
 };
 
-export const HierarchicalYearProgress = ({ displayYear, onPeriodClick }: HierarchicalYearProgressProps) => {
+export const HierarchicalYearProgress = ({ displayYear, displayMode, onPeriodClick }: HierarchicalYearProgressProps) => {
   const { habits, goals, habitChecks, settings } = useAppStore();
-  const isCircular = settings.progressDisplayMode === 'circular';
+  // Use passed displayMode if available, otherwise fall back to settings
+  const isCircular = displayMode 
+    ? displayMode === 'circular' 
+    : settings.progressDisplayMode === 'circular';
 
   const calculateProgress = (type: GoalType, period: string) => {
     const { completed, total } = calculateHierarchicalPeriodProgress(type, period, habits, goals, habitChecks);

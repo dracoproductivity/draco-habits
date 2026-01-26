@@ -92,9 +92,16 @@ export interface DailyLog {
   phoneUsageHours: number;
 }
 
+export interface PageProgressDisplayModes {
+  daily: ProgressDisplayMode;
+  goals: ProgressDisplayMode;
+  analytics: ProgressDisplayMode;
+}
+
 export interface AppSettings {
   themeColor: ThemeColor;
   progressDisplayMode: ProgressDisplayMode;
+  pageProgressDisplayModes?: PageProgressDisplayModes;
   showEmojis: boolean;
   notificationsEnabled: boolean;
   notificationReminders: NotificationReminder[];

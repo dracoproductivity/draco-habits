@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
-import { GoalType, Goal } from '@/types';
+import { GoalType, Goal, ProgressDisplayMode } from '@/types';
 import { cn } from '@/lib/utils';
 import { 
   calculateHierarchicalPeriodProgress,
@@ -8,7 +8,7 @@ import {
 } from '@/utils/habitInstanceCalculator';
 import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 
-interface PeriodCardProps {
+export interface PeriodCardProps {
   title: string;
   subtitle?: string;
   type: GoalType;
@@ -17,6 +17,7 @@ interface PeriodCardProps {
   onClick?: () => void;
   quarterMonths?: string[];
   displayYear?: number;
+  displayMode?: ProgressDisplayMode;
 }
 
 const MONTH_NAMES = [
@@ -136,7 +137,7 @@ const calculatePeriodProgressXN = (
   return calculateHierarchicalPeriodProgress(type, period, habits, goals, habitChecks);
 };
 
-export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear }: PeriodCardProps) => {
+export const PeriodCard = ({ title, subtitle, type, period, className, onClick, quarterMonths, displayYear, displayMode }: PeriodCardProps) => {
   const { goals, settings, habits, habitChecks } = useAppStore();
 
   const { completed, total } = calculatePeriodProgressXN(
@@ -150,7 +151,10 @@ export const PeriodCard = ({ title, subtitle, type, period, className, onClick, 
   const averageProgress = calculateRawPercentage(completed, total);
   const formattedProgress = formatPercentage(averageProgress);
 
-  const isCircular = settings.progressDisplayMode === 'circular';
+  // Use passed displayMode if available, otherwise fall back to settings
+  const isCircular = displayMode 
+    ? displayMode === 'circular' 
+    : settings.progressDisplayMode === 'circular';
   const periodStatus = getPeriodStatus(type, period, displayYear);
   
   const periodGoals = goals.filter((g) => g.type === type && g.period === period);

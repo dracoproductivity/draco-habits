@@ -3,9 +3,11 @@ import { useAppStore } from '@/store/useAppStore';
 import { calculateHierarchicalPeriodProgress, getPeriodIdentifier } from '@/utils/habitInstanceCalculator';
 import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 import { cn } from '@/lib/utils';
+import { ProgressDisplayMode } from '@/types';
 
 interface PeriodProgressIndicatorsProps {
   className?: string;
+  displayMode?: ProgressDisplayMode;
 }
 
 const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: string; delay?: number }) => {
@@ -77,10 +79,13 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
   );
 };
 
-export const PeriodProgressIndicators = ({ className }: PeriodProgressIndicatorsProps) => {
+export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgressIndicatorsProps) => {
   const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
   
-  const isCircular = settings.progressDisplayMode === 'circular';
+  // Use passed displayMode prop if available, otherwise fall back to settings
+  const isCircular = displayMode 
+    ? displayMode === 'circular' 
+    : settings.progressDisplayMode === 'circular';
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 
