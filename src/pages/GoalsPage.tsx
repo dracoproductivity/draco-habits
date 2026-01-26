@@ -31,7 +31,6 @@ type FilterType = 'all' | Goal['type'];
 
 const filterOptions: { value: FilterType; label: string }[] = [
   { value: 'all', label: 'Todos' },
-  { value: 'weekly', label: 'Semanal' },
   { value: 'monthly', label: 'Mensal' },
   { value: 'quarterly', label: 'Trimestral' },
   { value: 'semestral', label: 'Semestral' },
@@ -407,7 +406,18 @@ export const GoalsPage = () => {
 
   const handleCreateGoal = () => {
     if (!newGoalName.trim() || !newGoalType || !newGoalPeriod) return;
-    const newGoal = addGoal({
+    
+    // Check goal limit
+    if (goals.length >= 50) {
+      toast({
+        title: 'Limite atingido',
+        description: 'Você atingiu o limite de 50 objetivos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    addGoal({
       name: newGoalName.trim(),
       type: newGoalType,
       period: newGoalPeriod,
@@ -417,15 +427,10 @@ export const GoalsPage = () => {
       emoji: newGoalEmoji || undefined,
     });
     resetGoalCreation();
-    
-    if (newGoalType !== 'weekly' && newGoal) {
-      setParentGoalForWeekly(newGoal);
-      setWeeklyGoalName('');
-      setWeeklyGoalDays([1, 2, 3, 4, 5]);
-      setWeeklyGoalRepeat(true);
-      setWeeklyGoalPeriod(generateWeekOptions()[0]?.value || '');
-      setShowWeeklyGoalPrompt(true);
-    }
+    toast({
+      title: 'Objetivo criado!',
+      description: `"${newGoalName}" foi criado com sucesso.`,
+    });
   };
 
   const resetGoalCreation = () => {
@@ -522,13 +527,13 @@ export const GoalsPage = () => {
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     const idx = sequence.indexOf(current);
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
 
   const getPrevStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     const idx = sequence.indexOf(current);
     return idx > 0 ? sequence[idx - 1] : null;
   };
@@ -564,7 +569,7 @@ export const GoalsPage = () => {
       }
     };
 
-    const steps: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    const steps: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     
     steps.forEach((step) => {
       if (finalData[step].name && finalData[step].periods.length > 0) {
@@ -816,7 +821,7 @@ export const GoalsPage = () => {
             >
               <h3 className="text-lg font-bold mb-4 text-center">Escolha o tipo de objetivo</h3>
               <div className="space-y-2">
-                {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
                   <button
                     key={type}
                     onClick={() => openNewGoalModal(type)}
@@ -1092,116 +1097,7 @@ export const GoalsPage = () => {
                       ✓ Selecionar todos
                     </button>
 
-                    {/* Quick select options for weeks */}
-                    {goalCreationStep === 'weekly' && (
-                      <div className="space-y-1 mb-2 p-2 rounded-xl bg-secondary/10 border border-secondary/30">
-                        <p className="text-xs font-medium text-secondary-foreground mb-1">Seleção rápida:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {/* All weeks of the year */}
-                          {generateYearOptions().map(year => (
-                            <button
-                              key={`year-${year.value}`}
-                              onClick={() => {
-                                const yearWeeks = getFilteredOptions(goalCreationStep).filter(o => o.value.includes(year.value)).map(o => o.value);
-                                const allSelected = yearWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                setGoalCreationData(prev => ({
-                                  ...prev,
-                                  weekly: { 
-                                    ...prev.weekly, 
-                                    periods: allSelected 
-                                      ? prev.weekly.periods.filter(p => !yearWeeks.includes(p))
-                                      : [...new Set([...prev.weekly.periods, ...yearWeeks])]
-                                  }
-                                }));
-                              }}
-                              className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                            >
-                              Ano {year.value}
-                            </button>
-                          ))}
-                          {/* 1st and 2nd semester */}
-                          {generateYearOptions().map(year => (
-                            <>
-                              <button
-                                key={`s1-${year.value}`}
-                                onClick={() => {
-                                  const s1Weeks = getFilteredOptions(goalCreationStep).filter(o => {
-                                    const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                    if (!match) return false;
-                                    return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) <= 26;
-                                  }).map(o => o.value);
-                                  const allSelected = s1Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                  setGoalCreationData(prev => ({
-                                    ...prev,
-                                    weekly: { 
-                                      ...prev.weekly, 
-                                      periods: allSelected 
-                                        ? prev.weekly.periods.filter(p => !s1Weeks.includes(p))
-                                        : [...new Set([...prev.weekly.periods, ...s1Weeks])]
-                                    }
-                                  }));
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                              >
-                                1º Sem {year.value}
-                              </button>
-                              <button
-                                key={`s2-${year.value}`}
-                                onClick={() => {
-                                  const s2Weeks = getFilteredOptions(goalCreationStep).filter(o => {
-                                    const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                    if (!match) return false;
-                                    return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) > 26;
-                                  }).map(o => o.value);
-                                  const allSelected = s2Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                  setGoalCreationData(prev => ({
-                                    ...prev,
-                                    weekly: { 
-                                      ...prev.weekly, 
-                                      periods: allSelected 
-                                        ? prev.weekly.periods.filter(p => !s2Weeks.includes(p))
-                                        : [...new Set([...prev.weekly.periods, ...s2Weeks])]
-                                    }
-                                  }));
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                              >
-                                2º Sem {year.value}
-                              </button>
-                            </>
-                          ))}
-                        </div>
-                        {/* Months */}
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((monthLabel, monthIndex) => {
-                            const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-                            return (
-                              <button
-                                key={monthLabel}
-                                onClick={() => {
-                                  const monthWeeks = getFilteredOptions(goalCreationStep).filter(o => {
-                                    return o.label.toLowerCase().includes(monthNames[monthIndex]);
-                                  }).map(o => o.value);
-                                  const allSelected = monthWeeks.length > 0 && monthWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                  setGoalCreationData(prev => ({
-                                    ...prev,
-                                    weekly: { 
-                                      ...prev.weekly, 
-                                      periods: allSelected 
-                                        ? prev.weekly.periods.filter(p => !monthWeeks.includes(p))
-                                        : [...new Set([...prev.weekly.periods, ...monthWeeks])]
-                                    }
-                                  }));
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted/70 text-foreground transition-all"
-                              >
-                                {monthLabel}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    {/* Removed weekly quick select options - weekly goals no longer supported */}
 
                     <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded-xl bg-muted/20 border border-border/30">
                       {getFilteredOptions(goalCreationStep).map((option) => (

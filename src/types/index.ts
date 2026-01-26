@@ -34,6 +34,9 @@ export interface HabitCheck {
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'semestral' | 'yearly';
 
+// Goal types that can be created (excludes weekly)
+export type CreatableGoalType = 'monthly' | 'quarterly' | 'semestral' | 'yearly';
+
 export type GoalCategory = 
   | 'physical_health' 
   | 'study' 

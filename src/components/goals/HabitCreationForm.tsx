@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Check, Repeat, Bell, Layers } from 'lucide-react';
+import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
-import { Goal } from '@/types';
+import { Goal, XP_OPTIONS } from '@/types';
 import { toast } from '@/hooks/use-toast';
+import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -24,7 +25,7 @@ interface HabitCreationFormProps {
 }
 
 export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreationFormProps) => {
-  const { addHabit } = useAppStore();
+  const { addHabit, habits } = useAppStore();
   
   const [habitName, setHabitName] = useState('');
   const [habitEmoji, setHabitEmoji] = useState('');
@@ -35,6 +36,12 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [notificationTime, setNotificationTime] = useState('08:00');
   const [hasMicroGoals, setHasMicroGoals] = useState(false);
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
+  const [selectedXPReward, setSelectedXPReward] = useState<number>(parentGoal.categoryXP || 20);
+
+  // Habit limits check
+  const totalActiveHabits = getTotalActiveHabits(habits);
+  const xpCounts = getActiveHabitCountsByXP(habits);
+  const canAddNewHabit = canCreateHabit(habits);
 
   const toggleWeekDay = (day: number) => {
     if (selectedWeekDays.includes(day)) {
@@ -54,10 +61,30 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       return;
     }
 
+    // Check habit limit
+    if (!canAddNewHabit) {
+      toast({
+        title: 'Limite atingido',
+        description: 'Limite de 10 hábitos atingido. Quando um de seus hábitos tiver a recorrência finalizada, você poderá criar um novo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check XP limit
+    if (!isXPAvailable(selectedXPReward, habits)) {
+      toast({
+        title: 'Limite de XP atingido',
+        description: `Você já atingiu o limite de hábitos com ${selectedXPReward} XP.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     addHabit({
       name: habitName.trim(),
       emoji: habitEmoji || undefined,
-      xpReward: parentGoal.categoryXP || 20,
+      xpReward: selectedXPReward,
       goalId: parentGoal.id,
       weekDays: isOneTimeHabit ? undefined : selectedWeekDays,
       isOneTime: isOneTimeHabit,
@@ -289,6 +316,61 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             )}
           </div>
 
+          {/* XP Reward Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">XP por conclusão</span>
+            </div>
+            
+            <div className="grid grid-cols-6 gap-1">
+              {XP_OPTIONS.map((xp) => {
+                const limit = XP_LIMITS[xp];
+                const currentCount = xpCounts[xp] || 0;
+                const isAtLimit = limit !== undefined && currentCount >= limit;
+                const isSelected = selectedXPReward === xp;
+                
+                return (
+                  <div key={xp} className="flex flex-col items-center">
+                    <button
+                      type="button"
+                      onClick={() => !isAtLimit && setSelectedXPReward(xp)}
+                      disabled={isAtLimit}
+                      className={cn(
+                        'w-full py-2 rounded-lg text-xs font-medium transition-all',
+                        isAtLimit
+                          ? 'bg-destructive/20 text-destructive border border-destructive/30 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
+                      )}
+                    >
+                      {xp}
+                    </button>
+                    {limit !== undefined && (
+                      <span className={cn(
+                        'text-[9px] mt-0.5',
+                        isAtLimit ? 'text-destructive' : 'text-muted-foreground'
+                      )}>
+                        {isAtLimit ? 'Limite' : `${currentCount}/${limit}`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Habit limit warning */}
+          {!canAddNewHabit && (
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-xl border border-destructive/30">
+              <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+              <p className="text-xs text-destructive">
+                Limite de 10 hábitos atingido. Quando um de seus hábitos tiver a recorrência finalizada, você poderá criar um novo.
+              </p>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 pt-2">
             <button
@@ -299,7 +381,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             </button>
             <button
               onClick={handleCreateHabit}
-              disabled={!habitName.trim()}
+              disabled={!habitName.trim() || !canAddNewHabit || !isXPAvailable(selectedXPReward, habits)}
               className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Criar Hábito

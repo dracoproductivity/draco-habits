@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers, Sparkles, AlertCircle } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, 
 import { ptBR } from 'date-fns/locale';
 import { isHabitScheduledForDate, calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
+import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -261,12 +262,38 @@ const generateYearOptions = () => {
   ];
 };
 
+const generateSemesterOptions = (filterYear?: number) => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentSemester = now.getMonth() < 6 ? 1 : 2;
+  
+  const options: { value: string; label: string }[] = [];
+  const semesterLabels = ['Jan-Jun', 'Jul-Dez'];
+  
+  const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
+  
+  yearsToGenerate.forEach(year => {
+    const startS = year === currentYear ? currentSemester : 1;
+    
+    for (let s = startS; s <= 2; s++) {
+      options.push({ 
+        value: `${s}º Sem - ${year}`, 
+        label: `${s}º Sem - ${year} (${semesterLabels[s - 1]})` 
+      });
+    }
+  });
+  
+  return options;
+};
+
 const getPeriodOptions = (type: GoalType, filterYear?: number, filterQuarter?: number, filterMonth?: number) => {
   switch (type) {
     case 'weekly': return generateWeekOptions(filterYear, filterMonth);
     case 'monthly': return generateMonthOptions(filterYear, filterQuarter);
     case 'quarterly': return generateQuarterOptions(filterYear);
+    case 'semestral': return generateSemesterOptions(filterYear);
     case 'yearly': return generateYearOptions();
+    default: return [];
   }
 };
 
@@ -398,6 +425,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [showAllHabitsModal, setShowAllHabitsModal] = useState(false);
+  const [selectedXPReward, setSelectedXPReward] = useState<number>(20);
   
   // Multi-select periods for hierarchical creation
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
@@ -405,8 +433,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     semestral: { name: '', periods: [] },
     quarterly: { name: '', periods: [] },
     monthly: { name: '', periods: [] },
-    weekly: { name: '', periods: [] },
+    weekly: { name: '', periods: [] }, // Keep for backward compatibility but not used in creation
   });
+  
+  // Habit limits check
+  const totalActiveHabits = getTotalActiveHabits(habits);
+  const xpCounts = getActiveHabitCountsByXP(habits);
+  const canAddNewHabit = canCreateHabit(habits);
   
   const [viewDate, setViewDate] = useState(new Date());
   const viewDateStr = viewDate.toISOString().split('T')[0];
@@ -473,10 +506,30 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       return;
     }
 
+    // Check habit limit
+    if (!canAddNewHabit) {
+      toast({
+        title: 'Limite atingido',
+        description: 'Limite de 10 hábitos atingido. Quando um de seus hábitos tiver a recorrência finalizada, você poderá criar um novo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check XP limit
+    if (!isXPAvailable(selectedXPReward, habits)) {
+      toast({
+        title: 'Limite de XP atingido',
+        description: `Você já atingiu o limite de hábitos com ${selectedXPReward} XP.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     addHabit({
       name: newHabitName.trim(),
       emoji: newHabitEmoji || undefined,
-      xpReward: 20,
+      xpReward: selectedXPReward,
       goalId: selectedGoalId || undefined,
       weekDays: isOneTimeHabit ? undefined : selectedWeekDays,
       isOneTime: isOneTimeHabit,
@@ -492,6 +545,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     setRepeatFrequency(1);
     setHasMicroGoals(false);
     setMicroGoalsCount(4);
+    setSelectedXPReward(20);
     setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
@@ -540,13 +594,31 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   // Hierarchical goal creation helpers
   const getFilteredOptions = (type: GoalType) => {
     const yearlyPeriods = goalCreationData.yearly.periods;
+    const semestralPeriods = goalCreationData.semestral.periods;
     const quarterlyPeriods = goalCreationData.quarterly.periods;
-    const monthlyPeriods = goalCreationData.monthly.periods;
     
     switch (type) {
       case 'yearly':
         return getPeriodOptions('yearly');
+      case 'semestral': {
+        if (yearlyPeriods.length === 1) {
+          return generateSemesterOptions(parseInt(yearlyPeriods[0]));
+        }
+        return generateSemesterOptions();
+      }
       case 'quarterly': {
+        if (semestralPeriods.length === 1) {
+          const match = semestralPeriods[0].match(/(\d+)º Sem - (\d+)/);
+          if (match) {
+            const semester = parseInt(match[1]);
+            const year = parseInt(match[2]);
+            // Filter quarters based on semester
+            const quarters = semester === 1 ? [1, 2] : [3, 4];
+            return getPeriodOptions('quarterly', year).filter(opt => 
+              quarters.some(q => opt.value.includes(`${q}º Tri`))
+            );
+          }
+        }
         if (yearlyPeriods.length === 1) {
           return getPeriodOptions('quarterly', parseInt(yearlyPeriods[0]));
         }
@@ -564,19 +636,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
         }
         return getPeriodOptions('monthly');
       }
-      case 'weekly': {
-        if (monthlyPeriods.length === 1) {
-          const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-          const parts = monthlyPeriods[0].split(' ');
-          const monthIndex = months.indexOf(parts[0]);
-          const year = parseInt(parts[1]);
-          if (monthIndex !== -1) {
-            return getPeriodOptions('weekly', year, undefined, monthIndex);
-          }
-        }
-        return getPeriodOptions('weekly');
-      }
+      default:
+        return [];
     }
   };
 
@@ -651,8 +712,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       }
     };
 
-    // Create all goals in order: yearly -> quarterly -> monthly -> weekly
-    const steps: GoalType[] = ['yearly', 'quarterly', 'monthly', 'weekly'];
+    // Create all goals in order: yearly -> semestral -> quarterly -> monthly
+    const steps: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     let lastCreatedGoalId: string | null = null;
     
     steps.forEach((step) => {
@@ -701,13 +762,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     const idx = sequence.indexOf(current);
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
 
   const getPrevStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     const idx = sequence.indexOf(current);
     return idx > 0 ? sequence[idx - 1] : null;
   };
@@ -978,9 +1039,65 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                       )}
                     </div>
 
+                    {/* XP Reward Selection */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">XP por conclusão</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-6 gap-1">
+                        {XP_OPTIONS.map((xp) => {
+                          const limit = XP_LIMITS[xp];
+                          const currentCount = xpCounts[xp] || 0;
+                          const isAtLimit = limit !== undefined && currentCount >= limit;
+                          const isSelected = selectedXPReward === xp;
+                          
+                          return (
+                            <div key={xp} className="flex flex-col items-center">
+                              <button
+                                type="button"
+                                onClick={() => !isAtLimit && setSelectedXPReward(xp)}
+                                disabled={isAtLimit}
+                                className={cn(
+                                  'w-full py-2 rounded-lg text-xs font-medium transition-all',
+                                  isAtLimit
+                                    ? 'bg-destructive/20 text-destructive border border-destructive/30 cursor-not-allowed'
+                                    : isSelected
+                                      ? 'bg-primary text-primary-foreground'
+                                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
+                                )}
+                              >
+                                {xp}
+                              </button>
+                              {limit !== undefined && (
+                                <span className={cn(
+                                  'text-[9px] mt-0.5',
+                                  isAtLimit ? 'text-destructive' : 'text-muted-foreground'
+                                )}>
+                                  {isAtLimit ? 'Limite' : `${currentCount}/${limit}`}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Habit limit warning */}
+                    {!canAddNewHabit && (
+                      <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-xl border border-destructive/30">
+                        <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0" />
+                        <p className="text-xs text-destructive">
+                          Limite de 10 hábitos atingido. Quando um de seus hábitos tiver a recorrência finalizada, você poderá criar um novo.
+                        </p>
+                      </div>
+                    )}
+
                     <button
                       onClick={handleAddHabit}
-                      className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                      disabled={!canAddNewHabit || !isXPAvailable(selectedXPReward, habits)}
+                      className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Adicionar hábito
                     </button>
@@ -1230,114 +1347,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                                 ✓ Selecionar todos
                               </button>
 
-                              {/* Quick select options for weeks */}
-                              {goalCreationStep === 'weekly' && (
-                                <div className="space-y-1 mb-2 p-2 rounded-xl bg-secondary/10 border border-secondary/30">
-                                  <p className="text-xs font-medium text-secondary-foreground mb-1">Seleção rápida:</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {/* All weeks of the year */}
-                                    {generateYearOptions().map(year => (
-                                      <button
-                                        key={`year-${year.value}`}
-                                        onClick={() => {
-                                          const yearWeeks = getFilteredOptions('weekly').filter(o => o.value.includes(year.value)).map(o => o.value);
-                                          const allSelected = yearWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                          setGoalCreationData(prev => ({
-                                            ...prev,
-                                            weekly: { 
-                                              ...prev.weekly, 
-                                              periods: allSelected 
-                                                ? prev.weekly.periods.filter(p => !yearWeeks.includes(p))
-                                                : [...new Set([...prev.weekly.periods, ...yearWeeks])]
-                                            }
-                                          }));
-                                        }}
-                                        className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                                      >
-                                        Ano {year.value}
-                                      </button>
-                                    ))}
-                                    {/* 1st and 2nd semester */}
-                                    {generateYearOptions().map(year => (
-                                      <React.Fragment key={`sem-${year.value}`}>
-                                        <button
-                                          onClick={() => {
-                                            const s1Weeks = getFilteredOptions('weekly').filter(o => {
-                                              const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                              if (!match) return false;
-                                              return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) <= 26;
-                                            }).map(o => o.value);
-                                            const allSelected = s1Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                            setGoalCreationData(prev => ({
-                                              ...prev,
-                                              weekly: { 
-                                                ...prev.weekly, 
-                                                periods: allSelected 
-                                                  ? prev.weekly.periods.filter(p => !s1Weeks.includes(p))
-                                                  : [...new Set([...prev.weekly.periods, ...s1Weeks])]
-                                              }
-                                            }));
-                                          }}
-                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                                        >
-                                          1º Sem {year.value}
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            const s2Weeks = getFilteredOptions('weekly').filter(o => {
-                                              const match = o.value.match(/Semana (\d+) - (\d+)/);
-                                              if (!match) return false;
-                                              return parseInt(match[2]) === parseInt(year.value) && parseInt(match[1]) > 26;
-                                            }).map(o => o.value);
-                                            const allSelected = s2Weeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                            setGoalCreationData(prev => ({
-                                              ...prev,
-                                              weekly: { 
-                                                ...prev.weekly, 
-                                                periods: allSelected 
-                                                  ? prev.weekly.periods.filter(p => !s2Weeks.includes(p))
-                                                  : [...new Set([...prev.weekly.periods, ...s2Weeks])]
-                                              }
-                                            }));
-                                          }}
-                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-secondary/20 hover:bg-secondary/30 text-secondary-foreground transition-all"
-                                        >
-                                          2º Sem {year.value}
-                                        </button>
-                                      </React.Fragment>
-                                    ))}
-                                  </div>
-                                  {/* Months */}
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'].map((monthLabel, monthIndex) => {
-                                      const monthNames = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-                                      return (
-                                        <button
-                                          key={monthLabel}
-                                          onClick={() => {
-                                            const monthWeeks = getFilteredOptions('weekly').filter(o => {
-                                              return o.label.toLowerCase().includes(monthNames[monthIndex]);
-                                            }).map(o => o.value);
-                                            const allSelected = monthWeeks.length > 0 && monthWeeks.every(v => goalCreationData.weekly.periods.includes(v));
-                                            setGoalCreationData(prev => ({
-                                              ...prev,
-                                              weekly: { 
-                                                ...prev.weekly, 
-                                                periods: allSelected 
-                                                  ? prev.weekly.periods.filter(p => !monthWeeks.includes(p))
-                                                  : [...new Set([...prev.weekly.periods, ...monthWeeks])]
-                                              }
-                                            }));
-                                          }}
-                                          className="px-2 py-1 rounded-lg text-xs font-medium bg-muted/50 hover:bg-muted/70 text-foreground transition-all"
-                                        >
-                                          {monthLabel}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
+                              {/* Removed weekly quick select options - weekly goals no longer supported */}
 
                               <div className="max-h-40 overflow-y-auto space-y-1 bg-muted/20 rounded-xl p-2">
                                 {getFilteredOptions(goalCreationStep).map((option) => (
