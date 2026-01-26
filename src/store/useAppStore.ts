@@ -473,6 +473,14 @@ export const useAppStore = create<AppStore>()(
       },
 
       addGoal: (goal) => {
+        const { goals } = get();
+        
+        // Check goal limit
+        if (goals.length >= 50) {
+          console.warn('Goal limit reached (50 goals)');
+          // Still create the goal but log warning - validation should be done in UI
+        }
+        
         const newGoal: Goal = {
           ...goal,
           id: generateUUID(),
