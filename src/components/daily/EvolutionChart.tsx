@@ -91,16 +91,19 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   };
   
   const getWeekDays = useMemo(() => {
-    const days: { name: string; progress: number }[] = [];
+    const days: { name: string; progress: number | null; isFuture: boolean }[] = [];
     const monday = getWeekMonday();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
+      const isFuture = d > todayStart;
       days.push({
         name: dayNames[i],
-        progress: calculateDailyProgress(d),
+        progress: isFuture ? null : calculateDailyProgress(d),
+        isFuture,
       });
     }
     
@@ -108,14 +111,17 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   }, [weekOffset, habits, goals, habitChecks]);
 
   const getMonthDays = useMemo(() => {
-    const days: { name: string; progress: number }[] = [];
+    const days: { name: string; progress: number | null; isFuture: boolean }[] = [];
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(selectedYear, selectedMonth, i);
+      const isFuture = d > todayStart;
       days.push({
         name: i.toString(),
-        progress: calculateDailyProgress(d),
+        progress: isFuture ? null : calculateDailyProgress(d),
+        isFuture,
       });
     }
     
@@ -123,12 +129,16 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   }, [selectedMonth, selectedYear, habits, goals, habitChecks]);
 
   const getYearMonths = useMemo(() => {
-    const months: { name: string; progress: number }[] = [];
+    const months: { name: string; progress: number | null; isFuture: boolean }[] = [];
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
     
     for (let i = 0; i < 12; i++) {
+      const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth);
       months.push({
         name: SHORT_MONTHS[i],
-        progress: calculateMonthlyProgress(i, selectedYear),
+        progress: isFuture ? null : calculateMonthlyProgress(i, selectedYear),
+        isFuture,
       });
     }
     
@@ -185,8 +195,9 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between mb-2">
         <div>
-          <h3 className="font-semibold text-foreground">Evolução</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="font-semibold text-foreground">Constância</h3>
+          <p className="text-xs text-muted-foreground">Hábitos concluídos por dia</p>
+          <p className="text-[10px] text-muted-foreground/70 mt-0.5">
             {viewMode === 'week' 
               ? getWeekDateRange()
               : viewMode === 'month'

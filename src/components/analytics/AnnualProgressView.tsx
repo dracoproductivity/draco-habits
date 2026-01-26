@@ -5,10 +5,18 @@ import { useAppStore } from '@/store/useAppStore';
 import { PeriodCard } from '@/components/year/PeriodCard';
 import { PeriodModal } from '@/components/year/PeriodModal';
 import { HierarchicalYearProgress } from '@/components/analytics/HierarchicalYearProgress';
-import { GoalType } from '@/types';
+import { GoalType, ProgressDisplayMode } from '@/types';
 
-export const AnnualProgressView = () => {
-  const { goals, habits } = useAppStore();
+interface AnnualProgressViewProps {
+  displayMode?: ProgressDisplayMode;
+}
+
+export const AnnualProgressView = ({ displayMode }: AnnualProgressViewProps) => {
+  const { goals, habits, settings } = useAppStore();
+  const isDesktopScreen = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  
+  // Use passed displayMode prop if available, otherwise fall back to settings
+  const effectiveDisplayMode = displayMode || settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode;
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
   
   const currentYear = new Date().getFullYear();
@@ -84,13 +92,14 @@ export const AnnualProgressView = () => {
       
       {/* Week and Month cards side by side - only for current year */}
       {!isViewingNextYear && (
-        <div className={`grid ${isDesktop ? 'grid-cols-2' : 'grid-cols-2'} gap-3 mb-4`}>
+        <div className={`grid ${isDesktopScreen ? 'grid-cols-2' : 'grid-cols-2'} gap-3 mb-4`}>
           <PeriodCard
             title="Semana"
             subtitle="Semana atual"
             type="weekly"
             period={`Semana ${weekNumber} - ${currentYear}`}
             displayYear={currentYear}
+            displayMode={effectiveDisplayMode}
             onClick={() => openPeriodModal('Semana', 'weekly', `Semana ${weekNumber} - ${currentYear}`, 'Semana atual')}
           />
           
@@ -100,6 +109,7 @@ export const AnnualProgressView = () => {
             type="monthly"
             period={`${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`}
             displayYear={currentYear}
+            displayMode={effectiveDisplayMode}
             onClick={() => openPeriodModal(month.charAt(0).toUpperCase() + month.slice(1), 'monthly', `${month.charAt(0).toUpperCase() + month.slice(1)} ${currentYear}`, 'Mês atual')}
           />
         </div>
@@ -108,6 +118,7 @@ export const AnnualProgressView = () => {
       {/* Hierarchical Year Progress - Nested structure */}
       <HierarchicalYearProgress 
         displayYear={displayYear}
+        displayMode={effectiveDisplayMode}
         onPeriodClick={(title, type, period, subtitle, quarterMonths) => 
           openPeriodModal(title, type, period, subtitle, quarterMonths)
         }

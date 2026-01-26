@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { DailyHeader } from '@/components/daily/DailyHeader';
 import { HabitList } from '@/components/daily/HabitList';
@@ -5,11 +6,33 @@ import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
+import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
+import { ProgressDisplayMode } from '@/types';
 
 export const DailyPage = () => {
   const { isDesktop, isTablet } = useResponsive();
+  const { settings, updateSettings } = useAppStore();
+  
+  // Per-page progress display mode
+  const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
+    settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode
+  );
+  
+  const toggleDisplayMode = () => {
+    const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
+    setLocalDisplayMode(newMode);
+    updateSettings({
+      pageProgressDisplayModes: {
+        ...settings.pageProgressDisplayModes,
+        daily: newMode,
+        goals: settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode,
+        analytics: settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode,
+      }
+    });
+  };
 
   return (
     <motion.div
@@ -28,16 +51,16 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: 3-column layout - Habits | Timeline | Calendar - Equal heights */}
+            {/* Desktop: 3-column layout - Charts | Habits | Calendar */}
             <div className="grid grid-cols-3 gap-6" style={{ minHeight: '450px' }}>
-              {/* Left column - Habits */}
-              <div className="flex flex-col h-full">
-                <HabitList showProgressIndicators={false} className="h-full" />
-              </div>
-              
-              {/* Middle column - Timeline */}
+              {/* Left column - Charts (Evolution + Progress) */}
               <div className="flex flex-col h-full">
                 <ProgressTimeline className="h-full" />
+              </div>
+              
+              {/* Middle column - Habits (centered title) */}
+              <div className="flex flex-col h-full">
+                <HabitList showProgressIndicators={false} centerTitle className="h-full" />
               </div>
               
               {/* Right column - Calendar */}
@@ -46,9 +69,12 @@ export const DailyPage = () => {
               </div>
             </div>
             
-            {/* Progress indicators below */}
-            <div className="mt-6">
-              <PeriodProgressIndicators />
+            {/* Progress indicators below with toggle */}
+            <div className="mt-6 relative">
+              <div className="absolute right-0 top-0">
+                <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+              </div>
+              <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
             
             {/* Radar chart below progress indicators */}
@@ -64,8 +90,13 @@ export const DailyPage = () => {
           <div className="space-y-6">
             <HabitList showProgressIndicators={false} centerTitle />
             
-            {/* Progress indicators: day, week, month, quarter, year */}
-            <PeriodProgressIndicators />
+            {/* Progress indicators with toggle */}
+            <div className="relative">
+              <div className="absolute right-0 top-0">
+                <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+              </div>
+              <PeriodProgressIndicators displayMode={localDisplayMode} />
+            </div>
             
             {/* Radar chart */}
             <div className="flex justify-center">

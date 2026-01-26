@@ -21,19 +21,39 @@ import { EvolutionChart } from '@/components/daily/EvolutionChart';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { HealthLogModal } from '@/components/analytics/HealthLogModal';
+import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { cn } from '@/lib/utils';
 import { useResponsive } from '@/hooks/useResponsive';
+import { ProgressDisplayMode } from '@/types';
 
 type TimeRange = 'weekly' | 'monthly';
 type AnalyticsView = 'progress' | 'charts';
 
 export const AnalyticsPage = () => {
-  const { settings, dailyLogs, habits, goals, habitChecks } = useAppStore();
+  const { settings, updateSettings, dailyLogs, habits, goals, habitChecks } = useAppStore();
   const { isDesktop } = useResponsive();
 
   const [analyticsView, setAnalyticsView] = useState<AnalyticsView>('progress');
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
+  
+  // Per-page progress display mode
+  const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
+    settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode
+  );
+  
+  const toggleDisplayMode = () => {
+    const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
+    setLocalDisplayMode(newMode);
+    updateSettings({
+      pageProgressDisplayModes: {
+        ...settings.pageProgressDisplayModes,
+        daily: settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode,
+        goals: settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode,
+        analytics: newMode,
+      }
+    });
+  };
   
   // Health log modal state
   const [showSleepModal, setShowSleepModal] = useState(false);
@@ -118,8 +138,8 @@ export const AnalyticsPage = () => {
       <UniversalHeader />
 
       <div className="p-4">
-        {/* View Toggle */}
-        <div className="flex gap-2 mb-6">
+        {/* View Toggle with Progress Display Toggle */}
+        <div className="flex items-center gap-2 mb-6">
           <button
             onClick={() => setAnalyticsView('progress')}
             className={cn(
@@ -144,10 +164,11 @@ export const AnalyticsPage = () => {
             <BarChart3 className="w-4 h-4" />
             Gráficos
           </button>
+          <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
         </div>
 
         {analyticsView === 'progress' ? (
-          <AnnualProgressView />
+          <AnnualProgressView displayMode={localDisplayMode} />
         ) : (
           <>
             {/* Sleep & Phone Charts - Side by Side */}

@@ -8,7 +8,8 @@ import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
 import { HabitCreationForm } from '@/components/goals/HabitCreationForm';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
-import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit } from '@/types';
+import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
+import { Goal, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, Habit, ProgressDisplayMode } from '@/types';
 import { cn } from '@/lib/utils';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -209,7 +210,25 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, addGoal, updateGoal, removeGoal, settings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, updateSettings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
+  
+  // Per-page progress display mode
+  const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
+    settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode
+  );
+  
+  const toggleDisplayMode = () => {
+    const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
+    setLocalDisplayMode(newMode);
+    updateSettings({
+      pageProgressDisplayModes: {
+        ...settings.pageProgressDisplayModes,
+        daily: settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode,
+        goals: newMode,
+        analytics: settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode,
+      }
+    });
+  };
   
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
@@ -634,9 +653,12 @@ export const GoalsPage = () => {
       <UniversalHeader />
 
       <div className="p-4">
-        <header className="mb-4">
-          <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
-          <p className="text-muted-foreground">Gerencie seus objetivos</p>
+        <header className="mb-4 flex items-start justify-between">
+          <div>
+            <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Objetivos</h1>
+            <p className="text-muted-foreground">Gerencie seus objetivos</p>
+          </div>
+          <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
         </header>
 
       {/* Filters */}

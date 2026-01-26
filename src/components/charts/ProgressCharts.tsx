@@ -51,6 +51,8 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
   const getProgressData = useMemo(() => {
     const baseDate = referenceDate;
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     let days;
     
     if (progressTimeRange === 'week') {
@@ -71,6 +73,16 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
       }
       days = months;
     }
+
+    // Helper to check if a date is in the future
+    const isFutureDate = (d: Date) => {
+      if (progressTimeRange === 'year') {
+        // For year view, check if month is in the future
+        return d.getFullYear() > today.getFullYear() || 
+          (d.getFullYear() === today.getFullYear() && d.getMonth() > today.getMonth());
+      }
+      return d > todayStart;
+    };
 
     if (progressFilter === 'habits') {
       // For habits: Show total completion percentage at each day
@@ -98,12 +110,14 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
       return days.map((day) => {
         const isBeforeAccount = day < accountStartDate;
+        const isFuture = isFutureDate(day);
         
-        if (isBeforeAccount) {
+        if (isBeforeAccount || isFuture) {
           return { 
             date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'), 
             progress: null,
-            isBeforeAccount: true 
+            isBeforeAccount,
+            isFuture
           };
         }
 
@@ -192,12 +206,14 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
 
       return days.map((day) => {
         const isBeforeAccount = day < accountStartDate;
+        const isFuture = isFutureDate(day);
         
-        if (isBeforeAccount) {
+        if (isBeforeAccount || isFuture) {
           return {
             date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'),
             progress: null,
-            isBeforeAccount: true,
+            isBeforeAccount,
+            isFuture,
           };
         }
 
