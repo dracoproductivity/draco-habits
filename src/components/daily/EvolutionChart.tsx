@@ -51,7 +51,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const isCurrentYear = selectedYear === today.getFullYear();
   
   // Calculate daily progress for a specific date
-  const calculateDailyProgress = (date: Date): number | null => {
+  const calculateDailyProgress = (date: Date): number => {
     const dateStr = format(date, 'yyyy-MM-dd');
     
     // Get habits that are scheduled for this date
@@ -60,7 +60,8 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       return isHabitScheduledForDate(habit, date, linkedGoal);
     });
     
-    if (scheduledHabits.length === 0) return null;
+    // Return 0 if no habits scheduled (this allows the line to be drawn)
+    if (scheduledHabits.length === 0) return 0;
     
     // Count completed habits
     const completedCount = habitChecks.filter(
@@ -100,6 +101,8 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const isFuture = d > todayStart;
+      // For past/current days, always show the progress (even if 0)
+      // For future days, show null so the chart doesn't render them
       days.push({
         name: dayNames[i],
         progress: isFuture ? null : calculateDailyProgress(d),
