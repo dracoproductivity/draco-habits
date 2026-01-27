@@ -114,6 +114,7 @@ export type Database = {
         Row: {
           category: string | null
           category_xp: number | null
+          completion_status: string | null
           created_at: string
           custom_category_id: string | null
           emoji: string | null
@@ -129,6 +130,7 @@ export type Database = {
         Insert: {
           category?: string | null
           category_xp?: number | null
+          completion_status?: string | null
           created_at?: string
           custom_category_id?: string | null
           emoji?: string | null
@@ -144,6 +146,7 @@ export type Database = {
         Update: {
           category?: string | null
           category_xp?: number | null
+          completion_status?: string | null
           created_at?: string
           custom_category_id?: string | null
           emoji?: string | null
@@ -213,6 +216,7 @@ export type Database = {
           created_at: string
           description: string | null
           emoji: string | null
+          end_date: string | null
           frequency_weeks: number
           goal_id: string | null
           id: string
@@ -224,6 +228,7 @@ export type Database = {
           repeat_weekly: boolean
           selected_days: number[] | null
           specific_weeks_of_month: number[] | null
+          start_date: string | null
           updated_at: string
           user_id: string
           xp_reward: number | null
@@ -232,6 +237,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           emoji?: string | null
+          end_date?: string | null
           frequency_weeks?: number
           goal_id?: string | null
           id?: string
@@ -243,6 +249,7 @@ export type Database = {
           repeat_weekly?: boolean
           selected_days?: number[] | null
           specific_weeks_of_month?: number[] | null
+          start_date?: string | null
           updated_at?: string
           user_id: string
           xp_reward?: number | null
@@ -251,6 +258,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           emoji?: string | null
+          end_date?: string | null
           frequency_weeks?: number
           goal_id?: string | null
           id?: string
@@ -262,6 +270,7 @@ export type Database = {
           repeat_weekly?: boolean
           selected_days?: number[] | null
           specific_weeks_of_month?: number[] | null
+          start_date?: string | null
           updated_at?: string
           user_id?: string
           xp_reward?: number | null

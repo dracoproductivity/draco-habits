@@ -1385,6 +1385,39 @@ export const GoalsPage = () => {
                           <span className="text-2xl font-bold text-foreground">{total}</span>
                           <span className="text-sm text-muted-foreground ml-2">hábitos concluídos</span>
                         </div>
+                        
+                        {/* Completion Status Display */}
+                        {selectedGoal.completionStatus && (
+                          <div className={cn(
+                            'mt-3 p-4 rounded-xl border-2 text-center',
+                            selectedGoal.completionStatus === 'completed'
+                              ? 'bg-success/10 border-success/30'
+                              : 'bg-destructive/10 border-destructive/30'
+                          )}>
+                            <div className={cn(
+                              'w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center',
+                              selectedGoal.completionStatus === 'completed'
+                                ? 'bg-success/20'
+                                : 'bg-destructive/20'
+                            )}>
+                              {selectedGoal.completionStatus === 'completed' ? (
+                                <Check className="w-6 h-6 text-success" />
+                              ) : (
+                                <X className="w-6 h-6 text-destructive" />
+                              )}
+                            </div>
+                            <p className={cn(
+                              'text-sm font-medium',
+                              selectedGoal.completionStatus === 'completed'
+                                ? 'text-success'
+                                : 'text-destructive'
+                            )}>
+                              {selectedGoal.completionStatus === 'completed'
+                                ? 'Seu esforço foi recompensado, parabéns pela sua dedicação, você conseguiu alcançar seu objetivo!'
+                                : 'Não foi dessa vez, mas você está evoluindo, e isso é o que importa! Parabéns pelo seu esforço!'}
+                            </p>
+                          </div>
+                        )}
                       </>
                     );
                   })()}

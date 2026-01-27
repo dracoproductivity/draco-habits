@@ -23,6 +23,8 @@ export interface Habit {
   order?: number; // For custom ordering in the list
   hasMicroGoals?: boolean; // If true, habit is divided into micro goals
   microGoalsCount?: number; // Number of micro goals (1-10)
+  startDate?: string; // ISO date string - start of recurrence period
+  endDate?: string; // ISO date string - end of recurrence period
 }
 
 export interface HabitCheck {
@@ -33,6 +35,8 @@ export interface HabitCheck {
 }
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'semestral' | 'yearly';
+
+export type GoalCompletionStatus = 'completed' | 'failed' | null;
 
 // Goal types that can be created (excludes weekly)
 export type CreatableGoalType = 'monthly' | 'quarterly' | 'semestral' | 'yearly';
@@ -66,6 +70,7 @@ export interface Goal {
   customCategoryId?: string;
   categoryXP?: number; // XP reward for habits linked to this goal (0, 10, 20, 30, 40, 50)
   createdAt: string;
+  completionStatus?: GoalCompletionStatus; // Status when goal period ends
 }
 
 export interface DracoState {
