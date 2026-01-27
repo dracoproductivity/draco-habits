@@ -7,6 +7,7 @@ import {
   getPeriodBoundaries
 } from '@/utils/habitInstanceCalculator';
 import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
+import { getWeek } from 'date-fns';
 
 export interface PeriodCardProps {
   title: string;
@@ -79,9 +80,8 @@ const getPeriodStatus = (type: GoalType, period: string, displayYear?: number): 
       if (periodYear > currentYear) return 'not_started';
       if (periodYear < currentYear) return 'past';
       
-      const currentWeek = Math.ceil(
-        (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
-      );
+      // Use getWeek with weekStartsOn: 1 (Monday) to match getPeriodIdentifier
+      const currentWeek = getWeek(now, { weekStartsOn: 1 });
       if (week < currentWeek) return 'past';
       if (week === currentWeek) return 'started';
       return 'not_started';
