@@ -121,38 +121,8 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
           };
         }
 
-        // For week/month views, calculate daily completion rate (same as EvolutionChart/Constância)
-        if (progressTimeRange === 'week' || progressTimeRange === 'month') {
-          const dateStr = format(day, 'yyyy-MM-dd');
-          
-          const scheduledHabits = filteredHabits.filter(habit => {
-            const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-            return isHabitScheduledForDate(habit, day, linkedGoal);
-          });
-          
-          if (scheduledHabits.length === 0) {
-            return {
-              date: format(day, 'dd/MM'),
-              progress: 0,
-              isBeforeAccount: false,
-            };
-          }
-          
-          const completedCount = habitChecks.filter(
-            hc => hc.date === dateStr && hc.completed && scheduledHabits.some(h => h.id === hc.habitId)
-          ).length;
-          
-          const progress = Math.round((completedCount / scheduledHabits.length) * 100);
-          
-          return {
-            date: format(day, 'dd/MM'),
-            progress,
-            isBeforeAccount: false,
-          };
-        }
-
-        // For year view, calculate cumulative progress
-        const endDate = endOfMonth(day);
+        // For year view, calculate up to end of month
+        const endDate = progressTimeRange === 'year' ? endOfMonth(day) : day;
 
         // For each day, calculate how many habits were completed UP TO this day
         // divided by the TOTAL habits for the entire period
@@ -187,16 +157,18 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
             }
           });
 
+          // Calculate % as completed / total for entire habit period
           const habitProgress = (completedX / totalN) * 100;
-          totalHabitProgress += habitProgress;
           totalHabitProgress += habitProgress;
           habitsWithInstances++;
         });
 
+        // If viewing all habits, show the average % across all habits
+        // If viewing single habit, show that habit's %
         const progress = habitsWithInstances > 0 ? totalHabitProgress / habitsWithInstances : 0;
 
         return {
-          date: format(day, 'MMM'),
+          date: progressTimeRange === 'year' ? format(day, 'MMM') : format(day, 'dd/MM'),
           progress: Math.round(progress * 10) / 10,
           isBeforeAccount: false,
         };
