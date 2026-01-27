@@ -100,9 +100,12 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       const isFuture = d > todayStart;
+      // For past/current days, calculate progress - treat 0 as a valid value (different from null)
+      const dailyProgress = isFuture ? null : calculateDailyProgress(d);
       days.push({
         name: dayNames[i],
-        progress: isFuture ? null : calculateDailyProgress(d),
+        // If no habits scheduled (null), use 0 so line still renders
+        progress: dailyProgress === null ? (isFuture ? null : 0) : dailyProgress,
         isFuture,
       });
     }

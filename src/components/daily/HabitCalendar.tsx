@@ -5,7 +5,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { CalendarDayModal } from './CalendarDayModal';
 import { getHabitsForDate } from '@/utils/habitInstanceCalculator';
-import { format, parseISO } from 'date-fns';
 
 type CalendarView = 'week' | 'month';
 
@@ -28,7 +27,9 @@ export const HabitCalendar = ({ className }: HabitCalendarProps) => {
   const { habits, habitChecks, goals } = useAppStore();
 
   const getCompletionPercentage = (dateStr: string) => {
-    const dateObj = parseISO(dateStr);
+    // Parse date string as local timezone (not UTC) to avoid one-day shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
     const scheduledHabits = getHabitsForDate(dateObj, habits, goals);
     if (scheduledHabits.length === 0) return 0;
     const completedCount = habitChecks.filter(

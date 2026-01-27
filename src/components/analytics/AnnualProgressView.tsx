@@ -6,6 +6,7 @@ import { PeriodCard } from '@/components/year/PeriodCard';
 import { PeriodModal } from '@/components/year/PeriodModal';
 import { HierarchicalYearProgress } from '@/components/analytics/HierarchicalYearProgress';
 import { GoalType, ProgressDisplayMode } from '@/types';
+import { getWeek } from 'date-fns';
 
 interface AnnualProgressViewProps {
   displayMode?: ProgressDisplayMode;
@@ -33,9 +34,8 @@ export const AnnualProgressView = ({ displayMode }: AnnualProgressViewProps) => 
   
   const today = new Date();
   const month = today.toLocaleDateString('pt-BR', { month: 'long' });
-  const weekNumber = Math.ceil(
-    (today.getTime() - new Date(today.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
-  );
+  // Use getWeek with weekStartsOn: 1 (Monday) to match getPeriodIdentifier
+  const weekNumber = getWeek(today, { weekStartsOn: 1 });
   
   const isFirstTimeUser = goals.length === 0 && habits.length === 0;
   
