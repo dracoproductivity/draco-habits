@@ -18,7 +18,7 @@ export const DailyLogReminder = ({ onClick }: DailyLogReminderProps) => {
         <Moon className="w-4 h-4 text-indigo-400" />
       </div>
       <span className="text-sm text-foreground text-left">
-        Lembre-se de registrar quanto dormiu ontem?
+        Quando quiser registrar seu sono e tempo de celular, estou aqui!
       </span>
     </motion.button>
   );
