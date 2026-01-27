@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DailyHeader } from '@/components/daily/DailyHeader';
 import { HabitList } from '@/components/daily/HabitList';
@@ -7,14 +7,50 @@ import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
+import { GoalCompletionModal } from '@/components/modals/GoalCompletionModal';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
+import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
 import { cn } from '@/lib/utils';
-import { ProgressDisplayMode } from '@/types';
+import { ProgressDisplayMode, Goal } from '@/types';
 
 export const DailyPage = () => {
   const { isDesktop, isTablet } = useResponsive();
-  const { settings, updateSettings } = useAppStore();
+  const { settings, updateSettings, goals, habits, habitChecks, updateGoal } = useAppStore();
+  
+  // Goal completion modal state
+  const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
+  const [processedGoalIds, setProcessedGoalIds] = useState<Set<string>>(new Set());
+  
+  // Check for goals that need completion feedback
+  const goalsNeedingCompletion = useGoalCompletionCheck({
+    goals,
+    habits,
+    habitChecks,
+    currentDate: new Date(),
+  });
+  
+  // Show modal for goals that need completion (only if not already processed)
+  useEffect(() => {
+    const pendingGoal = goalsNeedingCompletion.find(
+      g => g.needsCompletion && !processedGoalIds.has(g.goalId)
+    );
+    
+    if (pendingGoal) {
+      const goal = goals.find(g => g.id === pendingGoal.goalId);
+      if (goal && !goal.completionStatus) {
+        setGoalToComplete(goal);
+      }
+    }
+  }, [goalsNeedingCompletion, goals, processedGoalIds]);
+  
+  const handleGoalCompletion = (status: 'completed' | 'failed') => {
+    if (goalToComplete) {
+      updateGoal(goalToComplete.id, { completionStatus: status });
+      setProcessedGoalIds(prev => new Set(prev).add(goalToComplete.id));
+      setGoalToComplete(null);
+    }
+  };
   
   // Per-page progress display mode
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
@@ -111,6 +147,19 @@ export const DailyPage = () => {
           </div>
         )}
       </div>
+      
+      {/* Goal Completion Modal */}
+      {goalToComplete && (
+        <GoalCompletionModal
+          isOpen={!!goalToComplete}
+          goal={goalToComplete}
+          onComplete={handleGoalCompletion}
+          onClose={() => {
+            setProcessedGoalIds(prev => new Set(prev).add(goalToComplete.id));
+            setGoalToComplete(null);
+          }}
+        />
+      )}
     </motion.div>
   );
 };

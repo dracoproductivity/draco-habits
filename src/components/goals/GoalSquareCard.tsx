@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Link2 } from 'lucide-react';
+import { Link2, Check, X } from 'lucide-react';
 import { Goal, DEFAULT_CATEGORIES } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -80,7 +80,7 @@ export const GoalSquareCard = ({ goal, index, onClick }: GoalSquareCardProps) =>
         )}
       </div>
       
-      {/* Bottom section - Progress and Habits */}
+      {/* Bottom section - Progress and Status */}
       <div className="space-y-1">
         {/* Progress bar */}
         <div className="flex items-center gap-1">
@@ -95,8 +95,30 @@ export const GoalSquareCard = ({ goal, index, onClick }: GoalSquareCardProps) =>
           <span className="text-[10px] font-bold text-primary">{formatPercentage(goal.progress)}</span>
         </div>
 
-        {/* Linked habits count */}
-        {linkedHabits.length > 0 && (
+        {/* Completion Status */}
+        {goal.completionStatus && (
+          <div className={cn(
+            'flex items-center gap-1 text-[9px] py-1 px-1.5 rounded-lg',
+            goal.completionStatus === 'completed' 
+              ? 'bg-success/20 text-success' 
+              : 'bg-destructive/20 text-destructive'
+          )}>
+            {goal.completionStatus === 'completed' ? (
+              <>
+                <Check className="w-3 h-3" />
+                <span className="truncate">Consegui!</span>
+              </>
+            ) : (
+              <>
+                <X className="w-3 h-3" />
+                <span className="truncate">Evoluindo...</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Linked habits count - only show if no completion status */}
+        {!goal.completionStatus && linkedHabits.length > 0 && (
           <div className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
             <Link2 className="w-2.5 h-2.5" />
             <span>{linkedHabits.length} hábito{linkedHabits.length !== 1 ? 's' : ''}</span>

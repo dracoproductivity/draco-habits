@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { Goal, XP_OPTIONS } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
+import { getPeriodBoundaries } from '@/utils/habitInstanceCalculator';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -37,6 +40,24 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [hasMicroGoals, setHasMicroGoals] = useState(false);
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
   const [selectedXPReward, setSelectedXPReward] = useState<number>(parentGoal.categoryXP || 20);
+  
+  // Date range state
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  // Calculate period boundaries based on parent goal
+  const periodBoundaries = useMemo(() => {
+    return getPeriodBoundaries(parentGoal.type, parentGoal.period);
+  }, [parentGoal.type, parentGoal.period]);
+
+  // Format date constraints
+  const minDate = periodBoundaries ? format(periodBoundaries.start, 'yyyy-MM-dd') : '';
+  const maxDate = periodBoundaries ? format(periodBoundaries.end, 'yyyy-MM-dd') : '';
+  
+  // Friendly date labels
+  const periodLabel = periodBoundaries 
+    ? `${format(periodBoundaries.start, 'd MMM yyyy', { locale: ptBR })} - ${format(periodBoundaries.end, 'd MMM yyyy', { locale: ptBR })}`
+    : '';
 
   // Habit limits check
   const totalActiveHabits = getTotalActiveHabits(habits);
@@ -56,6 +77,16 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       toast({
         title: 'Erro',
         description: 'Digite um nome para o hábito',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate date range for repeating habits
+    if (!isOneTimeHabit && (!startDate || !endDate)) {
+      toast({
+        title: 'Erro',
+        description: 'Selecione a data de início e término da recorrência',
         variant: 'destructive',
       });
       return;
@@ -93,6 +124,8 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       notificationTime: notificationEnabled ? notificationTime : undefined,
       hasMicroGoals,
       microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
+      startDate: isOneTimeHabit ? undefined : startDate,
+      endDate: isOneTimeHabit ? undefined : endDate,
     });
 
     toast({
@@ -226,6 +259,43 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                       {day.label}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Date Range for Recurrence */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Período da recorrência</span>
+                </div>
+                
+                <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                  📅 Período do objetivo: {periodLabel}
+                </p>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Início</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      min={minDate}
+                      max={endDate || maxDate}
+                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Término</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate || minDate}
+                      max={maxDate}
+                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
                 </div>
               </div>
             </>

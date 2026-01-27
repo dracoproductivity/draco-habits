@@ -58,6 +58,7 @@ interface GoalRow {
   category: string | null;
   category_xp: number | null;
   custom_category_id: string | null;
+  completion_status: string | null;
   created_at: string;
 }
 
@@ -77,6 +78,8 @@ interface HabitRow {
   xp_reward: number | null;
   notification_enabled: boolean;
   notification_time: string | null;
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
 }
 
@@ -231,6 +234,7 @@ export const useCloudSync = () => {
         category: g.category as Goal['category'],
         categoryXP: g.category_xp || undefined,
         customCategoryId: g.custom_category_id || undefined,
+        completionStatus: g.completion_status as Goal['completionStatus'],
         createdAt: g.created_at,
       }));
       
@@ -252,6 +256,8 @@ export const useCloudSync = () => {
         isOneTime: !h.repeat_weekly,
         repeatFrequency: h.frequency_weeks as Habit['repeatFrequency'],
         monthWeeks: h.specific_weeks_of_month || undefined,
+        startDate: h.start_date || undefined,
+        endDate: h.end_date || undefined,
         createdAt: h.created_at,
       }));
       
@@ -429,6 +435,7 @@ export const useCloudSync = () => {
         category: goal.category,
         category_xp: goal.categoryXP,
         custom_category_id: goal.customCategoryId && isValidUUID(goal.customCategoryId) ? goal.customCategoryId : null,
+        completion_status: goal.completionStatus,
       });
     
     if (error) {
@@ -490,6 +497,8 @@ export const useCloudSync = () => {
         xp_reward: habit.xpReward,
         notification_enabled: habit.notificationEnabled || false,
         notification_time: habit.notificationTime,
+        start_date: habit.startDate || null,
+        end_date: habit.endDate || null,
       });
     
     if (error) {
