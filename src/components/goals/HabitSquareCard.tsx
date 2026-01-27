@@ -13,10 +13,18 @@ interface HabitSquareCardProps {
   onClick?: () => void;
 }
 
+// Format date in local timezone to avoid UTC one-day shift
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps) => {
   const { settings, goals, habitChecks, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = formatLocalDate(new Date());
   const check = getHabitCheckForDate(habit.id, todayStr);
   const isCompleted = check?.completed ?? false;
 
