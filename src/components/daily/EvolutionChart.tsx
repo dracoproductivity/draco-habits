@@ -105,12 +105,13 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       
       // Compare as strings to avoid timezone issues
       const isFuture = dayStr > todayStr;
-      // For past/current days, calculate progress - treat 0 as a valid value (different from null)
-      const dailyProgress = isFuture ? null : calculateDailyProgress(d);
+      // Calculate progress for all days (past, current, and future)
+      // Future days will show 0% since no habits are completed yet
+      const dailyProgress = calculateDailyProgress(d);
       days.push({
         name: dayNames[i],
-        // If no habits scheduled (null), use 0 so line still renders
-        progress: dailyProgress === null ? (isFuture ? null : 0) : dailyProgress,
+        // Always show a value (0 if null) so line renders continuously
+        progress: dailyProgress === null ? 0 : dailyProgress,
         isFuture,
       });
     }
@@ -131,10 +132,12 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       
       // Compare as strings to avoid timezone issues
       const isFuture = dayStr > todayStr;
-      const dailyProgress = isFuture ? null : calculateDailyProgress(d);
+      // Calculate progress for all days (past, current, and future)
+      const dailyProgress = calculateDailyProgress(d);
       days.push({
         name: i.toString(),
-        progress: dailyProgress === null ? (isFuture ? null : 0) : dailyProgress,
+        // Always show a value (0 if null) so line renders continuously
+        progress: dailyProgress === null ? 0 : dailyProgress,
         isFuture,
       });
     }
@@ -149,10 +152,12 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     
     for (let i = 0; i < 12; i++) {
       const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth);
-      const monthProgress = isFuture ? null : calculateMonthlyProgress(i, selectedYear);
+      // Calculate progress for all months (past, current, and future)
+      const monthProgress = calculateMonthlyProgress(i, selectedYear);
       months.push({
         name: SHORT_MONTHS[i],
-        progress: monthProgress === null ? (isFuture ? null : 0) : monthProgress,
+        // Always show a value (0 if null) so line renders continuously
+        progress: monthProgress === null ? 0 : monthProgress,
         isFuture,
       });
     }
