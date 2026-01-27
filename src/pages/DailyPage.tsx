@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DailyHeader } from '@/components/daily/DailyHeader';
 import { HabitList } from '@/components/daily/HabitList';
@@ -8,19 +8,41 @@ import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { GoalCompletionModal } from '@/components/modals/GoalCompletionModal';
+import { FireCelebration } from '@/components/effects/FireCelebration';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
 import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
 import { cn } from '@/lib/utils';
 import { ProgressDisplayMode, Goal } from '@/types';
+import { formatLocalDate } from '@/utils/dateUtils';
 
 export const DailyPage = () => {
   const { isDesktop, isTablet } = useResponsive();
-  const { settings, updateSettings, goals, habits, habitChecks, updateGoal } = useAppStore();
+  const { settings, updateSettings, goals, habits, habitChecks, updateGoal, getDailyProgress } = useAppStore();
   
   // Goal completion modal state
   const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
   const [processedGoalIds, setProcessedGoalIds] = useState<Set<string>>(new Set());
+  
+  // Fire celebration state
+  const [showFireCelebration, setShowFireCelebration] = useState(false);
+  const [lastCelebratedDate, setLastCelebratedDate] = useState<string | null>(null);
+  
+  // Check for 100% daily progress
+  const todayStr = formatLocalDate(new Date());
+  const dailyProgress = getDailyProgress(todayStr);
+  
+  useEffect(() => {
+    // Trigger fire celebration when daily progress hits 100%
+    if (dailyProgress === 100 && lastCelebratedDate !== todayStr) {
+      setShowFireCelebration(true);
+      setLastCelebratedDate(todayStr);
+    }
+  }, [dailyProgress, todayStr, lastCelebratedDate]);
+  
+  const handleFireCelebrationComplete = useCallback(() => {
+    setShowFireCelebration(false);
+  }, []);
   
   // Check for goals that need completion feedback
   const goalsNeedingCompletion = useGoalCompletionCheck({
@@ -160,6 +182,12 @@ export const DailyPage = () => {
           }}
         />
       )}
+      
+      {/* Fire Celebration for 100% daily completion */}
+      <FireCelebration 
+        isActive={showFireCelebration} 
+        onComplete={handleFireCelebrationComplete} 
+      />
     </motion.div>
   );
 };
