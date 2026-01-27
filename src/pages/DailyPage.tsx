@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DailyHeader } from '@/components/daily/DailyHeader';
 import { HabitList } from '@/components/daily/HabitList';
-import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { GoalCompletionModal } from '@/components/modals/GoalCompletionModal';
 import { FireCelebration } from '@/components/effects/FireCelebration';
+import { EvolutionChart } from '@/components/daily/EvolutionChart';
+import { ProgressCharts } from '@/components/charts/ProgressCharts';
+import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
 import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
@@ -109,36 +111,55 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: 3-column layout - Charts | Habits | Calendar+Radar */}
-            <div className="grid grid-cols-3 gap-6" style={{ minHeight: '450px' }}>
-              {/* Left column - Charts (Evolution + Progress) */}
-              <div className="flex flex-col h-full">
-                <ProgressTimeline className="h-full" />
-              </div>
-              
-              {/* Middle column - Habits (centered title) + Period Progress */}
-              <div className="flex flex-col h-full">
-                <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
+            {/* Desktop: 3-column layout - Habits+Indicators | Charts bottom */}
+            <div className="flex flex-col gap-6">
+              {/* Top row: Habits (left-center) + Calendar & Radar (right) */}
+              <div className="grid grid-cols-3 gap-6" style={{ minHeight: '380px' }}>
+                {/* Left column - Empty space for balance */}
+                <div className="flex flex-col" />
                 
-                {/* Progress indicators below habits with toggle */}
-                <div className="mt-4">
-                  <div className="flex items-center justify-end mb-2">
-                    <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+                {/* Middle column - Habits (centered title) */}
+                <div className="flex flex-col h-full">
+                  <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
+                  
+                  {/* Progress indicators below habits with toggle - smaller size */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-end mb-2">
+                      <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+                    </div>
+                    <div className="transform scale-90 origin-center">
+                      <PeriodProgressIndicators displayMode={localDisplayMode} />
+                    </div>
                   </div>
-                  <PeriodProgressIndicators displayMode={localDisplayMode} />
+                </div>
+                
+                {/* Right column - Radar (top, centered with habits) + Calendar */}
+                <div className="flex flex-col h-full">
+                  {/* Radar chart at top, vertically centered with habits */}
+                  <div className="flex-1 flex flex-col justify-center">
+                    <div className="flex justify-center">
+                      <div className="w-52">
+                        <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
+                        <CategoryRadarChart className="h-[160px] w-full" compact />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Calendar below */}
+                  <HabitCalendar className="mt-4" />
                 </div>
               </div>
               
-              {/* Right column - Calendar + Radar */}
-              <div className="flex flex-col h-full">
-                <HabitCalendar className="flex-1" />
+              {/* Bottom row: Charts side by side - Constância (left) + Progresso (right) */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Left - Constância chart (Evolution) */}
+                <div className="rounded-2xl p-5 bg-muted/10 border border-border/30" style={{ minHeight: '280px' }}>
+                  <EvolutionChart compact />
+                </div>
                 
-                {/* Radar chart below calendar, vertically centered with period indicators */}
-                <div className="mt-4 flex justify-center">
-                  <div className="w-48">
-                    <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
-                    <CategoryRadarChart className="h-[140px] w-full" compact />
-                  </div>
+                {/* Right - Progresso chart */}
+                <div className="rounded-2xl p-5 bg-muted/10 border border-border/30" style={{ minHeight: '280px' }}>
+                  <ProgressCharts compact hideEmoji />
                 </div>
               </div>
             </div>

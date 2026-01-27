@@ -157,21 +157,21 @@ export const HierarchicalYearProgress = ({ displayYear, displayMode, onPeriodCli
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         onClick={() => onPeriodClick?.(`Ano ${displayYear}`, 'yearly', displayYear.toString())}
-        className="w-full text-left hover:bg-muted/30 rounded-xl p-2 -m-2 transition-colors"
+        className="w-full hover:bg-muted/30 rounded-xl p-2 -m-2 transition-colors"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg text-foreground">Ano {displayYear}</h3>
+        <div className="flex flex-col items-center mb-4">
+          <h3 className="font-semibold text-lg text-foreground text-center">Ano {displayYear}</h3>
           {isCircular ? (
-            <div className="relative flex items-center justify-center">
+            <div className="relative flex items-center justify-center mt-2">
               <ProgressCircle progress={yearProgress} size={50} />
               <span className="absolute text-xs font-bold">{formatPercentage(yearProgress)}</span>
             </div>
           ) : (
-            <span className="text-2xl font-bold text-gradient-primary">{formatPercentage(yearProgress)}</span>
+            <span className="text-2xl font-bold text-gradient-primary mt-1">{formatPercentage(yearProgress)}</span>
           )}
         </div>
 
-        {!isCircular && <ProgressBar progress={yearProgress} className="mb-2" />}
+        {!isCircular && <ProgressBar progress={yearProgress} className="mb-2 max-w-md mx-auto" />}
       </motion.button>
 
       {/* Semesters side by side */}
@@ -188,21 +188,21 @@ export const HierarchicalYearProgress = ({ displayYear, displayMode, onPeriodCli
             >
               {/* Semester Header */}
               <div
-                className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-80"
+                className="flex flex-col items-center mb-3 cursor-pointer hover:opacity-80"
                 onClick={() => onPeriodClick?.(`${semester}º Semestre`, 'semestral', semesterPeriod)}
               >
-                <span className="font-medium text-sm text-foreground">{semester}º Semestre</span>
+                <span className="font-medium text-sm text-foreground text-center">{semester}º Semestre</span>
                 {isCircular ? (
-                  <div className="relative flex items-center justify-center">
+                  <div className="relative flex items-center justify-center mt-1">
                     <ProgressCircle progress={semesterProgress} size={28} />
                     <span className="absolute text-[8px] font-bold">{Math.round(semesterProgress)}%</span>
                   </div>
                 ) : (
-                  <span className="text-xs font-bold text-primary">{formatPercentage(semesterProgress)}</span>
+                  <span className="text-xs font-bold text-primary mt-1">{formatPercentage(semesterProgress)}</span>
                 )}
               </div>
 
-              {!isCircular && <ProgressBar progress={semesterProgress} className="mb-3" />}
+              {!isCircular && <ProgressBar progress={semesterProgress} className="mb-3 max-w-[120px] mx-auto" />}
 
               {/* Quarters inside semester */}
               <div className="space-y-2">
@@ -218,21 +218,21 @@ export const HierarchicalYearProgress = ({ displayYear, displayMode, onPeriodCli
                     >
                       {/* Quarter Header */}
                       <div
-                        className="flex items-center justify-between mb-2 cursor-pointer hover:opacity-80"
+                        className="flex flex-col items-center mb-2 cursor-pointer hover:opacity-80"
                         onClick={() => onPeriodClick?.(`${quarter}º Trimestre`, 'quarterly', quarterPeriod, undefined, months)}
                       >
-                        <span className="font-medium text-xs text-foreground">{quarter}º Tri</span>
+                        <span className="font-medium text-xs text-foreground text-center">{quarter}º Tri</span>
                         {isCircular ? (
-                          <div className="relative flex items-center justify-center">
+                          <div className="relative flex items-center justify-center mt-1">
                             <ProgressCircle progress={quarterProgress} size={22} />
                             <span className="absolute text-[6px] font-bold">{Math.round(quarterProgress)}%</span>
                           </div>
                         ) : (
-                          <span className="text-[10px] font-bold text-primary">{formatPercentage(quarterProgress)}</span>
+                          <span className="text-[10px] font-bold text-primary mt-1">{formatPercentage(quarterProgress)}</span>
                         )}
                       </div>
 
-                      {!isCircular && <ProgressBar progress={quarterProgress} className="mb-2" />}
+                      {!isCircular && <ProgressBar progress={quarterProgress} className="mb-2 max-w-[80px] mx-auto" />}
 
                       {/* Months inside quarter */}
                       <div className="space-y-1">
