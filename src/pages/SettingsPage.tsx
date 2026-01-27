@@ -9,8 +9,6 @@ import {
   LogOut,
   Trash2,
   Check,
-  BarChart3,
-  Circle,
   Plus,
   X,
   Clock,
@@ -25,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCloudSync } from '@/hooks/useCloudSync';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ThemeColor, ProgressDisplayMode, NotificationReminder, DracoState } from '@/types';
+import { ThemeColor, NotificationReminder, DracoState } from '@/types';
 import { DracoIcon, DRACO_IMAGES } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { Switch } from '@/components/ui/switch';
@@ -63,10 +61,6 @@ const DRACO_OPTIONS: { id: DracoState['color']; name: string }[] = [
   { id: 'blue', name: 'Azul' },
 ];
 
-const PROGRESS_DISPLAY_OPTIONS: { id: ProgressDisplayMode; name: string; icon: typeof BarChart3 }[] = [
-  { id: 'linear', name: 'Linear', icon: BarChart3 },
-  { id: 'circular', name: 'Circular', icon: Circle },
-];
 
 const FRIENDLY_MESSAGES = [
   'Ei, campeão! 🏆 Hora de brilhar nos seus hábitos!',
@@ -424,29 +418,42 @@ export const SettingsPage = () => {
               <p className="text-xs text-muted-foreground">{dracoName.length}/32 caracteres</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-xs text-muted-foreground">Escolha seu Draco</label>
-              <div className="grid grid-cols-5 gap-2">
+              
+              {/* Large Draco Preview */}
+              <div className="flex justify-center">
+                <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-primary/30 shadow-lg">
+                  <img 
+                    src={DRACO_IMAGES[draco.color]}
+                    alt={`Draco ${draco.color}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+              
+              {/* Color Circles */}
+              <div className="flex flex-wrap justify-center gap-2">
                 {DRACO_OPTIONS.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => updateDraco({ color: option.id })}
                     className={cn(
-                      'relative flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all',
+                      'relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all',
                       draco.color === option.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                        ? 'border-primary ring-2 ring-primary/50 scale-110' 
+                        : 'border-border/50 hover:border-primary/50 hover:scale-105'
                     )}
+                    title={option.name}
                   >
                     <img 
                       src={DRACO_IMAGES[option.id]}
                       alt={option.name}
-                      className="w-12 h-12 object-contain rounded-lg"
+                      className="w-full h-full object-cover"
                     />
-                    <span className="text-[9px] text-foreground leading-tight">{option.name}</span>
                     {draco.color === option.id && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
+                        <Check className="w-4 h-4 text-primary-foreground drop-shadow-md" />
                       </div>
                     )}
                   </button>
@@ -473,28 +480,25 @@ export const SettingsPage = () => {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-3">Escolha sua cor</p>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 {THEME_OPTIONS.map((theme) => (
                   <button
                     key={theme.id}
                     onClick={() => updateSettings({ themeColor: theme.id })}
                     className={cn(
-                      'relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
+                      'relative w-8 h-8 rounded-full border-2 transition-all',
                       settings.themeColor === theme.id 
-                        ? 'border-primary bg-primary/10' 
-                        : 'border-transparent bg-muted/30 hover:bg-muted/50'
+                        ? 'border-primary ring-2 ring-primary/50 scale-110' 
+                        : 'border-border/50 hover:border-primary/50 hover:scale-105'
                     )}
+                    title={theme.name}
+                    style={{ 
+                      backgroundColor: `hsl(${theme.color})` 
+                    }}
                   >
-                    <div 
-                      className="w-8 h-8 rounded-full"
-                      style={{ 
-                        backgroundColor: `hsl(${theme.color})` 
-                      }}
-                    />
-                    <span className="text-[10px] text-foreground">{theme.name}</span>
                     {settings.themeColor === theme.id && (
-                      <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white drop-shadow-md" />
                       </div>
                     )}
                   </button>
@@ -518,55 +522,7 @@ export const SettingsPage = () => {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-border/30">
-              <p className="text-sm text-muted-foreground mb-3">Exibição do progresso</p>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Linear option */}
-                <button
-                  onClick={() => updateSettings({ progressDisplayMode: 'linear' })}
-                  className={cn(
-                    'flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all',
-                    settings.progressDisplayMode === 'linear' 
-                      ? 'border-primary bg-primary/10' 
-                      : 'border-transparent bg-muted/30 hover:bg-muted/50'
-                  )}
-                >
-                  {/* Linear example */}
-                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full w-3/4 rounded-full" style={{ background: 'var(--gradient-progress)' }} />
-                  </div>
-                  <span className="text-sm font-medium">Linear</span>
-                </button>
-                
-                {/* Circular option */}
-                <button
-                  onClick={() => updateSettings({ progressDisplayMode: 'circular' })}
-                  className={cn(
-                    'flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all',
-                    settings.progressDisplayMode === 'circular' 
-                      ? 'border-primary bg-primary/10' 
-                      : 'border-transparent bg-muted/30 hover:bg-muted/50'
-                  )}
-                >
-                  {/* Circular example */}
-                  <svg width={40} height={40} className="transform -rotate-90">
-                    <circle cx={20} cy={20} r={16} stroke="hsl(var(--muted))" strokeWidth="4" fill="none" />
-                    <circle 
-                      cx={20} cy={20} r={16} 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth="4" 
-                      fill="none" 
-                      strokeLinecap="round"
-                      strokeDasharray={100.53}
-                      strokeDashoffset={25.13}
-                    />
-                  </svg>
-                  <span className="text-sm font-medium">Circular</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-4 border-t border-border/30">
               <div>
                 <p className="font-medium text-foreground">Mostrar emojis</p>
                 <p className="text-sm text-muted-foreground">Exibir emojis nos hábitos</p>
