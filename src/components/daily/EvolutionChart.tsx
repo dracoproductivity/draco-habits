@@ -51,7 +51,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const isCurrentYear = selectedYear === today.getFullYear();
   
   // Calculate daily progress for a specific date
-  const calculateDailyProgress = (date: Date) => {
+  const calculateDailyProgress = (date: Date): number | null => {
     const dateStr = format(date, 'yyyy-MM-dd');
     
     // Get habits that are scheduled for this date
@@ -60,7 +60,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
       return isHabitScheduledForDate(habit, date, linkedGoal);
     });
     
-    if (scheduledHabits.length === 0) return 0;
+    if (scheduledHabits.length === 0) return null;
     
     // Count completed habits
     const completedCount = habitChecks.filter(
@@ -71,7 +71,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   };
 
   // Calculate monthly average progress
-  const calculateMonthlyProgress = (month: number, year: number) => {
+  const calculateMonthlyProgress = (month: number, year: number): number | null => {
     const monthStart = startOfMonth(new Date(year, month, 1));
     const monthEnd = endOfMonth(monthStart);
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -81,13 +81,13 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     
     daysInMonth.forEach(day => {
       const progress = calculateDailyProgress(day);
-      if (progress >= 0) {
+      if (progress !== null && progress >= 0) {
         totalProgress += progress;
         daysWithData++;
       }
     });
     
-    return daysWithData > 0 ? Math.round(totalProgress / daysWithData) : 0;
+    return daysWithData > 0 ? Math.round(totalProgress / daysWithData) : null;
   };
   
   const getWeekDays = useMemo(() => {

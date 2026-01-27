@@ -99,8 +99,8 @@ export const DailyPage = () => {
                 <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
                 
                 {/* Progress indicators below habits with toggle */}
-                <div className="mt-4 relative">
-                  <div className="absolute right-0 top-0">
+                <div className="mt-4">
+                  <div className="flex items-center justify-end mb-2">
                     <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
                   </div>
                   <PeriodProgressIndicators displayMode={localDisplayMode} />

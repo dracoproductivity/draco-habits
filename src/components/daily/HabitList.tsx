@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers, Sparkles, AlertCircle } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers, Sparkles, AlertCircle, CalendarRange } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -11,7 +11,7 @@ import { HabitItem } from './HabitItem';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { isHabitScheduledForDate, calculateHabitProgress } from '@/utils/habitInstanceCalculator';
+import { isHabitScheduledForDate, calculateHabitProgress, getPeriodBoundaries } from '@/utils/habitInstanceCalculator';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
 import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
 
@@ -427,6 +427,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const [showAllHabitsModal, setShowAllHabitsModal] = useState(false);
   const [selectedXPReward, setSelectedXPReward] = useState<number>(20);
   
+  // Date range state for habit recurrence
+  const [habitStartDate, setHabitStartDate] = useState<string>('');
+  const [habitEndDate, setHabitEndDate] = useState<string>('');
   // Multi-select periods for hierarchical creation
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, GoalCreationData>>({
     yearly: { name: '', periods: [] },
@@ -506,6 +509,16 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       return;
     }
 
+    // Validate date range for repeating habits with linked goals
+    if (!isOneTimeHabit && selectedGoalId && (!habitStartDate || !habitEndDate)) {
+      toast({
+        title: 'Erro',
+        description: 'Selecione a data de início e término da recorrência',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Check habit limit
     if (!canAddNewHabit) {
       toast({
@@ -536,6 +549,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       repeatFrequency: isOneTimeHabit ? undefined : repeatFrequency,
       hasMicroGoals,
       microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
+      startDate: isOneTimeHabit ? undefined : habitStartDate || undefined,
+      endDate: isOneTimeHabit ? undefined : habitEndDate || undefined,
     });
     setNewHabitName('');
     setNewHabitEmoji('');
@@ -546,6 +561,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     setHasMicroGoals(false);
     setMicroGoalsCount(4);
     setSelectedXPReward(20);
+    setHabitStartDate('');
+    setHabitEndDate('');
     setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
@@ -982,6 +999,57 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                               ))}
                             </div>
                           </div>
+
+                          {/* Date Range for Recurrence - only when linked to a goal */}
+                          {selectedGoalId && (() => {
+                            const linkedGoal = goals.find(g => g.id === selectedGoalId);
+                            if (!linkedGoal) return null;
+                            
+                            const periodBoundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
+                            if (!periodBoundaries) return null;
+                            
+                            const minDate = format(periodBoundaries.start, 'yyyy-MM-dd');
+                            const maxDate = format(periodBoundaries.end, 'yyyy-MM-dd');
+                            const periodLabel = `${format(periodBoundaries.start, 'd MMM yyyy', { locale: ptBR })} - ${format(periodBoundaries.end, 'd MMM yyyy', { locale: ptBR })}`;
+                            
+                            return (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <CalendarRange className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">Período da recorrência</span>
+                                </div>
+                                
+                                <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                                  📅 Período do objetivo: {periodLabel}
+                                </p>
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">Início</label>
+                                    <input
+                                      type="date"
+                                      value={habitStartDate}
+                                      onChange={(e) => setHabitStartDate(e.target.value)}
+                                      min={minDate}
+                                      max={habitEndDate || maxDate}
+                                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs text-muted-foreground">Término</label>
+                                    <input
+                                      type="date"
+                                      value={habitEndDate}
+                                      onChange={(e) => setHabitEndDate(e.target.value)}
+                                      min={habitStartDate || minDate}
+                                      max={maxDate}
+                                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </>
                       )}
                     </div>
@@ -1516,12 +1584,12 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             {/* Ver Mais button */}
             {hasMoreHabits && (
               <motion.button
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 onClick={() => setShowAllHabitsModal(true)}
-                className="w-full py-3 text-center text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
+                className="w-full py-2 text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Ver Mais ({remainingHabitsCount} hábitos restantes)
+                Ver mais ({remainingHabitsCount})
               </motion.button>
             )}
 
