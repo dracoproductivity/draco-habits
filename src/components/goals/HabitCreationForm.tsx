@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle, CalendarRange } from 'lucide-react';
+import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle, CalendarRange, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
@@ -22,13 +22,13 @@ const WEEK_DAYS = [
 ];
 
 interface HabitCreationFormProps {
-  parentGoal: Goal;
+  parentGoal?: Goal;
   onClose: () => void;
   onCreated?: () => void;
 }
 
 export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreationFormProps) => {
-  const { addHabit, habits } = useAppStore();
+  const { addHabit, habits, goals } = useAppStore();
   
   const [habitName, setHabitName] = useState('');
   const [habitEmoji, setHabitEmoji] = useState('');
@@ -39,16 +39,22 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [notificationTime, setNotificationTime] = useState('08:00');
   const [hasMicroGoals, setHasMicroGoals] = useState(false);
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
-  const [selectedXPReward, setSelectedXPReward] = useState<number>(parentGoal.categoryXP || 20);
+  
+  // Optional goal selection - use parentGoal if provided, otherwise allow user to select
+  const [selectedGoalId, setSelectedGoalId] = useState<string | null>(parentGoal?.id || null);
+  const selectedGoal = selectedGoalId ? goals.find(g => g.id === selectedGoalId) : parentGoal;
+  
+  const [selectedXPReward, setSelectedXPReward] = useState<number>(selectedGoal?.categoryXP || 20);
   
   // Date range state
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  // Calculate period boundaries based on parent goal
+  // Calculate period boundaries based on selected goal (if any)
   const periodBoundaries = useMemo(() => {
-    return getPeriodBoundaries(parentGoal.type, parentGoal.period);
-  }, [parentGoal.type, parentGoal.period]);
+    if (!selectedGoal) return null;
+    return getPeriodBoundaries(selectedGoal.type, selectedGoal.period);
+  }, [selectedGoal?.type, selectedGoal?.period]);
 
   // Format date constraints
   const minDate = periodBoundaries ? format(periodBoundaries.start, 'yyyy-MM-dd') : '';
@@ -116,7 +122,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       name: habitName.trim(),
       emoji: habitEmoji || undefined,
       xpReward: selectedXPReward,
-      goalId: parentGoal.id,
+      goalId: selectedGoal?.id,
       weekDays: isOneTimeHabit ? undefined : selectedWeekDays,
       isOneTime: isOneTimeHabit,
       repeatFrequency: isOneTimeHabit ? undefined : repeatFrequency,
@@ -130,7 +136,9 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
 
     toast({
       title: 'Hábito criado!',
-      description: `"${habitName}" vinculado a "${parentGoal.name}"`,
+      description: selectedGoal 
+        ? `"${habitName}" vinculado a "${selectedGoal.name}"`
+        : `"${habitName}" criado com sucesso`,
     });
 
     onCreated?.();
@@ -159,10 +167,34 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
           </button>
         </div>
 
-        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 mb-4">
-          <p className="text-sm text-muted-foreground">
-            Vinculado a: <span className="font-semibold text-foreground">{parentGoal.emoji && `${parentGoal.emoji} `}{parentGoal.name}</span>
-          </p>
+        {/* Goal Selection - optional linking */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Vincular a um objetivo (opcional)</span>
+          </div>
+          <select
+            value={selectedGoalId || ''}
+            onChange={(e) => {
+              const newGoalId = e.target.value || null;
+              setSelectedGoalId(newGoalId);
+              const newGoal = newGoalId ? goals.find(g => g.id === newGoalId) : null;
+              if (newGoal?.categoryXP) {
+                setSelectedXPReward(newGoal.categoryXP);
+              }
+              // Reset dates when goal changes
+              setStartDate('');
+              setEndDate('');
+            }}
+            className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          >
+            <option value="">Sem objetivo vinculado</option>
+            {goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.emoji && `${goal.emoji} `}{goal.name} ({goal.type} • {goal.period})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-4">
@@ -269,9 +301,11 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                   <span className="text-sm text-muted-foreground">Período da recorrência</span>
                 </div>
                 
-                <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
-                  📅 Período do objetivo: {periodLabel}
-                </p>
+                {periodLabel && (
+                  <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                    📅 Período do objetivo: {periodLabel}
+                  </p>
+                )}
                 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
