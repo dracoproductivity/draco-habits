@@ -283,6 +283,10 @@ export const GoalsPage = () => {
   // Delete confirmation state
   const [showDeleteGoalConfirmation, setShowDeleteGoalConfirmation] = useState(false);
 
+  // Habit creation from Goals page
+  const [showHabitGoalSelector, setShowHabitGoalSelector] = useState(false);
+  const [goalForHabitCreation, setGoalForHabitCreation] = useState<Goal | null>(null);
+
   const getParentGoalOptions = (type: GoalType): Goal[] => {
     const parentType = parentTypeMap[type];
     if (!parentType) return [];
@@ -788,10 +792,7 @@ export const GoalsPage = () => {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                const { setActiveTab } = useAppStore.getState();
-                setActiveTab('daily');
-              }}
+              onClick={() => setShowHabitGoalSelector(true)}
               className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
@@ -1726,6 +1727,83 @@ export const GoalsPage = () => {
           habit={selectedHabit}
           isOpen={!!selectedHabit}
           onClose={() => setSelectedHabit(null)}
+        />
+      )}
+
+      {/* Habit Goal Selector Modal */}
+      <AnimatePresence>
+        {showHabitGoalSelector && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setShowHabitGoalSelector(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[80vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Selecione o Objetivo</h3>
+                <button onClick={() => setShowHabitGoalSelector(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-4">
+                Escolha um objetivo para vincular o novo hábito:
+              </p>
+              
+              {goals.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">Nenhum objetivo criado ainda.</p>
+                  <button
+                    onClick={() => {
+                      setShowHabitGoalSelector(false);
+                      setShowNewGoalModal(true);
+                    }}
+                    className="px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium"
+                  >
+                    Criar Objetivo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {goals.map((goal) => (
+                    <button
+                      key={goal.id}
+                      onClick={() => {
+                        setGoalForHabitCreation(goal);
+                        setShowHabitGoalSelector(false);
+                      }}
+                      className="w-full p-3 rounded-xl text-left transition-colors hover:bg-muted/50 border border-border/50 flex items-center gap-3"
+                    >
+                      {goal.emoji && <span className="text-lg">{goal.emoji}</span>}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{goal.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {typeLabels[goal.type]} • {goal.period}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Habit Creation Form Modal */}
+      {goalForHabitCreation && (
+        <HabitCreationForm
+          parentGoal={goalForHabitCreation}
+          onClose={() => setGoalForHabitCreation(null)}
+          onCreated={() => setGoalForHabitCreation(null)}
         />
       )}
       </div>
