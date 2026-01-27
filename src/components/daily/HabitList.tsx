@@ -445,9 +445,18 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const canAddNewHabit = canCreateHabit(habits);
   
   const [viewDate, setViewDate] = useState(new Date());
-  const viewDateStr = viewDate.toISOString().split('T')[0];
+  
+  // Use local timezone date formatting to avoid UTC one-day shift
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const viewDateStr = formatLocalDate(viewDate);
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = formatLocalDate(today);
   
   const HABIT_DISPLAY_LIMIT = 5;
   const isToday = viewDateStr === todayStr;
@@ -457,7 +466,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   };
 
   const dailyProgress = getDailyProgress(todayStr);
@@ -479,14 +488,14 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     }
   };
 
-  const formatViewDate = () => {
+  const formatViewDateDisplay = () => {
     if (isToday) return 'Hoje';
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (viewDateStr === yesterday.toISOString().split('T')[0]) return 'Ontem';
+    if (viewDateStr === formatLocalDate(yesterday)) return 'Ontem';
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    if (viewDateStr === tomorrow.toISOString().split('T')[0]) return 'Amanhã';
+    if (viewDateStr === formatLocalDate(tomorrow)) return 'Amanhã';
     return viewDate.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
@@ -845,7 +854,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="text-sm text-foreground font-medium min-w-[80px] text-center">{formatViewDate()}</span>
+                <span className="text-sm text-foreground font-medium min-w-[80px] text-center">{formatViewDateDisplay()}</span>
                 <button
                   onClick={() => navigateDay(1)}
                   className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"

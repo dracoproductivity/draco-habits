@@ -166,8 +166,10 @@ export const useAppStore = create<AppStore>()(
 
       signup: (userData, password) => {
         if (userData.email && password) {
-          const today = new Date().toISOString().split('T')[0];
-          set((state) => ({ 
+          // Use local timezone formatting to avoid UTC one-day shift
+          const now = new Date();
+          const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          set((state) => ({
             isAuthenticated: true,
             isFirstTime: true,
             showWelcomeModal: true,
@@ -669,7 +671,8 @@ export const useAppStore = create<AppStore>()(
         for (let i = 0; i < 7; i++) {
           const d = new Date(start);
           d.setDate(d.getDate() + i);
-          dates.push(d.toISOString().split('T')[0]);
+          // Use local timezone formatting to avoid UTC one-day shift
+          dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         }
         
         let totalScheduled = 0;
@@ -704,7 +707,8 @@ export const useAppStore = create<AppStore>()(
         
         for (let day = 1; day <= daysInMonth; day++) {
           const dateObj = new Date(year, month, day);
-          const dateStr = dateObj.toISOString().split('T')[0];
+          // Use local timezone formatting to avoid UTC one-day shift
+          const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
           const habitsForDate = getHabitsForDate(dateObj, habits, goals);
           totalScheduled += habitsForDate.length;
           

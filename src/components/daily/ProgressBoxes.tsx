@@ -4,15 +4,23 @@ import { useAppStore } from '@/store/useAppStore';
 export const ProgressBoxes = () => {
   const { getDailyProgress, getWeeklyProgress } = useAppStore();
   
+  // Use local timezone formatting to avoid UTC one-day shift
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = formatLocalDate(today);
   
   const getWeekStart = () => {
     const d = new Date(today);
     const day = d.getDay();
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
-    return d.toISOString().split('T')[0];
+    return formatLocalDate(d);
   };
 
   const dailyProgress = getDailyProgress(todayStr);

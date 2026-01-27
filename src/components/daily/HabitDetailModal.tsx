@@ -100,7 +100,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      // Use local timezone formatting to avoid UTC one-day shift
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
       history.push({ date: dateStr, completed: check?.completed || false });
     }

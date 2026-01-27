@@ -93,13 +93,18 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const getWeekDays = useMemo(() => {
     const days: { name: string; progress: number | null; isFuture: boolean }[] = [];
     const monday = getWeekMonday();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // Create today as date-only string for accurate comparison
+    const todayStr = format(today, 'yyyy-MM-dd');
     
     const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
-      const isFuture = d > todayStart;
+      const dayStr = format(d, 'yyyy-MM-dd');
+      
+      // Compare as strings to avoid timezone issues
+      const isFuture = dayStr > todayStr;
       // For past/current days, calculate progress - treat 0 as a valid value (different from null)
       const dailyProgress = isFuture ? null : calculateDailyProgress(d);
       days.push({
@@ -116,14 +121,20 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const getMonthDays = useMemo(() => {
     const days: { name: string; progress: number | null; isFuture: boolean }[] = [];
     const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    // Create today as date-only string for accurate comparison
+    const todayStr = format(today, 'yyyy-MM-dd');
     
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(selectedYear, selectedMonth, i);
-      const isFuture = d > todayStart;
+      const dayStr = format(d, 'yyyy-MM-dd');
+      
+      // Compare as strings to avoid timezone issues
+      const isFuture = dayStr > todayStr;
+      const dailyProgress = isFuture ? null : calculateDailyProgress(d);
       days.push({
         name: i.toString(),
-        progress: isFuture ? null : calculateDailyProgress(d),
+        progress: dailyProgress === null ? (isFuture ? null : 0) : dailyProgress,
         isFuture,
       });
     }
@@ -138,9 +149,10 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     
     for (let i = 0; i < 12; i++) {
       const isFuture = selectedYear > currentYear || (selectedYear === currentYear && i > currentMonth);
+      const monthProgress = isFuture ? null : calculateMonthlyProgress(i, selectedYear);
       months.push({
         name: SHORT_MONTHS[i],
-        progress: isFuture ? null : calculateMonthlyProgress(i, selectedYear),
+        progress: monthProgress === null ? (isFuture ? null : 0) : monthProgress,
         isFuture,
       });
     }
