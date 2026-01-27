@@ -56,7 +56,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
     return getPeriodBoundaries(selectedGoal.type, selectedGoal.period);
   }, [selectedGoal?.type, selectedGoal?.period]);
 
-  // Format date constraints
+  // Format date constraints - allow any date if no goal is linked
   const minDate = periodBoundaries ? format(periodBoundaries.start, 'yyyy-MM-dd') : '';
   const maxDate = periodBoundaries ? format(periodBoundaries.end, 'yyyy-MM-dd') : '';
   
@@ -64,6 +64,9 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const periodLabel = periodBoundaries 
     ? `${format(periodBoundaries.start, 'd MMM yyyy', { locale: ptBR })} - ${format(periodBoundaries.end, 'd MMM yyyy', { locale: ptBR })}`
     : '';
+  
+  // Check if goal is linked to show period constraint info
+  const hasLinkedGoal = !!selectedGoal;
 
   // Habit limits check
   const totalActiveHabits = getTotalActiveHabits(habits);
@@ -301,9 +304,15 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                   <span className="text-sm text-muted-foreground">Período da recorrência</span>
                 </div>
                 
-                {periodLabel && (
+                {hasLinkedGoal && periodLabel && (
                   <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
                     📅 Período do objetivo: {periodLabel}
+                  </p>
+                )}
+                
+                {!hasLinkedGoal && (
+                  <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
+                    📅 Defina o período em que o hábito será repetido
                   </p>
                 )}
                 
@@ -314,8 +323,8 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      min={minDate}
-                      max={endDate || maxDate}
+                      min={minDate || undefined}
+                      max={endDate || maxDate || undefined}
                       className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
                     />
                   </div>
@@ -325,8 +334,8 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate || minDate}
-                      max={maxDate}
+                      min={startDate || minDate || undefined}
+                      max={maxDate || undefined}
                       className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
                     />
                   </div>

@@ -370,13 +370,16 @@ export const ProgressCharts = ({ compact = false, hideEmoji = false }: ProgressC
             <ChevronLeft className="w-3 h-3" />
             <span>Anterior</span>
           </button>
-          <span>
+          <button
+            onClick={() => setReferenceDate(new Date())}
+            className="px-2 py-1 rounded-lg hover:bg-muted/40 transition-colors text-primary font-medium"
+          >
             {progressTimeRange === 'week'
               ? `Semana ${format(startOfWeek(referenceDate, { weekStartsOn: 1 }), 'dd/MM')}`
               : progressTimeRange === 'year'
               ? referenceDate.getFullYear().toString()
               : format(referenceDate, 'MMMM yyyy')}
-          </span>
+          </button>
           <button
             onClick={() =>
               setReferenceDate((prev) =>
