@@ -645,7 +645,10 @@ export const useAppStore = create<AppStore>()(
 
       getDailyProgress: (date) => {
         const { habits, habitChecks, goals } = get();
-        const dateObj = new Date(date);
+        // Parse date string as local timezone (not UTC) to avoid one-day shift
+        // "YYYY-MM-DD" passed to new Date() is interpreted as UTC, causing issues
+        const [year, month, day] = date.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day);
         
         // Get habits that should appear on this date
         const habitsForDate = getHabitsForDate(dateObj, habits, goals);
@@ -665,7 +668,9 @@ export const useAppStore = create<AppStore>()(
       getWeeklyProgress: (weekStart) => {
         const { habits, habitChecks, goals } = get();
         
-        const start = new Date(weekStart);
+        // Parse weekStart as local timezone to avoid UTC shift
+        const [startYear, startMonth, startDay] = weekStart.split('-').map(Number);
+        const start = new Date(startYear, startMonth - 1, startDay);
         const dates: string[] = [];
         
         for (let i = 0; i < 7; i++) {
@@ -679,7 +684,9 @@ export const useAppStore = create<AppStore>()(
         let totalCompleted = 0;
         
         for (const dateStr of dates) {
-          const dateObj = new Date(dateStr);
+          // Parse each date as local timezone
+          const [y, m, d] = dateStr.split('-').map(Number);
+          const dateObj = new Date(y, m - 1, d);
           const habitsForDate = getHabitsForDate(dateObj, habits, goals);
           totalScheduled += habitsForDate.length;
           
