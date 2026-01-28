@@ -27,7 +27,7 @@ export const ProgressBoxes = () => {
   const weeklyProgress = getWeeklyProgress(getWeekStart());
 
   return (
-    <div className="flex items-center justify-center gap-12">
+    <div className="glass-card rounded-2xl p-4 flex items-center justify-center gap-12">
       <ProgressItem 
         label="Hoje" 
         progress={dailyProgress} 

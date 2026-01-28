@@ -868,11 +868,11 @@
     transform: translateY(-2px);
   }
 
-  /* Enhanced glass card for wallpaper backgrounds */
+  /* Enhanced glass card for wallpaper backgrounds - uses CSS variables set by JS */
   .glass-card {
-    background: hsl(var(--card) / 0.65);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: hsl(var(--card) / calc(var(--glass-opacity, 65) / 100));
+    backdrop-filter: blur(calc(var(--glass-blur, 20) * 1px)) saturate(180%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur, 20) * 1px)) saturate(180%);
     border: 1px solid hsl(var(--border) / 0.4);
     box-shadow: 
       0 4px 30px hsl(var(--muted) / 0.1),
@@ -880,13 +880,27 @@
   }
 
   [data-has-wallpaper="true"] .glass-card {
-    background: hsl(var(--card) / 0.55);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    background: hsl(var(--card) / calc(var(--glass-opacity, 55) / 100));
+    backdrop-filter: blur(calc(var(--glass-blur, 24) * 1px)) saturate(200%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur, 24) * 1px)) saturate(200%);
     border: 1px solid hsl(var(--border) / 0.3);
     box-shadow: 
       0 8px 40px hsl(0 0% 0% / 0.15),
       inset 0 1px 0 hsl(var(--foreground) / 0.05);
+  }
+
+  /* Glass button for consistent button styling */
+  .glass-button {
+    background: hsl(var(--muted) / calc(var(--glass-opacity, 65) / 100));
+    backdrop-filter: blur(calc(var(--glass-blur, 20) * 1px)) saturate(180%);
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur, 20) * 1px)) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .glass-button:hover {
+    background: hsl(var(--muted) / calc((var(--glass-opacity, 65) + 10) / 100));
+    border-color: hsl(var(--border) / 0.6);
   }
 
   .card-hover {

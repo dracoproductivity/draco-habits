@@ -128,6 +128,8 @@ export interface AppSettings {
   accountCreatedAt?: string; // ISO date string of when the account was created
   wallpaperLight?: string; // URL or data URL for light mode wallpaper
   wallpaperDark?: string; // URL or data URL for dark mode wallpaper
+  glassBlur: number; // 0-40 blur level in px
+  glassOpacity: number; // 0-100 opacity percentage
 }
 
 export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';

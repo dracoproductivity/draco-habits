@@ -52,7 +52,13 @@ const Index = () => {
       document.documentElement.style.setProperty('--custom-s', `${s}%`);
       document.documentElement.style.setProperty('--custom-l', `${l}%`);
     }
-  }, [settings.themeColor, settings.darkMode, settings.customColor]);
+    
+    // Apply glass blur and opacity settings
+    const blur = settings.glassBlur ?? 20;
+    const opacity = settings.glassOpacity ?? 65;
+    document.documentElement.style.setProperty('--glass-blur', blur.toString());
+    document.documentElement.style.setProperty('--glass-opacity', opacity.toString());
+  }, [settings.themeColor, settings.darkMode, settings.customColor, settings.glassBlur, settings.glassOpacity]);
 
   // Check if morning check-in should be shown - only once per session after 5am
   useEffect(() => {
