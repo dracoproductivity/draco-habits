@@ -39,6 +39,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [notificationTime, setNotificationTime] = useState('08:00');
   const [hasMicroGoals, setHasMicroGoals] = useState(false);
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
+  const [microGoalsNames, setMicroGoalsNames] = useState<string[]>([]);
   
   // Optional goal selection - use parentGoal if provided, otherwise allow user to select
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(parentGoal?.id || null);
@@ -133,6 +134,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       notificationTime: notificationEnabled ? notificationTime : undefined,
       hasMicroGoals,
       microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
+      microGoalsNames: hasMicroGoals && microGoalsNames.length > 0 ? microGoalsNames : undefined,
       startDate: isOneTimeHabit ? undefined : startDate,
       endDate: isOneTimeHabit ? undefined : endDate,
     });
@@ -368,7 +370,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             </div>
             
             {hasMicroGoals && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
                   💡 Ex: Beber 2L de água, com micro objetivos de 250ml. Cada vez que você beber 250ml, marca uma parte do hábito.
                 </p>
@@ -379,7 +381,15 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                       <button
                         key={count}
                         type="button"
-                        onClick={() => setMicroGoalsCount(count)}
+                        onClick={() => {
+                          setMicroGoalsCount(count);
+                          // Resize names array
+                          setMicroGoalsNames(prev => {
+                            const newNames = [...prev];
+                            while (newNames.length < count) newNames.push('');
+                            return newNames.slice(0, count);
+                          });
+                        }}
                         className={cn(
                           'w-7 h-7 rounded-lg text-xs font-medium transition-all',
                           microGoalsCount === count
@@ -389,6 +399,26 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                       >
                         {count}
                       </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Micro goals names */}
+                <div className="space-y-1">
+                  <span className="text-xs text-muted-foreground">Nomes (opcional):</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Array.from({ length: microGoalsCount }).map((_, i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        placeholder={`Micro ${i + 1}`}
+                        value={microGoalsNames[i] || ''}
+                        onChange={(e) => {
+                          const newNames = [...microGoalsNames];
+                          newNames[i] = e.target.value;
+                          setMicroGoalsNames(newNames);
+                        }}
+                        className="bg-muted/30 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                      />
                     ))}
                   </div>
                 </div>
