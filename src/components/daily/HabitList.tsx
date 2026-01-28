@@ -458,7 +458,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const today = new Date();
   const todayStr = formatLocalDate(today);
   
-  const HABIT_DISPLAY_LIMIT = 5;
+  // Show all habits – no limit – use scroll
   const isToday = viewDateStr === todayStr;
 
   const getWeekStart = () => {
@@ -820,10 +820,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     });
   }, [habits, viewDate, goals]);
 
-  // Limit displayed habits to 5
-  const displayedHabits = visibleHabits.slice(0, HABIT_DISPLAY_LIMIT);
-  const hasMoreHabits = visibleHabits.length > HABIT_DISPLAY_LIMIT;
-  const remainingHabitsCount = visibleHabits.length - HABIT_DISPLAY_LIMIT;
+  // Display all visible habits (scrollable, no limit)
+  const displayedHabits = visibleHabits;
 
   const showProgress = showProgressIndicators !== false;
   const shouldCenterTitle = centerTitle === true;
@@ -1564,11 +1562,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             )}
           </AnimatePresence>
 
-          <motion.div 
-            className="space-y-2"
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDrag}
+          <div 
+            className="space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin"
+            onTouchMove={(e) => e.stopPropagation()}
           >
             {displayedHabits.map((habit, index) => {
               const check = getHabitCheckForDate(habit.id, viewDateStr);
@@ -1590,25 +1586,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
               );
             })}
 
-            {/* Ver Mais button */}
-            {hasMoreHabits && (
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setShowAllHabitsModal(true)}
-                className="w-full py-2 text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Ver mais ({remainingHabitsCount})
-              </motion.button>
-            )}
-
             {visibleHabits.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhum hábito para hoje</p>
                 <p className="text-sm">Clique no + para adicionar</p>
               </div>
             )}
-          </motion.div>
+          </div>
         </div>
 
         {/* Progress indicators on the right side - only if showProgress is true */}

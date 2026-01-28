@@ -23,6 +23,7 @@ export interface Habit {
   order?: number; // For custom ordering in the list
   hasMicroGoals?: boolean; // If true, habit is divided into micro goals
   microGoalsCount?: number; // Number of micro goals (1-10)
+  microGoalsNames?: string[]; // Names for each micro goal
   startDate?: string; // ISO date string - start of recurrence period
   endDate?: string; // ISO date string - end of recurrence period
 }

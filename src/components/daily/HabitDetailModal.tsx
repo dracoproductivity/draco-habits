@@ -58,6 +58,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [habitEmoji, setHabitEmoji] = useState(habit.emoji || '');
+  const [habitName, setHabitName] = useState(habit.name);
   
   // Progress history view state
   const [historyView, setHistoryView] = useState<'week' | 'month'>('week');
@@ -80,7 +81,11 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   
   // XP reward state
   const [xpReward, setXpReward] = useState<number>(habit.xpReward || 10);
-
+  
+  // Micro goals editing state
+  const [hasMicroGoals, setHasMicroGoals] = useState(habit.hasMicroGoals || false);
+  const [microGoalsCount, setMicroGoalsCount] = useState(habit.microGoalsCount || 2);
+  const [microGoalsNames, setMicroGoalsNames] = useState<string[]>(habit.microGoalsNames || []);
   // Calculate habit progress using the new utility
   const habitProgress = useMemo(() => {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
@@ -177,6 +182,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
 
   const handleSave = () => {
     updateHabit(habit.id, {
+      name: habitName.trim() || habit.name,
       emoji: habitEmoji || undefined,
       goalId: selectedGoalId || undefined,
       weekDays: isOneTime ? undefined : weekDays,
@@ -186,6 +192,9 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       notificationEnabled,
       notificationTime,
       xpReward,
+      hasMicroGoals,
+      microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
+      microGoalsNames: hasMicroGoals && microGoalsNames.length > 0 ? microGoalsNames : undefined,
     });
     toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
     onClose();
@@ -292,7 +301,12 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 className="w-12 h-12"
               />
               <div className="flex-1">
-                <h2 className="text-lg font-semibold text-foreground">{habit.name}</h2>
+                <input
+                  type="text"
+                  value={habitName}
+                  onChange={(e) => setHabitName(e.target.value)}
+                  className="text-lg font-semibold text-foreground bg-transparent border-b border-border/30 focus:border-primary outline-none w-full"
+                />
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-primary font-medium">
                     {habitProgress.completed}/{habitProgress.total} ({formatPercentage(habitProgress.percentage)})
@@ -659,6 +673,80 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Micro Goals */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Micro Objetivos</h3>
+                </div>
+                <button
+                  onClick={() => setHasMicroGoals(!hasMicroGoals)}
+                  className={cn(
+                    'w-10 h-5 rounded-full transition-all relative',
+                    hasMicroGoals ? 'bg-primary' : 'bg-muted'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                      hasMicroGoals ? 'right-0.5' : 'left-0.5'
+                    )}
+                  />
+                </button>
+              </div>
+
+              {hasMicroGoals && (
+                <div className="space-y-3 p-3 bg-muted/30 rounded-xl border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Quantidade:</span>
+                    <div className="flex gap-1 flex-wrap">
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => {
+                            setMicroGoalsCount(count);
+                            setMicroGoalsNames(prev => {
+                              const newNames = [...prev];
+                              while (newNames.length < count) newNames.push('');
+                              return newNames.slice(0, count);
+                            });
+                          }}
+                          className={cn(
+                            'w-7 h-7 rounded-lg text-xs font-medium transition-all',
+                            microGoalsCount === count
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                          )}
+                        >
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Nomes (opcional):</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Array.from({ length: microGoalsCount }).map((_, i) => (
+                        <input
+                          key={i}
+                          type="text"
+                          placeholder={`Micro ${i + 1}`}
+                          value={microGoalsNames[i] || ''}
+                          onChange={(e) => {
+                            const newNames = [...microGoalsNames];
+                            newNames[i] = e.target.value;
+                            setMicroGoalsNames(newNames);
+                          }}
+                          className="bg-muted/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Category (from linked goal - read-only) */}

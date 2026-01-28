@@ -257,7 +257,7 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', userId);
       
-      const habits: Habit[] = (habitsData as HabitRow[] || []).map((h) => ({
+      const habits: Habit[] = (habitsData as HabitRow[] || []).map((h: any) => ({
         id: h.id,
         name: h.name,
         emoji: h.emoji || undefined,
@@ -271,6 +271,9 @@ export const useCloudSync = () => {
         monthWeeks: h.specific_weeks_of_month || undefined,
         startDate: h.start_date || undefined,
         endDate: h.end_date || undefined,
+        hasMicroGoals: h.has_micro_goals || false,
+        microGoalsCount: h.micro_goals_count || 1,
+        microGoalsNames: h.micro_goals_names || undefined,
         createdAt: h.created_at,
       }));
       
@@ -280,10 +283,11 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', userId);
       
-      const habitChecks: HabitCheck[] = (checksData as HabitCheckRow[] || []).map((c) => ({
+      const habitChecks: HabitCheck[] = (checksData as any[] || []).map((c: any) => ({
         habitId: c.habit_id,
         date: c.date,
         completed: c.completed,
+        microGoalsCompleted: c.micro_goals_completed || 0,
       }));
       
       // Load daily logs
@@ -512,6 +516,9 @@ export const useCloudSync = () => {
         notification_time: habit.notificationTime,
         start_date: habit.startDate || null,
         end_date: habit.endDate || null,
+        has_micro_goals: habit.hasMicroGoals || false,
+        micro_goals_count: habit.microGoalsCount || 1,
+        micro_goals_names: habit.microGoalsNames || [],
       });
     
     if (error) {
@@ -551,7 +558,7 @@ export const useCloudSync = () => {
   }, [user?.id]);
   
   // Save habit check to cloud
-  const saveHabitCheck = useCallback(async (habitId: string, date: string, completed: boolean) => {
+  const saveHabitCheck = useCallback(async (habitId: string, date: string, completed: boolean, microGoalsCompleted?: number) => {
     const userId = userIdRef.current || user?.id;
     if (!userId) {
       console.warn('saveHabitCheck: No user ID available');
@@ -571,6 +578,7 @@ export const useCloudSync = () => {
         habit_id: habitId,
         date: date,
         completed: completed,
+        micro_goals_completed: microGoalsCompleted || 0,
       }, {
         onConflict: 'habit_id,date',
       });
@@ -805,8 +813,8 @@ export const useCloudSync = () => {
           state.habitChecks.forEach(check => {
             if (!isValidUUID(check.habitId)) return;
             const prev = previousChecks.find(c => c.habitId === check.habitId && c.date === check.date);
-            if (!prev || prev.completed !== check.completed) {
-              saveHabitCheck(check.habitId, check.date, check.completed);
+            if (!prev || prev.completed !== check.completed || prev.microGoalsCompleted !== check.microGoalsCompleted) {
+              saveHabitCheck(check.habitId, check.date, check.completed, check.microGoalsCompleted);
             }
           });
           

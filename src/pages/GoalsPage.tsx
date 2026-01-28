@@ -1346,14 +1346,30 @@ export const GoalsPage = () => {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             >
+              {/* Header with editable emoji & name */}
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  {settings.showEmojis && selectedGoal.emoji && (
-                    <span className="text-2xl">{selectedGoal.emoji}</span>
-                  )}
-                  <h3 className="text-lg font-bold">{selectedGoal.name}</h3>
+                <div className="flex items-center gap-2 flex-1">
+                  <EmojiPickerButton
+                    value={selectedGoal.emoji || ''}
+                    onChange={(newEmoji) => {
+                      updateGoal(selectedGoal.id, { emoji: newEmoji || undefined });
+                      setSelectedGoal({ ...selectedGoal, emoji: newEmoji || undefined });
+                    }}
+                    placeholder="🎯"
+                    className="w-10 h-10"
+                  />
+                  <input
+                    type="text"
+                    value={selectedGoal.name}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      updateGoal(selectedGoal.id, { name: newName });
+                      setSelectedGoal({ ...selectedGoal, name: newName });
+                    }}
+                    className="text-lg font-bold bg-transparent border-b border-border/30 focus:border-primary outline-none flex-1"
+                  />
                 </div>
-                <button onClick={() => setSelectedGoal(null)} className="text-muted-foreground hover:text-foreground">
+                <button onClick={() => setSelectedGoal(null)} className="text-muted-foreground hover:text-foreground ml-2">
                   <X className="w-5 h-5" />
                 </button>
               </div>

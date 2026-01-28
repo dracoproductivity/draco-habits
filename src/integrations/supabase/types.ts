@@ -183,6 +183,7 @@ export type Database = {
           date: string
           habit_id: string
           id: string
+          micro_goals_completed: number
           user_id: string
         }
         Insert: {
@@ -191,6 +192,7 @@ export type Database = {
           date: string
           habit_id: string
           id?: string
+          micro_goals_completed?: number
           user_id: string
         }
         Update: {
@@ -199,6 +201,7 @@ export type Database = {
           date?: string
           habit_id?: string
           id?: string
+          micro_goals_completed?: number
           user_id?: string
         }
         Relationships: [
@@ -219,7 +222,10 @@ export type Database = {
           end_date: string | null
           frequency_weeks: number
           goal_id: string | null
+          has_micro_goals: boolean
           id: string
+          micro_goals_count: number
+          micro_goals_names: string[]
           name: string
           notification_enabled: boolean
           notification_time: string | null
@@ -240,7 +246,10 @@ export type Database = {
           end_date?: string | null
           frequency_weeks?: number
           goal_id?: string | null
+          has_micro_goals?: boolean
           id?: string
+          micro_goals_count?: number
+          micro_goals_names?: string[]
           name: string
           notification_enabled?: boolean
           notification_time?: string | null
@@ -261,7 +270,10 @@ export type Database = {
           end_date?: string | null
           frequency_weeks?: number
           goal_id?: string | null
+          has_micro_goals?: boolean
           id?: string
+          micro_goals_count?: number
+          micro_goals_names?: string[]
           name?: string
           notification_enabled?: boolean
           notification_time?: string | null
