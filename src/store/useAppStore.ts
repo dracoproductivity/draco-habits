@@ -210,10 +210,24 @@ export const useAppStore = create<AppStore>()(
       },
 
       updateUser: (updates) => {
-        const { user } = get();
-        if (user) {
-          set({ user: { ...user, ...updates } });
-        }
+        set((state) => {
+          if (state.user) {
+            return { user: { ...state.user, ...updates } };
+          }
+          if (!updates.id) {
+            return {};
+          }
+          return {
+            user: {
+              id: updates.id,
+              email: updates.email || '',
+              firstName: updates.firstName || 'Usuário',
+              lastName: updates.lastName || '',
+              birthDate: updates.birthDate,
+              photo: updates.photo || '',
+            },
+          };
+        });
       },
 
       addHabit: (habit) => {

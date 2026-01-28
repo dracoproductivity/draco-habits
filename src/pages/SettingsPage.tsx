@@ -196,7 +196,11 @@ export const SettingsPage = () => {
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
+    const userId = authUser?.id || user?.id;
+    const userEmail = authUser?.email || user?.email || '';
     const profileData = {
+      id: userId,
+      email: userEmail,
       firstName,
       lastName,
       birthDate,

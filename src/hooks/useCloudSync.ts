@@ -353,16 +353,19 @@ export const useCloudSync = () => {
       console.warn('saveProfile: No user ID available');
       return;
     }
-    
+
+    const currentUser = useAppStore.getState().user;
+    const mergedProfile = { ...(currentUser ?? {}), ...profileData };
+
     const { error } = await supabase
       .from('profiles')
-      .update({
-        first_name: profileData.firstName,
-        last_name: profileData.lastName,
-        birth_date: profileData.birthDate,
-        photo: profileData.photo,
-      })
-      .eq('user_id', userId);
+      .upsert({
+        user_id: userId,
+        first_name: mergedProfile.firstName || null,
+        last_name: mergedProfile.lastName || null,
+        birth_date: mergedProfile.birthDate || null,
+        photo: mergedProfile.photo || null,
+      }, { onConflict: 'user_id' });
     
     if (error) {
       console.error('Error saving profile:', error);
@@ -404,20 +407,24 @@ export const useCloudSync = () => {
       return;
     }
     
+    const currentSettings = useAppStore.getState().settings;
+    const mergedSettings = { ...currentSettings, ...settingsData };
+
     const { error } = await supabase
       .from('user_settings')
-      .update({
-        theme_color: settingsData.themeColor,
-        progress_display_mode: settingsData.progressDisplayMode,
-        show_emojis: settingsData.showEmojis,
-        notifications_enabled: settingsData.notificationsEnabled,
-        notification_reminders: JSON.stringify(settingsData.notificationReminders),
-        dark_mode: settingsData.darkMode,
-        min_sleep_hours: settingsData.minSleepHours,
-        max_phone_hours: settingsData.maxPhoneHours,
-        last_daily_log_date: settingsData.lastDailyLogDate,
-      })
-      .eq('user_id', userId);
+      .upsert({
+        user_id: userId,
+        theme_color: mergedSettings.themeColor,
+        progress_display_mode: mergedSettings.progressDisplayMode,
+        show_emojis: mergedSettings.showEmojis,
+        notifications_enabled: mergedSettings.notificationsEnabled,
+        notification_reminders: JSON.stringify(mergedSettings.notificationReminders ?? []),
+        dark_mode: mergedSettings.darkMode,
+        min_sleep_hours: mergedSettings.minSleepHours,
+        max_phone_hours: mergedSettings.maxPhoneHours,
+        account_created_at: mergedSettings.accountCreatedAt,
+        last_daily_log_date: mergedSettings.lastDailyLogDate,
+      }, { onConflict: 'user_id' });
     
     if (error) {
       console.error('Error saving settings:', error);
