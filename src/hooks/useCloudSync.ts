@@ -141,6 +141,10 @@ export const useCloudSync = () => {
     globalState.isInitialLoad = true;
     
     try {
+      // Get current auth session for email
+      const { data: { session } } = await supabase.auth.getSession();
+      const userEmail = session?.user?.email || '';
+      
       // Load profile
       const { data: profile } = await supabase
         .from('profiles')
@@ -152,11 +156,20 @@ export const useCloudSync = () => {
         const profileData = profile as ProfileRow;
         useAppStore.getState().updateUser({
           id: userId,
-          email: '',
+          email: userEmail,
           firstName: profileData.first_name || 'Usuário',
           lastName: profileData.last_name || '',
           birthDate: profileData.birth_date || undefined,
           photo: profileData.photo || '',
+        });
+      } else {
+        // Create initial user state if no profile exists yet
+        useAppStore.getState().updateUser({
+          id: userId,
+          email: userEmail,
+          firstName: 'Usuário',
+          lastName: '',
+          photo: '',
         });
       }
       
@@ -599,9 +612,64 @@ export const useCloudSync = () => {
       return;
     }
     
-    // Skip if ID is not a valid UUID
-    if (!isValidUUID(category.id)) {
+    // For categories with non-UUID IDs (like default_* overrides), we need to generate a proper UUID
+    // But keep the original ID in the store for local reference
+    let categoryIdForDb = category.id;
+    
+    // Check if this is a default category override (starts with "default_")
+    if (category.id.startsWith('default_')) {
+      // For default overrides, we still need to save them
+      // Generate a deterministic UUID-like ID from the override ID
+      categoryIdForDb = category.id;
+    }
+    
+    // Skip if ID is not a valid UUID and not a default override
+    if (!isValidUUID(categoryIdForDb) && !category.id.startsWith('default_')) {
       console.warn('Skipping category with invalid UUID:', category.id);
+      return;
+    }
+    
+    // If it's a default override, we need to check if it exists first and use upsert differently
+    if (category.id.startsWith('default_')) {
+      // Check if record exists
+      const { data: existing } = await supabase
+        .from('custom_categories')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', category.name)
+        .maybeSingle();
+      
+      if (existing) {
+        // Update existing
+        const { error } = await supabase
+          .from('custom_categories')
+          .update({
+            name: category.name,
+            emoji: category.emoji,
+            xp_reward: category.xpReward,
+          })
+          .eq('id', existing.id);
+        
+        if (error) {
+          console.error('Error updating category:', error);
+        }
+      } else {
+        // Insert new with a proper UUID
+        const newId = crypto.randomUUID();
+        const { error } = await supabase
+          .from('custom_categories')
+          .insert({
+            id: newId,
+            user_id: userId,
+            name: category.name,
+            emoji: category.emoji,
+            xp_reward: category.xpReward,
+          });
+        
+        if (error) {
+          console.error('Error inserting category:', error);
+        }
+      }
       return;
     }
     
@@ -753,16 +821,15 @@ export const useCloudSync = () => {
           const previousCategories: CustomCategory[] = globalState.lastSyncedData.customCategories ? JSON.parse(globalState.lastSyncedData.customCategories) : [];
           const currentIds = new Set(state.customCategories.map(c => c.id));
           
-          // Save new and updated categories
+          // Save new and updated categories (including default overrides with non-UUID IDs)
           state.customCategories.forEach(category => {
-            if (!isValidUUID(category.id)) return;
             const prev = previousCategories.find(c => c.id === category.id);
             if (!prev || JSON.stringify(prev) !== JSON.stringify(category)) {
               saveCustomCategory(category);
             }
           });
           
-          // Delete removed categories
+          // Delete removed categories (only those with valid UUIDs can be deleted from DB)
           previousCategories.forEach(category => {
             if (!currentIds.has(category.id) && isValidUUID(category.id)) {
               deleteCustomCategory(category.id);
