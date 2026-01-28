@@ -156,7 +156,7 @@ export const CategoriesSection = () => {
   };
 
   return (
-    <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+    <section className="glass-card rounded-2xl p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">

@@ -15,7 +15,7 @@ export const DesktopBottomNav = () => {
   const { activeTab, setActiveTab } = useAppStore();
 
   return (
-    <nav className="hidden lg:block fixed bottom-0 left-0 right-0 z-50 glass border-t border-border">
+    <nav className="hidden lg:block fixed bottom-4 left-1/2 -translate-x-1/2 z-50 glass-card rounded-2xl max-w-md w-full mx-auto">
       <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
