@@ -157,10 +157,10 @@ export const useCloudSync = () => {
         useAppStore.getState().updateUser({
           id: userId,
           email: userEmail,
-          firstName: profileData.first_name || 'Usuário',
-          lastName: profileData.last_name || '',
-          birthDate: profileData.birth_date || undefined,
-          photo: profileData.photo || '',
+          firstName: profileData.first_name ||,
+          lastName: profileData.last_name ||,
+          birthDate: profileData.birth_date ||,
+          photo: profileData.photo ||,
         });
       } else {
         // Create initial user state if no profile exists yet
