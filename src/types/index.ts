@@ -84,8 +84,15 @@ export interface DracoState {
          'yellow' | 'neutral' | 'lilac' | 'mint';
 }
 
-export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint';
+export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint' | 'custom';
 export type ProgressDisplayMode = 'linear' | 'circular';
+
+// HSL Color for custom theme
+export interface HSLColor {
+  h: number; // 0-360
+  s: number; // 0-100
+  l: number; // 0-100
+}
 
 export interface NotificationReminder {
   id: string;
@@ -108,6 +115,7 @@ export interface PageProgressDisplayModes {
 
 export interface AppSettings {
   themeColor: ThemeColor;
+  customColor?: HSLColor; // Custom HSL color when themeColor is 'custom'
   progressDisplayMode: ProgressDisplayMode;
   pageProgressDisplayModes?: PageProgressDisplayModes;
   showEmojis: boolean;
@@ -118,6 +126,8 @@ export interface AppSettings {
   maxPhoneHours: number; // maximum recommended phone usage hours
   lastDailyLogDate?: string; // last date user filled the morning check-in
   accountCreatedAt?: string; // ISO date string of when the account was created
+  wallpaperLight?: string; // URL or data URL for light mode wallpaper
+  wallpaperDark?: string; // URL or data URL for dark mode wallpaper
 }
 
 export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';

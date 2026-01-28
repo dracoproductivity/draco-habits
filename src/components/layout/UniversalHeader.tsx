@@ -10,7 +10,7 @@ export const UniversalHeader = () => {
   const { isDesktop } = useResponsive();
 
   return (
-    <header className="flex items-center justify-between p-4 border-b border-border">
+    <header className="glass-card flex items-center justify-between p-4 mx-4 mt-4 rounded-2xl">
       {/* Left side - Logo (desktop only) + User info */}
       <div className="flex items-center gap-4">
         {/* Logo - Desktop only */}

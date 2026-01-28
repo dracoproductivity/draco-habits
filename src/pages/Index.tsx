@@ -9,6 +9,7 @@ import { AnalyticsPage } from './AnalyticsPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { DesktopBottomNav } from '@/components/layout/DesktopBottomNav';
+import { AppBackground } from '@/components/layout/AppBackground';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
 import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
 import { DailyLogReminder } from '@/components/daily/DailyLogReminder';
@@ -43,7 +44,15 @@ const Index = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.classList.toggle('dark', settings.darkMode);
-  }, [settings.themeColor, settings.darkMode]);
+    
+    // Apply custom color if theme is custom
+    if (settings.themeColor === 'custom' && settings.customColor) {
+      const { h, s, l } = settings.customColor;
+      document.documentElement.style.setProperty('--custom-h', h.toString());
+      document.documentElement.style.setProperty('--custom-s', `${s}%`);
+      document.documentElement.style.setProperty('--custom-l', `${l}%`);
+    }
+  }, [settings.themeColor, settings.darkMode, settings.customColor]);
 
   // Check if morning check-in should be shown - only once per session after 5am
   useEffect(() => {
@@ -119,7 +128,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <AppBackground>
       {/* Main Content */}
       <main className={cn(
         'transition-all duration-300',
@@ -141,7 +150,7 @@ const Index = () => {
           <DailyLogReminder onClick={handleReminderClick} />
         )}
       </AnimatePresence>
-    </div>
+    </AppBackground>
   );
 };
 

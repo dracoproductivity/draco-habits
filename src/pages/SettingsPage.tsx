@@ -23,12 +23,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCloudSync } from '@/hooks/useCloudSync';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ThemeColor, NotificationReminder, DracoState } from '@/types';
+import { ThemeColor, NotificationReminder, DracoState, HSLColor } from '@/types';
 import { DracoIcon, DRACO_IMAGES } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { Switch } from '@/components/ui/switch';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { CategoriesSection } from '@/components/settings/CategoriesSection';
+import { WallpaperSection } from '@/components/settings/WallpaperSection';
+import { ColorWheelPicker } from '@/components/ui/ColorWheelPicker';
 import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
@@ -110,6 +112,10 @@ export const SettingsPage = () => {
   const [photoPreview, setPhotoPreview] = useState(user?.photo || '');
   const [dracoName, setDracoName] = useState(draco.name || 'Draco');
   const [dracoNameError, setDracoNameError] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [customColor, setCustomColor] = useState<HSLColor>(
+    settings.customColor || { h: 200, s: 80, l: 50 }
+  );
 
   // Sync local state when user/draco data changes from cloud
   useEffect(() => {
@@ -314,7 +320,7 @@ export const SettingsPage = () => {
 
       <div className="space-y-4">
         {/* Profile Section */}
-        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+        <section className="glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <User className="w-5 h-5 text-primary-foreground" />
@@ -468,26 +474,33 @@ export const SettingsPage = () => {
           </div>
         </section>
 
+        {/* Wallpaper Section */}
+        <WallpaperSection />
+
         {/* Theme */}
-        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+        <section className="glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Palette className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h2 className="font-semibold text-foreground">Tema</h2>
+            <h2 className="font-semibold text-foreground">Cor do Tema</h2>
           </div>
 
           <div className="space-y-4">
+            {/* Preset Colors */}
             <div>
-              <p className="text-sm text-muted-foreground mb-3">Escolha sua cor</p>
+              <p className="text-sm text-muted-foreground mb-3">Cores predefinidas</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {THEME_OPTIONS.map((theme) => (
                   <button
                     key={theme.id}
-                    onClick={() => updateSettings({ themeColor: theme.id })}
+                    onClick={() => {
+                      updateSettings({ themeColor: theme.id });
+                      setShowColorPicker(false);
+                    }}
                     className={cn(
                       'relative w-8 h-8 rounded-full border-2 transition-all',
-                      settings.themeColor === theme.id 
+                      settings.themeColor === theme.id && !showColorPicker
                         ? 'border-primary ring-2 ring-primary/50 scale-110' 
                         : 'border-border/50 hover:border-primary/50 hover:scale-105'
                     )}
@@ -496,15 +509,73 @@ export const SettingsPage = () => {
                       backgroundColor: `hsl(${theme.color})` 
                     }}
                   >
-                    {settings.themeColor === theme.id && (
+                    {settings.themeColor === theme.id && !showColorPicker && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Check className="w-4 h-4 text-white drop-shadow-md" />
                       </div>
                     )}
                   </button>
                 ))}
+                
+                {/* Custom Color Button */}
+                <button
+                  onClick={() => {
+                    setShowColorPicker(!showColorPicker);
+                    if (!showColorPicker) {
+                      updateSettings({ themeColor: 'custom', customColor });
+                    }
+                  }}
+                  className={cn(
+                    'relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden',
+                    settings.themeColor === 'custom' || showColorPicker
+                      ? 'border-primary ring-2 ring-primary/50 scale-110' 
+                      : 'border-border/50 hover:border-primary/50 hover:scale-105'
+                  )}
+                  title="Cor personalizada"
+                  style={{
+                    background: `conic-gradient(
+                      from 0deg,
+                      hsl(0, 80%, 50%),
+                      hsl(60, 80%, 50%),
+                      hsl(120, 80%, 50%),
+                      hsl(180, 80%, 50%),
+                      hsl(240, 80%, 50%),
+                      hsl(300, 80%, 50%),
+                      hsl(360, 80%, 50%)
+                    )`,
+                  }}
+                >
+                  {(settings.themeColor === 'custom' || showColorPicker) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                      <Check className="w-4 h-4 text-white drop-shadow-md" />
+                    </div>
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Color Wheel Picker */}
+            <AnimatePresence>
+              {showColorPicker && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-4 border-t border-border/30">
+                    <p className="text-sm text-muted-foreground mb-4 text-center">Escolha qualquer cor</p>
+                    <ColorWheelPicker
+                      value={customColor}
+                      onChange={(color) => {
+                        setCustomColor(color);
+                        updateSettings({ themeColor: 'custom', customColor: color });
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="pt-4 border-t border-border/30">
               <div className="flex items-center justify-between">
@@ -549,7 +620,7 @@ export const SettingsPage = () => {
         <CategoriesSection />
 
         {/* Health Settings */}
-        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+        <section className="glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Moon className="w-5 h-5 text-primary-foreground" />
@@ -603,7 +674,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* Notifications */}
-        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+        <section className="glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <Bell className="w-5 h-5 text-primary-foreground" />
@@ -765,7 +836,7 @@ export const SettingsPage = () => {
         </section>
 
         {/* Account */}
-        <section className="bg-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl p-4">
+        <section className="glass-card rounded-2xl p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <User className="w-5 h-5 text-primary-foreground" />
