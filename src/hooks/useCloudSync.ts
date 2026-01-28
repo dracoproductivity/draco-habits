@@ -348,7 +348,7 @@ export const useCloudSync = () => {
   
   // Save profile to cloud
   const saveProfile = useCallback(async (profileData: Partial<User>) => {
-    const userId = userIdRef.current || user?.id;
+    const userId = userIdRef.current || user?.id || profileData.id;
     if (!userId) {
       console.warn('saveProfile: No user ID available');
       return;
