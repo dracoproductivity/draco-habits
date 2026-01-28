@@ -116,7 +116,7 @@ export const DailyPage = () => {
               {/* Top row: Radar (left) + Habits (center) + Calendar (right) */}
               <div className="grid grid-cols-3 gap-6" style={{ minHeight: '380px' }}>
                 {/* Left column - Radar chart centered with habits */}
-                <div className="flex flex-col justify-center">
+                <div className="glass-card rounded-2xl p-4 flex flex-col justify-center">
                   <div className="flex justify-center">
                     <div className="w-52">
                       <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
@@ -126,25 +126,25 @@ export const DailyPage = () => {
                 </div>
                 
                 {/* Middle column - Habits (centered title) */}
-                <div className="flex flex-col h-full">
+                <div className="glass-card rounded-2xl p-4 flex flex-col h-full">
                   <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
                 </div>
                 
                 {/* Right column - Calendar */}
-                <div className="flex flex-col justify-center">
+                <div className="glass-card rounded-2xl p-4 flex flex-col justify-center">
                   <HabitCalendar />
                 </div>
               </div>
               
               {/* Bottom row: Constância (left) + Porcentagens (center) + Progresso (right) */}
               <div className="grid grid-cols-3 gap-6 items-center">
-                {/* Left - Constância chart (Evolution) - no background */}
-                <div className="p-5" style={{ minHeight: '300px' }}>
+                {/* Left - Constância chart (Evolution) */}
+                <div className="glass-card rounded-2xl p-5" style={{ minHeight: '300px' }}>
                   <EvolutionChart compact />
                 </div>
                 
                 {/* Center - Period progress indicators */}
-                <div className="flex flex-col items-center justify-center">
+                <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
                   <div className="flex items-center justify-end mb-2 w-full">
                     <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
                   </div>
@@ -153,8 +153,8 @@ export const DailyPage = () => {
                   </div>
                 </div>
                 
-                {/* Right - Progresso chart - no background */}
-                <div className="p-5" style={{ minHeight: '300px' }}>
+                {/* Right - Progresso chart */}
+                <div className="glass-card rounded-2xl p-5" style={{ minHeight: '300px' }}>
                   <ProgressCharts compact hideEmoji />
                 </div>
               </div>
@@ -163,26 +163,33 @@ export const DailyPage = () => {
         ) : (
           /* Mobile/Tablet: Vertical stack */
           <div className="space-y-6">
-            <HabitList showProgressIndicators={false} centerTitle />
+            <div className="glass-card rounded-2xl p-4">
+              <HabitList showProgressIndicators={false} centerTitle />
+            </div>
             
             {/* Progress indicators with toggle */}
-            <div className="relative">
-              <div className="absolute right-0 top-0">
+            <div className="glass-card rounded-2xl p-4 relative">
+              <div className="absolute right-4 top-4">
                 <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
               </div>
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
             
             {/* Radar chart */}
-            <div className="flex justify-center">
+            <div className="glass-card rounded-2xl p-4 flex justify-center">
               <div className="w-48">
                 <h4 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h4>
                 <CategoryRadarChart compact className="h-[140px] w-full" />
               </div>
             </div>
             
-            <ProgressTimeline />
-            <HabitCalendar />
+            <div className="glass-card rounded-2xl">
+              <ProgressTimeline />
+            </div>
+            
+            <div className="glass-card rounded-2xl p-4">
+              <HabitCalendar />
+            </div>
           </div>
         )}
       </div>

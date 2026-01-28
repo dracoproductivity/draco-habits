@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Image, Sun, Moon, Upload, X, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Image, Sun, Moon, Upload, X, Check, Droplets, Eye } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { Slider } from '@/components/ui/slider';
 
 // Sample wallpapers (can be replaced with actual URLs)
 const SAMPLE_WALLPAPERS = {
@@ -27,6 +28,9 @@ export const WallpaperSection = () => {
   const { settings, updateSettings } = useAppStore();
   const [activeMode, setActiveMode] = useState<'light' | 'dark'>('dark');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const glassBlur = settings.glassBlur ?? 20;
+  const glassOpacity = settings.glassOpacity ?? 65;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,13 +87,16 @@ export const WallpaperSection = () => {
   const currentWallpaper = activeMode === 'light' ? settings.wallpaperLight : settings.wallpaperDark;
   const samples = activeMode === 'light' ? SAMPLE_WALLPAPERS.light : SAMPLE_WALLPAPERS.dark;
 
+  // Get actual wallpaper based on current mode for preview
+  const previewWallpaper = settings.darkMode ? settings.wallpaperDark : settings.wallpaperLight;
+
   return (
     <section className="glass-card rounded-2xl p-4">
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
           <Image className="w-5 h-5 text-primary-foreground" />
         </div>
-        <h2 className="font-semibold text-foreground">Wallpaper</h2>
+        <h2 className="font-semibold text-foreground">Wallpaper & Efeito Vidro</h2>
       </div>
 
       {/* Mode Toggle */}
@@ -100,7 +107,7 @@ export const WallpaperSection = () => {
             'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
             activeMode === 'light'
               ? 'bg-primary text-primary-foreground'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              : 'glass-button text-muted-foreground hover:text-foreground'
           )}
         >
           <Sun className="w-4 h-4" />
@@ -112,7 +119,7 @@ export const WallpaperSection = () => {
             'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
             activeMode === 'dark'
               ? 'bg-primary text-primary-foreground'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+              : 'glass-button text-muted-foreground hover:text-foreground'
           )}
         >
           <Moon className="w-4 h-4" />
@@ -141,7 +148,15 @@ export const WallpaperSection = () => {
           
           {/* Glass card preview */}
           <div className="absolute inset-4 flex items-center justify-center">
-            <div className="bg-card/60 backdrop-blur-xl border border-border/30 rounded-xl p-3 shadow-lg">
+            <div 
+              className="rounded-xl p-3 shadow-lg border"
+              style={{
+                background: `hsl(var(--card) / ${glassOpacity / 100})`,
+                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                borderColor: 'hsl(var(--border) / 0.3)',
+              }}
+            >
               <p className="text-xs text-foreground font-medium">Prévia do card</p>
             </div>
           </div>
@@ -187,7 +202,7 @@ export const WallpaperSection = () => {
       {/* Upload Custom */}
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="w-full py-3 flex items-center justify-center gap-2 border-2 border-dashed border-border/50 rounded-xl text-muted-foreground hover:border-primary/50 hover:text-primary transition-all"
+        className="w-full py-3 flex items-center justify-center gap-2 glass-button rounded-xl text-muted-foreground hover:text-primary transition-all"
       >
         <Upload className="w-4 h-4" />
         <span className="text-sm">Enviar imagem personalizada</span>
@@ -201,9 +216,104 @@ export const WallpaperSection = () => {
         className="hidden"
       />
       
-      <p className="text-xs text-muted-foreground mt-2 text-center">
+      <p className="text-xs text-muted-foreground mt-2 text-center mb-6">
         Tamanho máximo: 5MB
       </p>
+
+      {/* Glass Effect Controls */}
+      <div className="border-t border-border/30 pt-4 space-y-4">
+        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+          <Droplets className="w-4 h-4 text-primary" />
+          Efeito Vidro
+        </h3>
+
+        {/* Live Preview Box */}
+        <div 
+          className="h-32 rounded-xl overflow-hidden relative"
+          style={{
+            background: previewWallpaper?.startsWith('linear-gradient') 
+              ? previewWallpaper 
+              : previewWallpaper?.startsWith('data:') 
+                ? `url(${previewWallpaper}) center/cover`
+                : 'linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--secondary) / 0.3))',
+          }}
+        >
+          {previewWallpaper?.startsWith('data:') && (
+            <img 
+              src={previewWallpaper} 
+              alt="Preview background" 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          
+          {/* Preview content with live glass effect */}
+          <div className="absolute inset-3 flex items-center justify-center gap-3">
+            <div 
+              className="rounded-xl p-4 border flex-1"
+              style={{
+                background: `hsl(var(--card) / ${glassOpacity / 100})`,
+                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                borderColor: 'hsl(var(--border) / 0.3)',
+                boxShadow: '0 4px 30px hsl(var(--muted) / 0.1), inset 0 1px 0 hsl(var(--foreground) / 0.03)',
+              }}
+            >
+              <p className="text-sm font-medium text-foreground mb-1">Card de exemplo</p>
+              <p className="text-xs text-muted-foreground">Prévia em tempo real</p>
+            </div>
+            
+            <div 
+              className="rounded-lg px-4 py-2 border"
+              style={{
+                background: `hsl(var(--muted) / ${glassOpacity / 100})`,
+                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                borderColor: 'hsl(var(--border) / 0.3)',
+              }}
+            >
+              <p className="text-xs font-medium text-foreground">Botão</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Blur Slider */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Droplets className="w-3.5 h-3.5" />
+              Desfoque (Blur)
+            </label>
+            <span className="text-xs font-medium text-foreground">{glassBlur}px</span>
+          </div>
+          <Slider
+            value={[glassBlur]}
+            min={0}
+            max={40}
+            step={1}
+            onValueChange={(value) => updateSettings({ glassBlur: value[0] })}
+            className="w-full"
+          />
+        </div>
+
+        {/* Opacity Slider */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" />
+              Transparência
+            </label>
+            <span className="text-xs font-medium text-foreground">{glassOpacity}%</span>
+          </div>
+          <Slider
+            value={[glassOpacity]}
+            min={10}
+            max={100}
+            step={1}
+            onValueChange={(value) => updateSettings({ glassOpacity: value[0] })}
+            className="w-full"
+          />
+        </div>
+      </div>
     </section>
   );
 };

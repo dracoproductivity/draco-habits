@@ -40,7 +40,7 @@ export const GoalCard = ({ goal, index, onClick }: GoalCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={onClick}
-      className="w-full card-dark p-4 text-left card-hover"
+      className="w-full glass-card rounded-2xl p-4 text-left card-hover"
     >
       <div className="flex items-start gap-3">
         {settings.showEmojis && goal.emoji && (

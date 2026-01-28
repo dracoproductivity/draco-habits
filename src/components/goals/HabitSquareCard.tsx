@@ -39,7 +39,7 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
       className={cn(
-        "w-full aspect-square card-dark p-2 text-left card-hover flex flex-col justify-between transition-all min-h-0",
+        "w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between transition-all min-h-0 rounded-2xl",
         isCompleted && 'opacity-70'
       )}
       style={{ maxWidth: '140px', maxHeight: '140px' }}

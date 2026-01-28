@@ -59,7 +59,7 @@ export const HabitItem = ({
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
-      className="relative rounded-xl overflow-hidden cursor-pointer group"
+      className="relative glass-card rounded-xl overflow-hidden cursor-pointer group"
       onClick={onClick}
     >
       {/* Background fill animation */}

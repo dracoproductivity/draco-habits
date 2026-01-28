@@ -57,7 +57,7 @@ export const GoalSquareCard = ({ goal, index, onClick }: GoalSquareCardProps) =>
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
-      className="w-full aspect-square card-dark p-2 text-left card-hover flex flex-col justify-between min-h-0"
+      className="w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between min-h-0 rounded-2xl"
       style={{ maxWidth: '140px', maxHeight: '140px' }}
     >
       {/* Top section - Emoji and Type */}

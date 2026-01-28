@@ -119,6 +119,8 @@ const defaultSettings: AppSettings = {
   darkMode: true,
   minSleepHours: 7,
   maxPhoneHours: 2,
+  glassBlur: 20,
+  glassOpacity: 65,
 };
 
 // Empty defaults for first-time users
