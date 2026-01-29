@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
@@ -86,6 +86,14 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [hasMicroGoals, setHasMicroGoals] = useState(habit.hasMicroGoals || false);
   const [microGoalsCount, setMicroGoalsCount] = useState(habit.microGoalsCount || 2);
   const [microGoalsNames, setMicroGoalsNames] = useState<string[]>(habit.microGoalsNames || []);
+  
+  // Date range state for editing
+  const [startDate, setStartDate] = useState(habit.startDate || '');
+  const [endDate, setEndDate] = useState(habit.endDate || '');
+  
+  // Goal creation emoji
+  const [newGoalEmoji, setNewGoalEmoji] = useState('');
+  
   // Calculate habit progress using the new utility
   const habitProgress = useMemo(() => {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
@@ -195,6 +203,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       hasMicroGoals,
       microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
       microGoalsNames: hasMicroGoals && microGoalsNames.length > 0 ? microGoalsNames : undefined,
+      startDate: isOneTime ? undefined : (startDate || undefined),
+      endDate: isOneTime ? undefined : (endDate || undefined),
     });
     toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
     onClose();
@@ -212,7 +222,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   };
 
   const getNextStep = (current: GoalType): GoalType | null => {
-    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly', 'weekly'];
+    const sequence: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     const idx = sequence.indexOf(current);
     return idx < sequence.length - 1 ? sequence[idx + 1] : null;
   };
@@ -250,7 +260,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
 
     const newGoal = addGoal({
       name: newGoalName.trim(),
-      emoji: habit.emoji || undefined,
+      emoji: newGoalEmoji || habit.emoji || undefined,
       type: goalCreationStep,
       period: periods[goalCreationStep],
       progress: 0,
@@ -263,11 +273,13 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     if (nextStep) {
       setGoalCreationStep(nextStep);
       setNewGoalName('');
+      setNewGoalEmoji(''); // Reset emoji for next step
     } else {
       setSelectedGoalId(newGoal.id);
       setShowGoalCreation(false);
       setGoalCreationStep('yearly');
       setNewGoalName('');
+      setNewGoalEmoji('');
       setCreatedGoalIds({} as Record<GoalType, string>);
       toast({ title: 'Objetivos criados!', description: 'Hábito vinculado com sucesso.' });
     }
@@ -281,7 +293,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
@@ -522,12 +534,12 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 </div>
                 
                 <div className="flex gap-1 mb-2">
-                  {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
+                  {(['yearly', 'semestral', 'quarterly', 'monthly'] as GoalType[]).map((step, i) => (
                     <div
                       key={step}
                       className={cn(
                         'flex-1 h-1 rounded-full transition-colors',
-                        i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
+                        i <= ['yearly', 'semestral', 'quarterly', 'monthly'].indexOf(goalCreationStep)
                           ? 'bg-primary'
                           : 'bg-muted'
                       )}
@@ -535,13 +547,21 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   ))}
                 </div>
 
-                <input
-                  type="text"
-                  placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
-                  value={newGoalName}
-                  onChange={(e) => setNewGoalName(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                />
+                <div className="flex gap-2">
+                  <EmojiPickerButton
+                    value={newGoalEmoji}
+                    onChange={setNewGoalEmoji}
+                    placeholder="🎯"
+                    className="w-10 h-10"
+                  />
+                  <input
+                    type="text"
+                    placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
+                    value={newGoalName}
+                    onChange={(e) => setNewGoalName(e.target.value)}
+                    className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  />
+                </div>
                 
                 <button
                   onClick={handleCreateGoalSequence}
@@ -649,6 +669,42 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 )}
               </div>
             </div>
+
+            {/* Date Range for Recurrence */}
+            {!isOneTime && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <CalendarRange className="w-4 h-4 text-primary" />
+                  <h3 className="font-medium text-foreground">Período da Recorrência</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Data de início</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      max={endDate || undefined}
+                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Data de término</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      min={startDate || undefined}
+                      className="w-full p-2 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary text-sm"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ Alterações nas datas afetam apenas datas futuras, não o histórico passado.
+                </p>
+              </div>
+            )}
 
             {/* XP Reward */}
             <div>
