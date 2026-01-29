@@ -134,10 +134,12 @@ export const SettingsPage = () => {
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
 
-  // Sync settings to cloud when they change
+  // Sync settings to cloud when they change (only if user is authenticated)
   useEffect(() => {
-    saveSettings(settings);
-  }, [settings, saveSettings]);
+    if (authUser?.id) {
+      saveSettings(settings);
+    }
+  }, [settings, saveSettings, authUser?.id]);
 
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 0;

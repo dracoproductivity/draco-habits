@@ -191,6 +191,38 @@ const generateQuarterOptions = (includeNextYear = false) => {
   return options;
 };
 
+const generateSemesterOptions = (includeNextYear = false) => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentSemester = now.getMonth() < 6 ? 1 : 2;
+  
+  const options: { value: string; label: string }[] = [];
+  
+  // Current year semesters (from current semester onwards)
+  for (let s = currentSemester; s <= 2; s++) {
+    const label = s === 1 ? 'Jan-Jun' : 'Jul-Dez';
+    options.push({ 
+      value: `${s}º Sem - ${currentYear}`, 
+      label: `${s}º Sem - ${currentYear} (${label})` 
+    });
+  }
+  
+  // Next year semesters
+  if (includeNextYear) {
+    const nextYear = currentYear + 1;
+    options.push({ 
+      value: `1º Sem - ${nextYear}`, 
+      label: `1º Sem - ${nextYear} (Jan-Jun)` 
+    });
+    options.push({ 
+      value: `2º Sem - ${nextYear}`, 
+      label: `2º Sem - ${nextYear} (Jul-Dez)` 
+    });
+  }
+  
+  return options;
+};
+
 const generateYearOptions = () => {
   const currentYear = new Date().getFullYear();
   return [
@@ -204,6 +236,7 @@ const getPeriodOptions = (type: GoalType) => {
     case 'weekly': return generateWeekOptions(true);
     case 'monthly': return generateMonthOptions(true);
     case 'quarterly': return generateQuarterOptions(true);
+    case 'semestral': return generateSemesterOptions(true);
     case 'yearly': return generateYearOptions();
   }
 };
@@ -986,7 +1019,7 @@ export const GoalsPage = () => {
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Tipo de período</label>
                     <div className="grid grid-cols-4 gap-1">
-                      {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((type) => (
+                      {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
                         <button
                           key={type}
                           onClick={() => {
@@ -1037,12 +1070,12 @@ export const GoalsPage = () => {
                 <div className="space-y-4">
                   {/* Progress indicator */}
                   <div className="flex gap-1 mb-2">
-                    {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((step, i) => (
+                    {(['yearly', 'semestral', 'quarterly', 'monthly'] as GoalType[]).map((step, i) => (
                       <div
                         key={step}
                         className={cn(
                           'flex-1 h-1 rounded-full transition-colors',
-                          i <= ['yearly', 'quarterly', 'monthly', 'weekly'].indexOf(goalCreationStep)
+                          i <= ['yearly', 'semestral', 'quarterly', 'monthly'].indexOf(goalCreationStep)
                             ? 'bg-primary'
                             : 'bg-muted'
                         )}

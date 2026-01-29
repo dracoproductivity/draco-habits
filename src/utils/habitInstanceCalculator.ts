@@ -159,6 +159,21 @@ export const calculateHabitInstances = (
     periodEnd = endOfYear(now);
   }
   
+  // Apply habit's own start/end date constraints if defined
+  if (habit.startDate) {
+    const habitStart = parseISO(habit.startDate);
+    if (habitStart > periodStart) {
+      periodStart = habitStart;
+    }
+  }
+  
+  if (habit.endDate) {
+    const habitEnd = parseISO(habit.endDate);
+    if (habitEnd < periodEnd) {
+      periodEnd = habitEnd;
+    }
+  }
+  
   // Start from habit creation date or period start, whichever is later
   const effectiveStart = fromDate 
     ? (fromDate > habitCreatedAt ? fromDate : habitCreatedAt)
@@ -236,6 +251,21 @@ export const isHabitScheduledForDate = (
   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const createdDateOnly = new Date(habitCreatedAt.getFullYear(), habitCreatedAt.getMonth(), habitCreatedAt.getDate());
   if (dateOnly < createdDateOnly) return false;
+  
+  // Check habit's own start/end date constraints
+  if (habit.startDate) {
+    const startDateOnly = parseISO(habit.startDate);
+    if (dateOnly < new Date(startDateOnly.getFullYear(), startDateOnly.getMonth(), startDateOnly.getDate())) {
+      return false;
+    }
+  }
+  
+  if (habit.endDate) {
+    const endDateOnly = parseISO(habit.endDate);
+    if (dateOnly > new Date(endDateOnly.getFullYear(), endDateOnly.getMonth(), endDateOnly.getDate())) {
+      return false;
+    }
+  }
   
   // Check if date is within the goal's period (only if goal exists)
   if (linkedGoal) {
