@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Target, CalendarDays, BarChart3, Plus, Edit3 } from 'lucide-react';
+import { Moon, Smartphone, Plus, Edit3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,19 +15,15 @@ import {
   ReferenceArea,
   ReferenceLine,
 } from 'recharts';
-import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { EvolutionChart } from '@/components/daily/EvolutionChart';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { HealthLogModal } from '@/components/analytics/HealthLogModal';
-import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { cn } from '@/lib/utils';
 import { useResponsive } from '@/hooks/useResponsive';
-import { ProgressDisplayMode } from '@/types';
 
 type TimeRange = 'weekly' | 'monthly';
-type AnalyticsView = 'progress' | 'charts';
 
 export const AnalyticsPage = () => {
   const { settings, updateSettings, dailyLogs, habits, goals, habitChecks } = useAppStore();
@@ -48,7 +44,7 @@ export const AnalyticsPage = () => {
     updateSettings({
       pageProgressDisplayModes: {
         ...settings.pageProgressDisplayModes,
-        daily: settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode,
+        home: settings.pageProgressDisplayModes?.home || settings.progressDisplayMode,
         goals: settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode,
         analytics: newMode,
       }

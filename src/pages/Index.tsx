@@ -6,6 +6,7 @@ import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
 import { GoalsPage } from './GoalsPage';
 import { AnalyticsPage } from './AnalyticsPage';
+import { DataPage } from './DataPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { DesktopBottomNav } from '@/components/layout/DesktopBottomNav';
@@ -120,12 +121,14 @@ const Index = () => {
 
   const renderPage = () => {
     switch (activeTab) {
-      case 'daily':
+      case 'home':
         return <DailyPage />;
       case 'goals':
         return <GoalsPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'data':
+        return <DataPage />;
       case 'settings':
         return <SettingsPage />;
       default:
@@ -152,7 +155,7 @@ const Index = () => {
         onClose={handleMorningCheckInClose} 
       />
       <AnimatePresence>
-        {showDailyLogReminder && activeTab === 'daily' && (
+        {showDailyLogReminder && activeTab === 'home' && (
           <DailyLogReminder onClick={handleReminderClick} />
         )}
       </AnimatePresence>

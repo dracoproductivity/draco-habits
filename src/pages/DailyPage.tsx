@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { DailyHeader } from '@/components/daily/DailyHeader';
 import { HabitList } from '@/components/daily/HabitList';
-import { HabitCalendar } from '@/components/daily/HabitCalendar';
-import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { GoalCompletionModal } from '@/components/modals/GoalCompletionModal';
@@ -78,7 +76,7 @@ export const DailyPage = () => {
   
   // Per-page progress display mode
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
-    settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode
+    settings.pageProgressDisplayModes?.home || settings.progressDisplayMode
   );
   
   const toggleDisplayMode = () => {
@@ -87,7 +85,7 @@ export const DailyPage = () => {
     updateSettings({
       pageProgressDisplayModes: {
         ...settings.pageProgressDisplayModes,
-        daily: newMode,
+        home: newMode,
         goals: settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode,
         analytics: settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode,
       }
@@ -111,18 +109,13 @@ export const DailyPage = () => {
       )}>
         {isDesktop ? (
           <>
-            {/* Desktop: 3-column layout - Radar left | Habits center | Calendar right */}
+            {/* Desktop: 3-column layout */}
             <div className="flex flex-col gap-6">
-              {/* Top row: Radar (left) + Habits (center) + Calendar (right) */}
+              {/* Top row: Constância (left) + Habits (center) + Progresso (right) */}
               <div className="grid grid-cols-3 gap-6" style={{ minHeight: '380px' }}>
-                {/* Left column - Radar chart centered with habits */}
-                <div className="glass-card rounded-2xl p-4 flex flex-col justify-center">
-                  <div className="flex justify-center">
-                    <div className="w-52">
-                      <h3 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h3>
-                      <CategoryRadarChart className="h-[160px] w-full" compact />
-                    </div>
-                  </div>
+                {/* Left column - Constância chart */}
+                <div className="glass-card rounded-2xl p-5 flex flex-col justify-center">
+                  <EvolutionChart compact />
                 </div>
                 
                 {/* Middle column - Habits (centered title) */}
@@ -130,32 +123,19 @@ export const DailyPage = () => {
                   <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
                 </div>
                 
-                {/* Right column - Calendar */}
-                <div className="glass-card rounded-2xl p-4 flex flex-col justify-center">
-                  <HabitCalendar />
+                {/* Right column - Progresso chart */}
+                <div className="glass-card rounded-2xl p-5 flex flex-col justify-center">
+                  <ProgressCharts compact hideEmoji />
                 </div>
               </div>
               
-              {/* Bottom row: Constância (left) + Porcentagens (center) + Progresso (right) */}
-              <div className="grid grid-cols-3 gap-6 items-center">
-                {/* Left - Constância chart (Evolution) */}
-                <div className="glass-card rounded-2xl p-5" style={{ minHeight: '300px' }}>
-                  <EvolutionChart compact />
+              {/* Bottom row: Period progress indicators centered */}
+              <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-end mb-2 w-full">
+                  <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
                 </div>
-                
-                {/* Center - Period progress indicators */}
-                <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-end mb-2 w-full">
-                    <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
-                  </div>
-                  <div className="transform scale-90 origin-center">
-                    <PeriodProgressIndicators displayMode={localDisplayMode} />
-                  </div>
-                </div>
-                
-                {/* Right - Progresso chart */}
-                <div className="glass-card rounded-2xl p-5" style={{ minHeight: '300px' }}>
-                  <ProgressCharts compact hideEmoji />
+                <div className="transform scale-90 origin-center">
+                  <PeriodProgressIndicators displayMode={localDisplayMode} />
                 </div>
               </div>
             </div>
@@ -175,20 +155,8 @@ export const DailyPage = () => {
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
             
-            {/* Radar chart */}
-            <div className="glass-card rounded-2xl p-4 flex justify-center">
-              <div className="w-48">
-                <h4 className="font-medium text-muted-foreground text-sm mb-2 text-center">Categorias</h4>
-                <CategoryRadarChart compact className="h-[140px] w-full" />
-              </div>
-            </div>
-            
             <div className="glass-card rounded-2xl">
               <ProgressTimeline />
-            </div>
-            
-            <div className="glass-card rounded-2xl p-4">
-              <HabitCalendar />
             </div>
           </div>
         )}

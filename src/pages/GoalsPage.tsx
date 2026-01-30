@@ -255,7 +255,7 @@ export const GoalsPage = () => {
     updateSettings({
       pageProgressDisplayModes: {
         ...settings.pageProgressDisplayModes,
-        daily: settings.pageProgressDisplayModes?.daily || settings.progressDisplayMode,
+        home: settings.pageProgressDisplayModes?.home || settings.progressDisplayMode,
         goals: newMode,
         analytics: settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode,
       }
@@ -796,7 +796,7 @@ export const GoalsPage = () => {
                 <button
                   onClick={() => {
                     const { setActiveTab } = useAppStore.getState();
-                    setActiveTab('daily');
+                    setActiveTab('home');
                   }}
                   className="text-sm font-medium text-primary hover:underline"
                 >

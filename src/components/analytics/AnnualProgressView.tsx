@@ -65,7 +65,7 @@ export const AnnualProgressView = ({ displayMode }: AnnualProgressViewProps) => 
               <button
                 onClick={() => {
                   const { setActiveTab } = useAppStore.getState();
-                  setActiveTab('daily');
+                  setActiveTab('home');
                 }}
                 className="text-sm font-medium text-primary hover:underline"
               >
