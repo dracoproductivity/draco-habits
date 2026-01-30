@@ -109,7 +109,7 @@ export interface DailyLog {
 }
 
 export interface PageProgressDisplayModes {
-  daily: ProgressDisplayMode;
+  home: ProgressDisplayMode;
   goals: ProgressDisplayMode;
   analytics: ProgressDisplayMode;
 }
@@ -133,7 +133,7 @@ export interface AppSettings {
   glassOpacity: number; // 0-100 opacity percentage
 }
 
-export type TabType = 'daily' | 'goals' | 'analytics' | 'settings';
+export type TabType = 'home' | 'goals' | 'analytics' | 'data' | 'settings';
 
 export const DEFAULT_CATEGORIES: { id: GoalCategory; name: string; emoji: string }[] = [
   { id: 'physical_health', name: 'Saúde Física', emoji: '💪' },

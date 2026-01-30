@@ -141,7 +141,7 @@ export const useAppStore = create<AppStore>()(
       customCategories: [],
       dailyLogs: [],
       settings: defaultSettings,
-      activeTab: 'daily',
+      activeTab: 'home',
       showWelcomeModal: false,
 
       clearLevelUp: () => {
