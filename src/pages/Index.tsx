@@ -140,7 +140,7 @@ const Index = () => {
     <AppBackground>
       {/* Main Content */}
       <main className={cn(
-        'transition-all duration-300',
+        'transition-all duration-300 pt-4',
         isDesktop ? 'max-w-7xl mx-auto px-8 pb-24' : isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
       )}>
         {renderPage()}
