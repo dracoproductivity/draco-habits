@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Plus, Edit3 } from 'lucide-react';
+import { Moon, Smartphone, Plus, Edit3, Target } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,27 +29,8 @@ export const AnalyticsPage = () => {
   const { settings, updateSettings, dailyLogs, habits, goals, habitChecks } = useAppStore();
   const { isDesktop } = useResponsive();
 
-  const [analyticsView, setAnalyticsView] = useState<AnalyticsView>('progress');
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
-  
-  // Per-page progress display mode
-  const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
-    settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode
-  );
-  
-  const toggleDisplayMode = () => {
-    const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
-    setLocalDisplayMode(newMode);
-    updateSettings({
-      pageProgressDisplayModes: {
-        ...settings.pageProgressDisplayModes,
-        home: settings.pageProgressDisplayModes?.home || settings.progressDisplayMode,
-        goals: settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode,
-        analytics: newMode,
-      }
-    });
-  };
   
   // Health log modal state
   const [showSleepModal, setShowSleepModal] = useState(false);
@@ -134,320 +115,269 @@ export const AnalyticsPage = () => {
       <UniversalHeader />
 
       <div className="p-4">
-        {/* View Toggle with Progress Display Toggle */}
-        <div className="flex items-center gap-2 mb-6">
-          <button
-            onClick={() => setAnalyticsView('progress')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all',
-              analyticsView === 'progress'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-            )}
-          >
-            <CalendarDays className="w-4 h-4" />
-            Progresso Anual
-          </button>
-          <button
-            onClick={() => setAnalyticsView('charts')}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all',
-              analyticsView === 'charts'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-            )}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Gráficos
-          </button>
-          <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
-        </div>
+        <header className="mb-6">
+          <h1 className={`font-bold text-gradient-primary ${isDesktop ? 'text-3xl' : 'text-2xl'}`}>Análises</h1>
+          <p className="text-muted-foreground">Gráficos e estatísticas</p>
+        </header>
 
-        {analyticsView === 'progress' ? (
-          <AnnualProgressView displayMode={localDisplayMode} />
-        ) : (
-          <>
-            {/* Sleep & Phone Charts - Side by Side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Sleep Chart - Line chart with reference area */}
-              <div className="glass-card rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-                      <Moon className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">Horas de Sono</h3>
-                      <p className="text-xs text-muted-foreground">Mínimo: {minSleepHours}h</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setSleepTimeRange('weekly')}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        sleepTimeRange === 'weekly'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Semana
-                    </button>
-                    <button
-                      onClick={() => setSleepTimeRange('monthly')}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        sleepTimeRange === 'monthly'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Mês
-                    </button>
-                  </div>
-                </div>
-
-                {/* Register/Edit Button */}
-                <button
-                  onClick={() => setShowSleepModal(true)}
-                  className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
-                >
-                  {hasTodaySleep ? (
-                    <>
-                      <Edit3 className="w-4 h-4" />
-                      Alterar registro (hoje: {todayLog?.sleepHours}h)
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Registrar hoje
-                    </>
-                  )}
-                </button>
-
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getSleepData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis
-                        dataKey={sleepTimeRange === 'weekly' ? 'dayName' : 'date'}
-                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                        axisLine={{ stroke: 'hsl(var(--border))' }}
-                      />
-                      <YAxis
-                        domain={[0, 12]}
-                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                        axisLine={{ stroke: 'hsl(var(--border))' }}
-                        tickFormatter={(v) => `${v}h`}
-                      />
-                      <Tooltip content={<SleepTooltip />} />
-                      {/* Reference area for below minimum - light red */}
-                      <ReferenceArea
-                        y1={0}
-                        y2={minSleepHours}
-                        fill="hsl(0 80% 50%)"
-                        fillOpacity={0.08}
-                        label={{ value: 'Quantidade mínima', position: 'insideBottomRight', fill: 'hsl(0 60% 50%)', fontSize: 9 }}
-                      />
-                      <ReferenceLine
-                        y={minSleepHours}
-                        stroke="hsl(0 70% 50%)"
-                        strokeDasharray="5 5"
-                        strokeOpacity={0.5}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="hours"
-                        stroke="hsl(var(--muted-foreground))"
-                        strokeWidth={2}
-                        connectNulls={false}
-                        dot={(props: any) => {
-                          const { cx, cy, payload } = props;
-                          if (payload.hours === null) return null;
-                          // Colors: good (green) = above min, warning (yellow) = at min, bad (red) = below min
-                          const colorMap = {
-                            good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
-                            warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
-                            bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
-                          };
-                          const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
-                          return (
-                            <circle
-                              key={`sleep-dot-${payload.date || payload.dayName}`}
-                              cx={cx}
-                              cy={cy}
-                              r={5}
-                              fill={colors.fill}
-                              stroke={colors.stroke}
-                              strokeWidth={2}
-                            />
-                          );
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Phone Usage Chart - Line chart with reference area */}
-              <div className="glass-card rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
-                      <Smartphone className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground">Celular (inútil)</h3>
-                      <p className="text-xs text-muted-foreground">Máximo: {maxPhoneHours}h</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => setPhoneTimeRange('weekly')}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        phoneTimeRange === 'weekly'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Semana
-                    </button>
-                    <button
-                      onClick={() => setPhoneTimeRange('monthly')}
-                      className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                        phoneTimeRange === 'monthly'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      Mês
-                    </button>
-                  </div>
-                </div>
-
-                {/* Register/Edit Button */}
-                <button
-                  onClick={() => setShowPhoneModal(true)}
-                  className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
-                >
-                  {hasTodayPhone ? (
-                    <>
-                      <Edit3 className="w-4 h-4" />
-                      Alterar registro (hoje: {todayLog?.phoneUsageHours}h)
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Registrar hoje
-                    </>
-                  )}
-                </button>
-
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getPhoneData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis
-                        dataKey={phoneTimeRange === 'weekly' ? 'dayName' : 'date'}
-                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                        axisLine={{ stroke: 'hsl(var(--border))' }}
-                      />
-                      <YAxis
-                        domain={[0, 12]}
-                        tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                        axisLine={{ stroke: 'hsl(var(--border))' }}
-                        tickFormatter={(v) => `${v}h`}
-                      />
-                      <Tooltip content={<SleepTooltip />} />
-                      {/* Reference area for above maximum - light red */}
-                      <ReferenceArea
-                        y1={maxPhoneHours}
-                        y2={12}
-                        fill="hsl(0 80% 50%)"
-                        fillOpacity={0.08}
-                        label={{ value: 'Quantidade máxima', position: 'insideTopRight', fill: 'hsl(0 60% 50%)', fontSize: 9 }}
-                      />
-                      <ReferenceLine
-                        y={maxPhoneHours}
-                        stroke="hsl(0 70% 50%)"
-                        strokeDasharray="5 5"
-                        strokeOpacity={0.5}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="hours"
-                        stroke="hsl(var(--muted-foreground))"
-                        strokeWidth={2}
-                        connectNulls={false}
-                        dot={(props: any) => {
-                          const { cx, cy, payload } = props;
-                          if (payload.hours === null) return null;
-                          // Colors: good (green) = below max, warning (yellow) = at max, bad (red) = above max
-                          const colorMap = {
-                            good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
-                            warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
-                            bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
-                          };
-                          const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
-                          return (
-                            <circle
-                              key={`phone-dot-${payload.date || payload.dayName}`}
-                              cx={cx}
-                              cy={cy}
-                              r={5}
-                              fill={colors.fill}
-                              stroke={colors.stroke}
-                              strokeWidth={2}
-                            />
-                          );
-                        }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Category Radar Chart */}
-            <div className="glass-card rounded-2xl p-4 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-purple-400" />
+        {/* Sleep & Phone Charts - Side by Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Sleep Chart - Line chart with reference area */}
+          <div className="glass-card rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                  <Moon className="w-5 h-5 text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Categorias</h3>
-                  <p className="text-xs text-muted-foreground">Distribuição por categoria</p>
+                  <h3 className="font-semibold text-foreground">Horas de Sono</h3>
+                  <p className="text-xs text-muted-foreground">Mínimo: {minSleepHours}h</p>
                 </div>
               </div>
-              <div className="h-64">
-                <CategoryRadarChart className="h-full" />
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setSleepTimeRange('weekly')}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                    sleepTimeRange === 'weekly'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  Semana
+                </button>
+                <button
+                  onClick={() => setSleepTimeRange('monthly')}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                    sleepTimeRange === 'monthly'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  Mês
+                </button>
               </div>
             </div>
 
-            {/* Evolution + Progress Charts */}
-            {isDesktop ? (
-              // Desktop: Side by side
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="glass-card rounded-2xl p-5">
-                  <EvolutionChart />
+            {/* Register/Edit Button */}
+            <button
+              onClick={() => setShowSleepModal(true)}
+              className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
+            >
+              {hasTodaySleep ? (
+                <>
+                  <Edit3 className="w-4 h-4" />
+                  Alterar registro (hoje: {todayLog?.sleepHours}h)
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Registrar hoje
+                </>
+              )}
+            </button>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={getSleepData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis
+                    dataKey={sleepTimeRange === 'weekly' ? 'dayName' : 'date'}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis
+                    domain={[0, 12]}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickFormatter={(v) => `${v}h`}
+                  />
+                  <Tooltip content={<SleepTooltip />} />
+                  {/* Reference area for below minimum - light red */}
+                  <ReferenceArea
+                    y1={0}
+                    y2={minSleepHours}
+                    fill="hsl(0 80% 50%)"
+                    fillOpacity={0.08}
+                    label={{ value: 'Quantidade mínima', position: 'insideBottomRight', fill: 'hsl(0 60% 50%)', fontSize: 9 }}
+                  />
+                  <ReferenceLine
+                    y={minSleepHours}
+                    stroke="hsl(0 70% 50%)"
+                    strokeDasharray="5 5"
+                    strokeOpacity={0.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      if (payload.hours === null) return null;
+                      // Colors: good (green) = above min, warning (yellow) = at min, bad (red) = below min
+                      const colorMap = {
+                        good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
+                        warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
+                        bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
+                      };
+                      const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
+                      return (
+                        <circle
+                          key={`sleep-dot-${payload.date || payload.dayName}`}
+                          cx={cx}
+                          cy={cy}
+                          r={5}
+                          fill={colors.fill}
+                          stroke={colors.stroke}
+                          strokeWidth={2}
+                        />
+                      );
+                    }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Phone Usage Chart - Line chart with reference area */}
+          <div className="glass-card rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                  <Smartphone className="w-5 h-5 text-orange-400" />
                 </div>
-                <div className="glass-card rounded-2xl p-5">
-                  <ProgressCharts hideEmoji />
+                <div>
+                  <h3 className="font-semibold text-foreground">Celular (inútil)</h3>
+                  <p className="text-xs text-muted-foreground">Máximo: {maxPhoneHours}h</p>
                 </div>
               </div>
-            ) : (
-              // Mobile: Stacked
-              <div className="space-y-4 mb-6">
-                <div className="glass-card rounded-2xl p-5">
-                  <EvolutionChart />
-                </div>
-                <div className="glass-card rounded-2xl p-5">
-                  <ProgressCharts hideEmoji />
-                </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setPhoneTimeRange('weekly')}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                    phoneTimeRange === 'weekly'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  Semana
+                </button>
+                <button
+                  onClick={() => setPhoneTimeRange('monthly')}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
+                    phoneTimeRange === 'monthly'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  Mês
+                </button>
               </div>
-            )}
-          </>
-        )}
+            </div>
+
+            {/* Register/Edit Button */}
+            <button
+              onClick={() => setShowPhoneModal(true)}
+              className="w-full mb-3 py-2 px-3 rounded-xl bg-muted/30 hover:bg-muted/50 border border-border/30 text-sm text-foreground font-medium transition-all flex items-center justify-center gap-2"
+            >
+              {hasTodayPhone ? (
+                <>
+                  <Edit3 className="w-4 h-4" />
+                  Alterar registro (hoje: {todayLog?.phoneUsageHours}h)
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Registrar hoje
+                </>
+              )}
+            </button>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={getPhoneData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis
+                    dataKey={phoneTimeRange === 'weekly' ? 'dayName' : 'date'}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis
+                    domain={[0, 12]}
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickFormatter={(v) => `${v}h`}
+                  />
+                  <Tooltip content={<SleepTooltip />} />
+                  {/* Reference area for above maximum - light red */}
+                  <ReferenceArea
+                    y1={maxPhoneHours}
+                    y2={12}
+                    fill="hsl(0 80% 50%)"
+                    fillOpacity={0.08}
+                    label={{ value: 'Quantidade máxima', position: 'insideTopRight', fill: 'hsl(0 60% 50%)', fontSize: 9 }}
+                  />
+                  <ReferenceLine
+                    y={maxPhoneHours}
+                    stroke="hsl(0 70% 50%)"
+                    strokeDasharray="5 5"
+                    strokeOpacity={0.5}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="hsl(var(--muted-foreground))"
+                    strokeWidth={2}
+                    connectNulls={false}
+                    dot={(props: any) => {
+                      const { cx, cy, payload } = props;
+                      if (payload.hours === null) return null;
+                      // Colors: good (green) = below max, warning (yellow) = at max, bad (red) = above max
+                      const colorMap = {
+                        good: { fill: 'hsl(142 71% 45%)', stroke: 'hsl(142 71% 35%)' },
+                        warning: { fill: 'hsl(45 93% 47%)', stroke: 'hsl(45 93% 37%)' },
+                        bad: { fill: 'hsl(0 80% 55%)', stroke: 'hsl(0 80% 45%)' },
+                      };
+                      const colors = colorMap[payload.status as keyof typeof colorMap] || colorMap.good;
+                      return (
+                        <circle
+                          key={`phone-dot-${payload.date || payload.dayName}`}
+                          cx={cx}
+                          cy={cy}
+                          r={5}
+                          fill={colors.fill}
+                          stroke={colors.stroke}
+                          strokeWidth={2}
+                        />
+                      );
+                    }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Charts */}
+        <div className="space-y-6">
+          {/* Evolution Chart */}
+          <div className="glass-card rounded-2xl p-4">
+            <EvolutionChart />
+          </div>
+
+          {/* Progress Charts */}
+          <div className="glass-card rounded-2xl p-4">
+            <ProgressCharts />
+          </div>
+
+          {/* Category Radar Chart */}
+          <div className="glass-card rounded-2xl p-4">
+            <CategoryRadarChart />
+          </div>
+        </div>
       </div>
-      
+
       {/* Health Log Modals */}
       <HealthLogModal
         isOpen={showSleepModal}

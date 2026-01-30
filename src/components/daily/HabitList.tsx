@@ -418,6 +418,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   // Hierarchical creation state
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [newGoalName, setNewGoalName] = useState('');
+  const [newGoalEmoji, setNewGoalEmoji] = useState('');
   const [selectedWeekDays, setSelectedWeekDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [isOneTimeHabit, setIsOneTimeHabit] = useState(false);
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(1);
@@ -601,7 +602,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     
     const newGoal = addGoal({
       name: singleGoalName.trim(),
-      emoji: newHabitEmoji || undefined,
+      emoji: newGoalEmoji || undefined,
       type: singleGoalType as GoalType,
       period: singleGoalPeriod,
       progress: 0,
@@ -775,6 +776,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     setSingleGoalName('');
     setGoalCreationStep('yearly');
     setNewGoalName('');
+    setNewGoalEmoji('');
     setSelectedCategory('');
     setSelectedCategoryXP(20);
     setShowCategoryStep(false);
@@ -1291,20 +1293,27 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
                         {creationMode === 'single' ? (
                           <>
-                            {/* Single goal creation */}
-                            <input
-                              type="text"
-                              placeholder="Nome do objetivo"
-                              value={singleGoalName}
-                              onChange={(e) => setSingleGoalName(e.target.value)}
-                              className="w-full bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-                            />
+                            {/* Single goal creation with emoji */}
+                            <div className="flex gap-2">
+                              <EmojiPickerButton
+                                value={newGoalEmoji}
+                                onChange={setNewGoalEmoji}
+                                placeholder="🎯"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Nome do objetivo"
+                                value={singleGoalName}
+                                onChange={(e) => setSingleGoalName(e.target.value)}
+                                className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              />
+                            </div>
 
-                            {/* Period type selection */}
+                            {/* Period type selection - order: monthly, quarterly, semestral, yearly */}
                             <div>
                               <label className="text-xs text-muted-foreground mb-1 block">Tipo de período</label>
                               <div className="grid grid-cols-4 gap-1">
-                                {(['yearly', 'quarterly', 'monthly', 'weekly'] as GoalType[]).map((type) => (
+                                {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
                                   <button
                                     key={type}
                                     onClick={() => {
