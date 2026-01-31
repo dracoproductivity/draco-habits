@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Target, Settings, CalendarDays, BarChart3, Database } from 'lucide-react';
+import { Home, Target, Settings, CalendarDays, BarChart3 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { TabType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -7,10 +7,10 @@ import { DracoIcon } from '@/components/icons/DracoIcon';
 import dracoLogo from '@/assets/draco-logo-new.png';
 
 const tabs: { id: TabType; label: string; icon: typeof CalendarDays }[] = [
-  { id: 'home', label: 'Home', icon: CalendarDays },
+  { id: 'home', label: 'Home', icon: Home },
   { id: 'goals', label: 'Objetivos', icon: Target },
   { id: 'analytics', label: 'Análises', icon: BarChart3 },
-  { id: 'data', label: 'Data', icon: Database },
+  { id: 'data', label: 'Data', icon: CalendarDays },
   { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
