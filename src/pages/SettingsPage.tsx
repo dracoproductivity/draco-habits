@@ -78,7 +78,7 @@ const FRIENDLY_MESSAGES = [
 export const SettingsPage = () => {
   const { settings, updateSettings, logout, user, updateUser, draco, updateDraco } = useAppStore();
   const { signOut, user: authUser, resetPassword } = useAuth();
-  const { saveProfile, saveDraco, saveSettings } = useCloudSync();
+  const { saveProfile, saveDraco } = useCloudSync();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showAddReminder, setShowAddReminder] = useState(false);
@@ -133,13 +133,6 @@ export const SettingsPage = () => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.classList.toggle('dark', settings.darkMode);
   }, [settings.themeColor, settings.darkMode]);
-
-  // Sync settings to cloud when they change (only if user is authenticated)
-  useEffect(() => {
-    if (authUser?.id) {
-      saveSettings(settings);
-    }
-  }, [settings, saveSettings, authUser?.id]);
 
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 0;
