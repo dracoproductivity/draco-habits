@@ -335,6 +335,8 @@ export type Database = {
           account_created_at: string | null
           created_at: string
           dark_mode: boolean
+          glass_blur: number
+          glass_opacity: number
           id: string
           last_daily_log_date: string | null
           max_phone_hours: number | null
@@ -346,11 +348,17 @@ export type Database = {
           theme_color: string
           updated_at: string
           user_id: string
+          wallpaper_dark: string | null
+          wallpaper_light: string | null
+          wallpaper_mobile_dark: string | null
+          wallpaper_mobile_light: string | null
         }
         Insert: {
           account_created_at?: string | null
           created_at?: string
           dark_mode?: boolean
+          glass_blur?: number
+          glass_opacity?: number
           id?: string
           last_daily_log_date?: string | null
           max_phone_hours?: number | null
@@ -362,11 +370,17 @@ export type Database = {
           theme_color?: string
           updated_at?: string
           user_id: string
+          wallpaper_dark?: string | null
+          wallpaper_light?: string | null
+          wallpaper_mobile_dark?: string | null
+          wallpaper_mobile_light?: string | null
         }
         Update: {
           account_created_at?: string | null
           created_at?: string
           dark_mode?: boolean
+          glass_blur?: number
+          glass_opacity?: number
           id?: string
           last_daily_log_date?: string | null
           max_phone_hours?: number | null
@@ -378,6 +392,10 @@ export type Database = {
           theme_color?: string
           updated_at?: string
           user_id?: string
+          wallpaper_dark?: string | null
+          wallpaper_light?: string | null
+          wallpaper_mobile_dark?: string | null
+          wallpaper_mobile_light?: string | null
         }
         Relationships: []
       }
