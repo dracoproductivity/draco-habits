@@ -127,8 +127,10 @@ export interface AppSettings {
   maxPhoneHours: number; // maximum recommended phone usage hours
   lastDailyLogDate?: string; // last date user filled the morning check-in
   accountCreatedAt?: string; // ISO date string of when the account was created
-  wallpaperLight?: string; // URL or data URL for light mode wallpaper
-  wallpaperDark?: string; // URL or data URL for dark mode wallpaper
+  wallpaperLight?: string; // URL or data URL for light mode wallpaper (desktop)
+  wallpaperDark?: string; // URL or data URL for dark mode wallpaper (desktop)
+  wallpaperMobileLight?: string; // URL or data URL for light mode wallpaper (mobile)
+  wallpaperMobileDark?: string; // URL or data URL for dark mode wallpaper (mobile)
   glassBlur: number; // 0-40 blur level in px
   glassOpacity: number; // 0-100 opacity percentage
 }

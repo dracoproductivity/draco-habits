@@ -44,6 +44,12 @@ interface SettingsRow {
   max_phone_hours: number | null;
   account_created_at: string | null;
   last_daily_log_date: string | null;
+  wallpaper_light: string | null;
+  wallpaper_dark: string | null;
+  wallpaper_mobile_light: string | null;
+  wallpaper_mobile_dark: string | null;
+  glass_blur: number;
+  glass_opacity: number;
 }
 
 interface GoalRow {
@@ -221,6 +227,12 @@ export const useCloudSync = () => {
           maxPhoneHours: settings.max_phone_hours || 2,
           accountCreatedAt: settings.account_created_at || undefined,
           lastDailyLogDate: settings.last_daily_log_date || undefined,
+          wallpaperLight: settings.wallpaper_light || undefined,
+          wallpaperDark: settings.wallpaper_dark || undefined,
+          wallpaperMobileLight: settings.wallpaper_mobile_light || undefined,
+          wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
+          glassBlur: settings.glass_blur ?? 20,
+          glassOpacity: settings.glass_opacity ?? 65,
         });
       }
 
@@ -409,6 +421,12 @@ export const useCloudSync = () => {
           max_phone_hours: mergedSettings.maxPhoneHours,
           account_created_at: mergedSettings.accountCreatedAt,
           last_daily_log_date: mergedSettings.lastDailyLogDate,
+          wallpaper_light: mergedSettings.wallpaperLight ?? null,
+          wallpaper_dark: mergedSettings.wallpaperDark ?? null,
+          wallpaper_mobile_light: mergedSettings.wallpaperMobileLight ?? null,
+          wallpaper_mobile_dark: mergedSettings.wallpaperMobileDark ?? null,
+          glass_blur: mergedSettings.glassBlur ?? 20,
+          glass_opacity: mergedSettings.glassOpacity ?? 65,
         },
         { onConflict: "user_id" },
       );
