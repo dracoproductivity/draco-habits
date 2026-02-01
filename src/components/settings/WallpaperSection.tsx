@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Image, Sun, Moon, Upload, X, Check, Droplets, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Image, Sun, Moon, Upload, X, Check, Droplets, Eye, Monitor, Smartphone } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { Slider } from '@/components/ui/slider';
+import { ImageCropper } from '@/components/ui/ImageCropper';
 
 // Sample wallpapers (can be replaced with actual URLs)
 const SAMPLE_WALLPAPERS = {
@@ -24,13 +25,33 @@ const SAMPLE_WALLPAPERS = {
   ],
 };
 
+type DeviceType = 'desktop' | 'mobile';
+type ThemeMode = 'light' | 'dark';
+
 export const WallpaperSection = () => {
   const { settings, updateSettings } = useAppStore();
-  const [activeMode, setActiveMode] = useState<'light' | 'dark'>('dark');
+  const [deviceType, setDeviceType] = useState<DeviceType>('desktop');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Cropper state
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
 
   const glassBlur = settings.glassBlur ?? 20;
   const glassOpacity = settings.glassOpacity ?? 65;
+
+  // Get current wallpaper based on device type and theme mode
+  const getCurrentWallpaper = () => {
+    if (deviceType === 'mobile') {
+      return themeMode === 'light' 
+        ? settings.wallpaperMobileLight 
+        : settings.wallpaperMobileDark;
+    }
+    return themeMode === 'light' 
+      ? settings.wallpaperLight 
+      : settings.wallpaperDark;
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,25 +69,59 @@ export const WallpaperSection = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        if (activeMode === 'light') {
-          updateSettings({ wallpaperLight: result });
-        } else {
-          updateSettings({ wallpaperDark: result });
-        }
-        toast({
-          title: 'Wallpaper atualizado! 🎨',
-          description: `Wallpaper do modo ${activeMode === 'light' ? 'claro' : 'escuro'} alterado`,
-        });
+        setPendingImage(result);
+        setShowCropper(true);
       };
       reader.readAsDataURL(file);
     }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropSave = (croppedImage: string) => {
+    // Save based on current device type and theme mode
+    if (deviceType === 'mobile') {
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperMobileLight: croppedImage });
+      } else {
+        updateSettings({ wallpaperMobileDark: croppedImage });
+      }
+    } else {
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperLight: croppedImage });
+      } else {
+        updateSettings({ wallpaperDark: croppedImage });
+      }
+    }
+    
+    setShowCropper(false);
+    setPendingImage(null);
+    toast({
+      title: 'Wallpaper atualizado! 🎨',
+      description: `Wallpaper ${deviceType === 'mobile' ? 'mobile' : 'desktop'} do modo ${themeMode === 'light' ? 'claro' : 'escuro'} alterado`,
+    });
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setPendingImage(null);
   };
 
   const selectWallpaper = (gradient: string) => {
-    if (activeMode === 'light') {
-      updateSettings({ wallpaperLight: gradient });
+    if (deviceType === 'mobile') {
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperMobileLight: gradient });
+      } else {
+        updateSettings({ wallpaperMobileDark: gradient });
+      }
     } else {
-      updateSettings({ wallpaperDark: gradient });
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperLight: gradient });
+      } else {
+        updateSettings({ wallpaperDark: gradient });
+      }
     }
     toast({
       title: 'Wallpaper selecionado! 🎨',
@@ -74,246 +129,305 @@ export const WallpaperSection = () => {
   };
 
   const clearWallpaper = () => {
-    if (activeMode === 'light') {
-      updateSettings({ wallpaperLight: undefined });
+    if (deviceType === 'mobile') {
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperMobileLight: undefined });
+      } else {
+        updateSettings({ wallpaperMobileDark: undefined });
+      }
     } else {
-      updateSettings({ wallpaperDark: undefined });
+      if (themeMode === 'light') {
+        updateSettings({ wallpaperLight: undefined });
+      } else {
+        updateSettings({ wallpaperDark: undefined });
+      }
     }
     toast({
       title: 'Wallpaper removido',
     });
   };
 
-  const currentWallpaper = activeMode === 'light' ? settings.wallpaperLight : settings.wallpaperDark;
-  const samples = activeMode === 'light' ? SAMPLE_WALLPAPERS.light : SAMPLE_WALLPAPERS.dark;
+  const currentWallpaper = getCurrentWallpaper();
+  const samples = themeMode === 'light' ? SAMPLE_WALLPAPERS.light : SAMPLE_WALLPAPERS.dark;
 
   // Get actual wallpaper based on current mode for preview
   const previewWallpaper = settings.darkMode ? settings.wallpaperDark : settings.wallpaperLight;
 
+  // Aspect ratio based on device type
+  const cropAspectRatio = deviceType === 'mobile' ? 9 / 16 : 16 / 9;
+
   return (
-    <section className="glass-card rounded-2xl p-4">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-          <Image className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <h2 className="font-semibold text-foreground">Wallpaper & Efeito Vidro</h2>
-      </div>
-
-      {/* Mode Toggle */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setActiveMode('light')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
-            activeMode === 'light'
-              ? 'bg-primary text-primary-foreground'
-              : 'glass-button text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <Sun className="w-4 h-4" />
-          <span className="text-sm font-medium">Modo Claro</span>
-        </button>
-        <button
-          onClick={() => setActiveMode('dark')}
-          className={cn(
-            'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
-            activeMode === 'dark'
-              ? 'bg-primary text-primary-foreground'
-              : 'glass-button text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <Moon className="w-4 h-4" />
-          <span className="text-sm font-medium">Modo Escuro</span>
-        </button>
-      </div>
-
-      {/* Current Wallpaper Preview */}
-      <div className="mb-4">
-        <p className="text-xs text-muted-foreground mb-2">Wallpaper atual</p>
-        <div 
-          className="h-24 rounded-xl border border-border/50 overflow-hidden relative"
-          style={{
-            background: currentWallpaper?.startsWith('linear-gradient') || currentWallpaper?.startsWith('data:')
-              ? (currentWallpaper.startsWith('data:') ? `url(${currentWallpaper}) center/cover` : currentWallpaper)
-              : 'hsl(var(--background))',
-          }}
-        >
-          {currentWallpaper?.startsWith('data:') && (
-            <img 
-              src={currentWallpaper} 
-              alt="Wallpaper preview" 
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-          
-          {/* Glass card preview */}
-          <div className="absolute inset-4 flex items-center justify-center">
-            <div 
-              className="rounded-xl p-3 shadow-lg border"
-              style={{
-                background: `hsl(var(--card) / ${glassOpacity / 100})`,
-                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                borderColor: 'hsl(var(--border) / 0.3)',
-              }}
-            >
-              <p className="text-xs text-foreground font-medium">Prévia do card</p>
-            </div>
+    <>
+      <section className="glass-card rounded-2xl p-4">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+            <Image className="w-5 h-5 text-primary-foreground" />
           </div>
-
-          {currentWallpaper && (
-            <button
-              onClick={clearWallpaper}
-              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center hover:bg-destructive transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          )}
+          <h2 className="font-semibold text-foreground">Wallpaper & Efeito Vidro</h2>
         </div>
-      </div>
 
-      {/* Sample Wallpapers */}
-      <div className="mb-4">
-        <p className="text-xs text-muted-foreground mb-2">Escolha um wallpaper</p>
-        <div className="grid grid-cols-5 gap-2">
-          {samples.map((sample) => (
-            <button
-              key={sample.id}
-              onClick={() => selectWallpaper(sample.gradient)}
-              className={cn(
-                'aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:scale-105',
-                currentWallpaper === sample.gradient
-                  ? 'border-primary ring-2 ring-primary/50'
-                  : 'border-border/50'
-              )}
-              style={{ background: sample.gradient }}
-              title={sample.name}
-            >
-              {currentWallpaper === sample.gradient && (
-                <div className="w-full h-full flex items-center justify-center bg-primary/30">
-                  <Check className="w-4 h-4 text-white drop-shadow-md" />
-                </div>
-              )}
-            </button>
-          ))}
+        {/* Device Type Toggle */}
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => setDeviceType('desktop')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
+              deviceType === 'desktop'
+                ? 'bg-primary text-primary-foreground'
+                : 'glass-button text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Monitor className="w-4 h-4" />
+            <span className="text-sm font-medium">Desktop</span>
+          </button>
+          <button
+            onClick={() => setDeviceType('mobile')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
+              deviceType === 'mobile'
+                ? 'bg-primary text-primary-foreground'
+                : 'glass-button text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span className="text-sm font-medium">Mobile</span>
+          </button>
         </div>
-      </div>
 
-      {/* Upload Custom */}
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="w-full py-3 flex items-center justify-center gap-2 glass-button rounded-xl text-muted-foreground hover:text-primary transition-all"
-      >
-        <Upload className="w-4 h-4" />
-        <span className="text-sm">Enviar imagem personalizada</span>
-      </button>
-      
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
-      
-      <p className="text-xs text-muted-foreground mt-2 text-center mb-6">
-        Tamanho máximo: 5MB
-      </p>
+        {/* Theme Mode Toggle */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setThemeMode('light')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
+              themeMode === 'light'
+                ? 'bg-secondary text-secondary-foreground'
+                : 'glass-button text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Sun className="w-4 h-4" />
+            <span className="text-sm font-medium">Modo Claro</span>
+          </button>
+          <button
+            onClick={() => setThemeMode('dark')}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl transition-all',
+              themeMode === 'dark'
+                ? 'bg-secondary text-secondary-foreground'
+                : 'glass-button text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Moon className="w-4 h-4" />
+            <span className="text-sm font-medium">Modo Escuro</span>
+          </button>
+        </div>
 
-      {/* Glass Effect Controls */}
-      <div className="border-t border-border/30 pt-4 space-y-4">
-        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-primary" />
-          Efeito Vidro
-        </h3>
-
-        {/* Live Preview Box */}
-        <div 
-          className="h-32 rounded-xl overflow-hidden relative"
-          style={{
-            background: previewWallpaper?.startsWith('linear-gradient') 
-              ? previewWallpaper 
-              : previewWallpaper?.startsWith('data:') 
-                ? `url(${previewWallpaper}) center/cover`
-                : 'linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--secondary) / 0.3))',
-          }}
-        >
-          {previewWallpaper?.startsWith('data:') && (
-            <img 
-              src={previewWallpaper} 
-              alt="Preview background" 
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-          
-          {/* Preview content with live glass effect */}
-          <div className="absolute inset-3 flex items-center justify-center gap-3">
-            <div 
-              className="rounded-xl p-4 border flex-1"
-              style={{
-                background: `hsl(var(--card) / ${glassOpacity / 100})`,
-                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                borderColor: 'hsl(var(--border) / 0.3)',
-                boxShadow: '0 4px 30px hsl(var(--muted) / 0.1), inset 0 1px 0 hsl(var(--foreground) / 0.03)',
-              }}
-            >
-              <p className="text-sm font-medium text-foreground mb-1">Card de exemplo</p>
-              <p className="text-xs text-muted-foreground">Prévia em tempo real</p>
-            </div>
+        {/* Current Wallpaper Preview */}
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-2">
+            Wallpaper atual ({deviceType === 'mobile' ? 'Mobile' : 'Desktop'} - {themeMode === 'light' ? 'Claro' : 'Escuro'})
+          </p>
+          <div 
+            className={cn(
+              "rounded-xl border border-border/50 overflow-hidden relative",
+              deviceType === 'mobile' ? 'h-40 max-w-[100px] mx-auto' : 'h-24'
+            )}
+            style={{
+              background: currentWallpaper?.startsWith('linear-gradient') || currentWallpaper?.startsWith('data:')
+                ? (currentWallpaper.startsWith('data:') ? `url(${currentWallpaper}) center/cover` : currentWallpaper)
+                : 'hsl(var(--background))',
+            }}
+          >
+            {currentWallpaper?.startsWith('data:') && (
+              <img 
+                src={currentWallpaper} 
+                alt="Wallpaper preview" 
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
             
-            <div 
-              className="rounded-lg px-4 py-2 border"
-              style={{
-                background: `hsl(var(--muted) / ${glassOpacity / 100})`,
-                backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
-                borderColor: 'hsl(var(--border) / 0.3)',
-              }}
-            >
-              <p className="text-xs font-medium text-foreground">Botão</p>
+            {/* Glass card preview */}
+            <div className="absolute inset-2 flex items-center justify-center">
+              <div 
+                className="rounded-xl p-2 shadow-lg border"
+                style={{
+                  background: `hsl(var(--card) / ${glassOpacity / 100})`,
+                  backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  borderColor: 'hsl(var(--border) / 0.3)',
+                }}
+              >
+                <p className="text-xs text-foreground font-medium">Prévia</p>
+              </div>
+            </div>
+
+            {currentWallpaper && (
+              <button
+                onClick={clearWallpaper}
+                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-destructive/80 text-destructive-foreground flex items-center justify-center hover:bg-destructive transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Sample Wallpapers */}
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground mb-2">Escolha um wallpaper</p>
+          <div className="grid grid-cols-5 gap-2">
+            {samples.map((sample) => (
+              <button
+                key={sample.id}
+                onClick={() => selectWallpaper(sample.gradient)}
+                className={cn(
+                  'aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:scale-105',
+                  currentWallpaper === sample.gradient
+                    ? 'border-primary ring-2 ring-primary/50'
+                    : 'border-border/50'
+                )}
+                style={{ background: sample.gradient }}
+                title={sample.name}
+              >
+                {currentWallpaper === sample.gradient && (
+                  <div className="w-full h-full flex items-center justify-center bg-primary/30">
+                    <Check className="w-4 h-4 text-white drop-shadow-md" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Upload Custom */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="w-full py-3 flex items-center justify-center gap-2 glass-button rounded-xl text-muted-foreground hover:text-primary transition-all"
+        >
+          <Upload className="w-4 h-4" />
+          <span className="text-sm">Enviar imagem personalizada</span>
+        </button>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        
+        <p className="text-xs text-muted-foreground mt-2 text-center mb-6">
+          Tamanho máximo: 5MB • Você poderá ajustar zoom e posição
+        </p>
+
+        {/* Glass Effect Controls */}
+        <div className="border-t border-border/30 pt-4 space-y-4">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-primary" />
+            Efeito Vidro
+          </h3>
+
+          {/* Live Preview Box */}
+          <div 
+            className="h-32 rounded-xl overflow-hidden relative"
+            style={{
+              background: previewWallpaper?.startsWith('linear-gradient') 
+                ? previewWallpaper 
+                : previewWallpaper?.startsWith('data:') 
+                  ? `url(${previewWallpaper}) center/cover`
+                  : 'linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--secondary) / 0.3))',
+            }}
+          >
+            {previewWallpaper?.startsWith('data:') && (
+              <img 
+                src={previewWallpaper} 
+                alt="Preview background" 
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
+            
+            {/* Preview content with live glass effect */}
+            <div className="absolute inset-3 flex items-center justify-center gap-3">
+              <div 
+                className="rounded-xl p-4 border flex-1"
+                style={{
+                  background: `hsl(var(--card) / ${glassOpacity / 100})`,
+                  backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  borderColor: 'hsl(var(--border) / 0.3)',
+                  boxShadow: '0 4px 30px hsl(var(--muted) / 0.1), inset 0 1px 0 hsl(var(--foreground) / 0.03)',
+                }}
+              >
+                <p className="text-sm font-medium text-foreground mb-1">Card de exemplo</p>
+                <p className="text-xs text-muted-foreground">Prévia em tempo real</p>
+              </div>
+              
+              <div 
+                className="rounded-lg px-4 py-2 border"
+                style={{
+                  background: `hsl(var(--muted) / ${glassOpacity / 100})`,
+                  backdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  WebkitBackdropFilter: `blur(${glassBlur}px) saturate(180%)`,
+                  borderColor: 'hsl(var(--border) / 0.3)',
+                }}
+              >
+                <p className="text-xs font-medium text-foreground">Botão</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Blur Slider */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Droplets className="w-3.5 h-3.5" />
-              Desfoque (Blur)
-            </label>
-            <span className="text-xs font-medium text-foreground">{glassBlur}px</span>
+          {/* Blur Slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Droplets className="w-3.5 h-3.5" />
+                Desfoque (Blur)
+              </label>
+              <span className="text-xs font-medium text-foreground">{glassBlur}px</span>
+            </div>
+            <Slider
+              value={[glassBlur]}
+              min={0}
+              max={40}
+              step={1}
+              onValueChange={(value) => updateSettings({ glassBlur: value[0] })}
+              className="w-full"
+            />
           </div>
-          <Slider
-            value={[glassBlur]}
-            min={0}
-            max={40}
-            step={1}
-            onValueChange={(value) => updateSettings({ glassBlur: value[0] })}
-            className="w-full"
-          />
-        </div>
 
-        {/* Opacity Slider */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5" />
-              Transparência
-            </label>
-            <span className="text-xs font-medium text-foreground">{glassOpacity}%</span>
+          {/* Opacity Slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Eye className="w-3.5 h-3.5" />
+                Transparência
+              </label>
+              <span className="text-xs font-medium text-foreground">{glassOpacity}%</span>
+            </div>
+            <Slider
+              value={[glassOpacity]}
+              min={10}
+              max={100}
+              step={1}
+              onValueChange={(value) => updateSettings({ glassOpacity: value[0] })}
+              className="w-full"
+            />
           </div>
-          <Slider
-            value={[glassOpacity]}
-            min={10}
-            max={100}
-            step={1}
-            onValueChange={(value) => updateSettings({ glassOpacity: value[0] })}
-            className="w-full"
-          />
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Image Cropper Modal */}
+      <AnimatePresence>
+        {showCropper && pendingImage && (
+          <ImageCropper
+            imageSrc={pendingImage}
+            aspectRatio={cropAspectRatio}
+            onSave={handleCropSave}
+            onCancel={handleCropCancel}
+            outputWidth={deviceType === 'mobile' ? 1080 : 1920}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };

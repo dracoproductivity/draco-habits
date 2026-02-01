@@ -31,6 +31,7 @@ import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { CategoriesSection } from '@/components/settings/CategoriesSection';
 import { WallpaperSection } from '@/components/settings/WallpaperSection';
 import { ColorWheelPicker } from '@/components/ui/ColorWheelPicker';
+import { ImageCropper } from '@/components/ui/ImageCropper';
 import { format, differenceInYears, parse } from 'date-fns';
 
 const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
@@ -116,6 +117,10 @@ export const SettingsPage = () => {
   const [customColor, setCustomColor] = useState<HSLColor>(
     settings.customColor || { h: 200, s: 80, l: 50 }
   );
+  
+  // Photo cropper state
+  const [pendingPhoto, setPendingPhoto] = useState<string | null>(null);
+  const [showPhotoCropper, setShowPhotoCropper] = useState(false);
 
   // Sync local state when user/draco data changes from cloud
   useEffect(() => {
@@ -166,13 +171,41 @@ export const SettingsPage = () => {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: 'O tamanho máximo é 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        setPhotoPreview(result);
+        setPendingPhoto(result);
+        setShowPhotoCropper(true);
       };
       reader.readAsDataURL(file);
     }
+    // Reset input value to allow re-selecting the same file
+    e.target.value = '';
+  };
+
+  const handlePhotoCropSave = (croppedPhoto: string) => {
+    setPhotoPreview(croppedPhoto);
+    setShowPhotoCropper(false);
+    setPendingPhoto(null);
+    toast({
+      title: 'Foto ajustada! 📸',
+      description: 'Lembre-se de salvar o perfil para aplicar',
+    });
+  };
+
+  const handlePhotoCropCancel = () => {
+    setShowPhotoCropper(false);
+    setPendingPhoto(null);
   };
 
   const handleDracoNameChange = (value: string) => {
@@ -947,6 +980,20 @@ export const SettingsPage = () => {
         </section>
       </div>
       </div>
+
+      {/* Photo Cropper Modal */}
+      <AnimatePresence>
+        {showPhotoCropper && pendingPhoto && (
+          <ImageCropper
+            imageSrc={pendingPhoto}
+            aspectRatio={1}
+            onSave={handlePhotoCropSave}
+            onCancel={handlePhotoCropCancel}
+            outputWidth={400}
+            circular={true}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
