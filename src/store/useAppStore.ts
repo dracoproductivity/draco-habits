@@ -213,6 +213,19 @@ export const useAppStore = create<AppStore>()(
         const { user } = get();
         if (user) {
           set({ user: { ...user, ...updates } });
+        } else {
+          // Initialize user if it doesn't exist (for initial load from cloud)
+          set({ 
+            user: { 
+              id: updates.id || '', 
+              email: updates.email || '', 
+              firstName: updates.firstName || '', 
+              lastName: updates.lastName || '',
+              birthDate: updates.birthDate || '',
+              photo: updates.photo || '',
+              ...updates 
+            } as User 
+          });
         }
       },
 
