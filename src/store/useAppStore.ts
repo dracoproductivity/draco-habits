@@ -245,9 +245,32 @@ export const useAppStore = create<AppStore>()(
 
       updateHabit: (id, updates) => {
         set((state) => ({
-          habits: state.habits.map((h) =>
-            h.id === id ? { ...h, ...updates } : h
-          ),
+          habits: state.habits.map((h) => {
+            if (h.id !== id) return h;
+            
+            // Check if schedule-related fields are being changed
+            const isScheduleChange = 
+              (updates.weekDays !== undefined && JSON.stringify(updates.weekDays) !== JSON.stringify(h.weekDays)) ||
+              (updates.repeatFrequency !== undefined && updates.repeatFrequency !== h.repeatFrequency) ||
+              (updates.monthWeeks !== undefined && JSON.stringify(updates.monthWeeks) !== JSON.stringify(h.monthWeeks));
+            
+            if (isScheduleChange) {
+              // Save previous schedule before applying changes
+              // Only save if we don't already have a scheduleUpdatedAt set (first time)
+              // or if we're changing the schedule again
+              const now = new Date().toISOString();
+              return {
+                ...h,
+                ...updates,
+                scheduleUpdatedAt: now,
+                previousWeekDays: h.weekDays,
+                previousRepeatFrequency: h.repeatFrequency,
+                previousMonthWeeks: h.monthWeeks,
+              };
+            }
+            
+            return { ...h, ...updates };
+          }),
         }));
         
         // Recalculate goal progress after updating habit
