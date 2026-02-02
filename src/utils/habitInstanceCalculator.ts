@@ -209,10 +209,17 @@ export const calculateHabitInstances = (
       const dayDateOnly = new Date(day.getFullYear(), day.getMonth(), day.getDate());
       
       // If the date is before the schedule was updated, use previous schedule
+      // Only use previous values if they actually exist (not undefined)
       if (dayDateOnly < scheduleUpdatedDateOnly) {
-        weekDays = habit.previousWeekDays;
-        repeatFrequency = habit.previousRepeatFrequency;
-        monthWeeks = habit.previousMonthWeeks;
+        if (habit.previousWeekDays !== undefined) {
+          weekDays = habit.previousWeekDays;
+        }
+        if (habit.previousRepeatFrequency !== undefined) {
+          repeatFrequency = habit.previousRepeatFrequency;
+        }
+        if (habit.previousMonthWeeks !== undefined) {
+          monthWeeks = habit.previousMonthWeeks;
+        }
       }
     }
     
@@ -320,10 +327,17 @@ export const isHabitScheduledForDate = (
     );
     
     // If the date is before the schedule was updated, use previous schedule
+    // Only use previous values if they actually exist (not undefined)
     if (dateOnly < scheduleUpdatedDateOnly) {
-      weekDays = habit.previousWeekDays;
-      repeatFrequency = habit.previousRepeatFrequency;
-      monthWeeks = habit.previousMonthWeeks;
+      if (habit.previousWeekDays !== undefined) {
+        weekDays = habit.previousWeekDays;
+      }
+      if (habit.previousRepeatFrequency !== undefined) {
+        repeatFrequency = habit.previousRepeatFrequency;
+      }
+      if (habit.previousMonthWeeks !== undefined) {
+        monthWeeks = habit.previousMonthWeeks;
+      }
     }
   }
   
