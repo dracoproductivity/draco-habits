@@ -26,6 +26,11 @@ export interface Habit {
   microGoalsNames?: string[]; // Names for each micro goal
   startDate?: string; // ISO date string - start of recurrence period
   endDate?: string; // ISO date string - end of recurrence period
+  // Schedule history - used to apply old schedule to dates before the change
+  scheduleUpdatedAt?: string; // ISO timestamp when schedule was last changed
+  previousWeekDays?: number[]; // Previous weekDays before last change
+  previousRepeatFrequency?: 1 | 2 | 3 | 4; // Previous repeatFrequency
+  previousMonthWeeks?: number[]; // Previous monthWeeks
 }
 
 export interface HabitCheck {

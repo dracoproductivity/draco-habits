@@ -231,7 +231,11 @@ export type Database = {
           notification_time: string | null
           period_type: string
           period_value: string | null
+          previous_frequency_weeks: number | null
+          previous_selected_days: number[] | null
+          previous_specific_weeks_of_month: number[] | null
           repeat_weekly: boolean
+          schedule_updated_at: string | null
           selected_days: number[] | null
           specific_weeks_of_month: number[] | null
           start_date: string | null
@@ -255,7 +259,11 @@ export type Database = {
           notification_time?: string | null
           period_type: string
           period_value?: string | null
+          previous_frequency_weeks?: number | null
+          previous_selected_days?: number[] | null
+          previous_specific_weeks_of_month?: number[] | null
           repeat_weekly?: boolean
+          schedule_updated_at?: string | null
           selected_days?: number[] | null
           specific_weeks_of_month?: number[] | null
           start_date?: string | null
@@ -279,7 +287,11 @@ export type Database = {
           notification_time?: string | null
           period_type?: string
           period_value?: string | null
+          previous_frequency_weeks?: number | null
+          previous_selected_days?: number[] | null
+          previous_specific_weeks_of_month?: number[] | null
           repeat_weekly?: boolean
+          schedule_updated_at?: string | null
           selected_days?: number[] | null
           specific_weeks_of_month?: number[] | null
           start_date?: string | null

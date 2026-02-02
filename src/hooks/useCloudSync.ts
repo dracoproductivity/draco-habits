@@ -87,6 +87,11 @@ interface HabitRow {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+  // Schedule history fields
+  schedule_updated_at: string | null;
+  previous_selected_days: number[] | null;
+  previous_frequency_weeks: number | null;
+  previous_specific_weeks_of_month: number[] | null;
 }
 
 interface HabitCheckRow {
@@ -275,6 +280,11 @@ export const useCloudSync = () => {
         microGoalsCount: h.micro_goals_count || 1,
         microGoalsNames: h.micro_goals_names || undefined,
         createdAt: h.created_at,
+        // Schedule history fields
+        scheduleUpdatedAt: h.schedule_updated_at || undefined,
+        previousWeekDays: h.previous_selected_days || undefined,
+        previousRepeatFrequency: h.previous_frequency_weeks as Habit["repeatFrequency"] || undefined,
+        previousMonthWeeks: h.previous_specific_weeks_of_month || undefined,
       }));
 
       // Load habit checks
@@ -532,6 +542,11 @@ export const useCloudSync = () => {
         has_micro_goals: habit.hasMicroGoals || false,
         micro_goals_count: habit.microGoalsCount || 1,
         micro_goals_names: habit.microGoalsNames || [],
+        // Schedule history fields
+        schedule_updated_at: habit.scheduleUpdatedAt || null,
+        previous_selected_days: habit.previousWeekDays || null,
+        previous_frequency_weeks: habit.previousRepeatFrequency || null,
+        previous_specific_weeks_of_month: habit.previousMonthWeeks || null,
       });
 
       if (error) {

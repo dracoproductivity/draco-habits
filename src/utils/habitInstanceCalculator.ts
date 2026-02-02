@@ -194,25 +194,47 @@ export const calculateHabitInstances = (
   for (const day of allDays) {
     let isScheduled = true;
     
+    // Determine which schedule to use based on scheduleUpdatedAt
+    let weekDays = habit.weekDays;
+    let repeatFrequency = habit.repeatFrequency;
+    let monthWeeks = habit.monthWeeks;
+    
+    if (habit.scheduleUpdatedAt) {
+      const scheduleUpdatedAt = parseISO(habit.scheduleUpdatedAt);
+      const scheduleUpdatedDateOnly = new Date(
+        scheduleUpdatedAt.getFullYear(), 
+        scheduleUpdatedAt.getMonth(), 
+        scheduleUpdatedAt.getDate()
+      );
+      const dayDateOnly = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+      
+      // If the date is before the schedule was updated, use previous schedule
+      if (dayDateOnly < scheduleUpdatedDateOnly) {
+        weekDays = habit.previousWeekDays;
+        repeatFrequency = habit.previousRepeatFrequency;
+        monthWeeks = habit.previousMonthWeeks;
+      }
+    }
+    
     // Check weekdays
-    if (habit.weekDays && habit.weekDays.length > 0) {
+    if (weekDays && weekDays.length > 0) {
       const dayOfWeek = getDay(day);
-      if (!habit.weekDays.includes(dayOfWeek)) {
+      if (!weekDays.includes(dayOfWeek)) {
         isScheduled = false;
       }
     }
     
     // Check week frequency (every X weeks)
-    if (isScheduled && habit.repeatFrequency && habit.repeatFrequency > 1) {
-      if (!isDateInWeekFrequency(day, habitCreatedAt, habit.repeatFrequency)) {
+    if (isScheduled && repeatFrequency && repeatFrequency > 1) {
+      if (!isDateInWeekFrequency(day, habitCreatedAt, repeatFrequency)) {
         isScheduled = false;
       }
     }
     
     // Check specific weeks of month
-    if (isScheduled && habit.monthWeeks && habit.monthWeeks.length > 0) {
+    if (isScheduled && monthWeeks && monthWeeks.length > 0) {
       const weekOfMonth = getWeekOfMonth(day);
-      if (!habit.monthWeeks.includes(weekOfMonth)) {
+      if (!monthWeeks.includes(weekOfMonth)) {
         isScheduled = false;
       }
     }
@@ -283,23 +305,45 @@ export const isHabitScheduledForDate = (
     return format(dateOnly, 'yyyy-MM-dd') === format(createdDateOnly, 'yyyy-MM-dd');
   }
   
+  // Determine which schedule to use based on scheduleUpdatedAt
+  // If the date is before the schedule was updated, use the previous schedule
+  let weekDays = habit.weekDays;
+  let repeatFrequency = habit.repeatFrequency;
+  let monthWeeks = habit.monthWeeks;
+  
+  if (habit.scheduleUpdatedAt) {
+    const scheduleUpdatedAt = parseISO(habit.scheduleUpdatedAt);
+    const scheduleUpdatedDateOnly = new Date(
+      scheduleUpdatedAt.getFullYear(), 
+      scheduleUpdatedAt.getMonth(), 
+      scheduleUpdatedAt.getDate()
+    );
+    
+    // If the date is before the schedule was updated, use previous schedule
+    if (dateOnly < scheduleUpdatedDateOnly) {
+      weekDays = habit.previousWeekDays;
+      repeatFrequency = habit.previousRepeatFrequency;
+      monthWeeks = habit.previousMonthWeeks;
+    }
+  }
+  
   // Check weekdays
-  if (habit.weekDays && habit.weekDays.length > 0) {
+  if (weekDays && weekDays.length > 0) {
     const dayOfWeek = getDay(dateOnly);
-    if (!habit.weekDays.includes(dayOfWeek)) return false;
+    if (!weekDays.includes(dayOfWeek)) return false;
   }
   
   // Check week frequency
-  if (habit.repeatFrequency && habit.repeatFrequency > 1) {
-    if (!isDateInWeekFrequency(dateOnly, habitCreatedAt, habit.repeatFrequency)) {
+  if (repeatFrequency && repeatFrequency > 1) {
+    if (!isDateInWeekFrequency(dateOnly, habitCreatedAt, repeatFrequency)) {
       return false;
     }
   }
   
   // Check specific weeks of month
-  if (habit.monthWeeks && habit.monthWeeks.length > 0) {
+  if (monthWeeks && monthWeeks.length > 0) {
     const weekOfMonth = getWeekOfMonth(dateOnly);
-    if (!habit.monthWeeks.includes(weekOfMonth)) return false;
+    if (!monthWeeks.includes(weekOfMonth)) return false;
   }
   
   return true;
