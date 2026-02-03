@@ -47,9 +47,38 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   
   const [selectedXPReward, setSelectedXPReward] = useState<number>(selectedGoal?.categoryXP || 20);
   
-  // Date range state
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  // Date range state - default to today for start
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    return format(now, 'yyyy-MM-dd');
+  }, []);
+  
+  // Calculate initial end date based on parentGoal
+  const initialEndDate = useMemo(() => {
+    if (parentGoal) {
+      const boundaries = getPeriodBoundaries(parentGoal.type, parentGoal.period);
+      if (boundaries) {
+        return format(boundaries.end, 'yyyy-MM-dd');
+      }
+    }
+    return '';
+  }, [parentGoal]);
+  
+  // Calculate initial start date (today or period start, whichever is later)
+  const initialStartDate = useMemo(() => {
+    if (parentGoal) {
+      const boundaries = getPeriodBoundaries(parentGoal.type, parentGoal.period);
+      if (boundaries) {
+        const today = new Date();
+        const effectiveStart = today > boundaries.start ? today : boundaries.start;
+        return format(effectiveStart, 'yyyy-MM-dd');
+      }
+    }
+    return todayStr;
+  }, [parentGoal, todayStr]);
+  
+  const [startDate, setStartDate] = useState<string>(initialStartDate);
+  const [endDate, setEndDate] = useState<string>(initialEndDate);
 
   // Calculate period boundaries based on selected goal (if any)
   const periodBoundaries = useMemo(() => {
@@ -187,9 +216,22 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
               if (newGoal?.categoryXP) {
                 setSelectedXPReward(newGoal.categoryXP);
               }
-              // Reset dates when goal changes
-              setStartDate('');
-              setEndDate('');
+              // Set default dates based on goal period
+              if (newGoal) {
+                const boundaries = getPeriodBoundaries(newGoal.type, newGoal.period);
+                if (boundaries) {
+                  // Start date: today or period start (whichever is later)
+                  const today = new Date();
+                  const effectiveStart = today > boundaries.start ? today : boundaries.start;
+                  setStartDate(format(effectiveStart, 'yyyy-MM-dd'));
+                  // End date: last day of the period
+                  setEndDate(format(boundaries.end, 'yyyy-MM-dd'));
+                }
+              } else {
+                // Reset to today when no goal is selected
+                setStartDate(todayStr);
+                setEndDate('');
+              }
             }}
             className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
