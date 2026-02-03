@@ -693,14 +693,25 @@ export const useAppStore = create<AppStore>()(
         
         if (habitsForDate.length === 0) return 0;
         
-        const completed = habitsForDate.filter(habit => {
-          const check = habitChecks.find(
-            hc => hc.habitId === habit.id && hc.date === date && hc.completed
-          );
-          return check !== undefined;
-        }).length;
+        // Calculate progress considering micro-goals partial completion
+        let totalProgress = 0;
         
-        return Math.round((completed / habitsForDate.length) * 100);
+        for (const habit of habitsForDate) {
+          const check = habitChecks.find(
+            hc => hc.habitId === habit.id && hc.date === date
+          );
+          
+          if (habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1) {
+            // For micro-goals habits, calculate partial progress
+            const microGoalsCompleted = check?.microGoalsCompleted || 0;
+            totalProgress += microGoalsCompleted / habit.microGoalsCount;
+          } else {
+            // For regular habits, it's 0 or 1
+            totalProgress += check?.completed ? 1 : 0;
+          }
+        }
+        
+        return Math.round((totalProgress / habitsForDate.length) * 100);
       },
 
       getWeeklyProgress: (weekStart) => {

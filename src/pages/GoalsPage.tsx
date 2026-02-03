@@ -242,7 +242,7 @@ const getPeriodOptions = (type: GoalType) => {
 };
 
 export const GoalsPage = () => {
-  const { goals, addGoal, updateGoal, removeGoal, settings, updateSettings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate } = useAppStore();
+  const { goals, addGoal, updateGoal, removeGoal, settings, updateSettings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate, updateHabit } = useAppStore();
   
   // Per-page progress display mode
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
@@ -315,6 +315,13 @@ export const GoalsPage = () => {
 
   // Delete confirmation state
   const [showDeleteGoalConfirmation, setShowDeleteGoalConfirmation] = useState(false);
+  const [showMigrateHabitsModal, setShowMigrateHabitsModal] = useState(false);
+  const [migrateToGoalId, setMigrateToGoalId] = useState<string | null>(null);
+  
+  // Get linked habits for selected goal
+  const linkedHabitsToSelectedGoal = selectedGoal 
+    ? habits.filter(h => h.goalId === selectedGoal.id)
+    : [];
 
   // Habit creation from Goals page
   const [showHabitCreationForm, setShowHabitCreationForm] = useState(false);
@@ -1685,17 +1692,63 @@ export const GoalsPage = () => {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Excluir objetivo</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir o objetivo "{selectedGoal.name}"? Esta ação não pode ser desfeita.
+                        {linkedHabitsToSelectedGoal.length > 0 ? (
+                          <>
+                            Você tem <strong>{linkedHabitsToSelectedGoal.length} hábito{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''}</strong> vinculado{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''} a este objetivo. 
+                            Caso apague-o, os hábitos ficarão órfãos (sem objetivo vinculado).
+                          </>
+                        ) : (
+                          <>Tem certeza que deseja excluir o objetivo "{selectedGoal.name}"? Esta ação não pode ser desfeita.</>
+                        )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
+                    
+                    {linkedHabitsToSelectedGoal.length > 0 && (
+                      <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground">Deseja migrá-los para outro objetivo?</p>
+                        <select
+                          value={migrateToGoalId || ''}
+                          onChange={(e) => setMigrateToGoalId(e.target.value || null)}
+                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                        >
+                          <option value="">Não migrar (deixar órfãos)</option>
+                          {goals.filter(g => g.id !== selectedGoal.id).map((goal) => (
+                            <option key={goal.id} value={goal.id}>
+                              {goal.emoji && `${goal.emoji} `}{goal.name} ({typeLabels[goal.type]})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogCancel onClick={() => setMigrateToGoalId(null)}>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => {
                           const goalName = selectedGoal.name;
+                          const habitsCount = linkedHabitsToSelectedGoal.length;
+                          
+                          // Migrate habits if a target goal is selected
+                          if (migrateToGoalId && habitsCount > 0) {
+                            linkedHabitsToSelectedGoal.forEach(habit => {
+                              updateHabit(habit.id, { goalId: migrateToGoalId });
+                            });
+                            const targetGoal = goals.find(g => g.id === migrateToGoalId);
+                            toast({ 
+                              title: 'Hábitos migrados!', 
+                              description: `${habitsCount} hábito${habitsCount > 1 ? 's' : ''} migrado${habitsCount > 1 ? 's' : ''} para "${targetGoal?.name}".` 
+                            });
+                          } else if (habitsCount > 0) {
+                            // Remove goal link from habits (make them orphans)
+                            linkedHabitsToSelectedGoal.forEach(habit => {
+                              updateHabit(habit.id, { goalId: undefined });
+                            });
+                          }
+                          
                           removeGoal(selectedGoal.id);
                           setSelectedGoal(null);
                           setShowDeleteGoalConfirmation(false);
+                          setMigrateToGoalId(null);
                           toast({ title: 'Objetivo excluído!', description: `"${goalName}" foi removido.` });
                         }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
