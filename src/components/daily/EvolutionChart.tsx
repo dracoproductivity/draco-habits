@@ -50,7 +50,7 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
   const isCurrentMonth = selectedMonth === today.getMonth() && selectedYear === today.getFullYear();
   const isCurrentYear = selectedYear === today.getFullYear();
   
-  // Calculate daily progress for a specific date
+  // Calculate daily progress for a specific date (with micro-goals support)
   const calculateDailyProgress = (date: Date): number | null => {
     const dateStr = format(date, 'yyyy-MM-dd');
     
@@ -62,12 +62,21 @@ export const EvolutionChart = ({ className, compact = false }: EvolutionChartPro
     
     if (scheduledHabits.length === 0) return null;
     
-    // Count completed habits
-    const completedCount = habitChecks.filter(
-      hc => hc.date === dateStr && hc.completed && scheduledHabits.some(h => h.id === hc.habitId)
-    ).length;
+    // Calculate progress considering micro-goals (incremental progress)
+    let totalProgress = 0;
+    for (const habit of scheduledHabits) {
+      const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
+      
+      if (habit.hasMicroGoals && habit.microGoalsCount > 1) {
+        // For habits with micro-goals, add partial progress
+        totalProgress += (check?.microGoalsCompleted || 0) / habit.microGoalsCount;
+      } else {
+        // For regular habits, add 1 if completed
+        totalProgress += check?.completed ? 1 : 0;
+      }
+    }
     
-    return Math.round((completedCount / scheduledHabits.length) * 100);
+    return Math.round((totalProgress / scheduledHabits.length) * 100);
   };
 
   // Calculate monthly average progress
