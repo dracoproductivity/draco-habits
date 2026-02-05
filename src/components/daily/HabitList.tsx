@@ -4,10 +4,11 @@ import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, Chev
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
+import { GoalType, Habit, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory, DIFFICULTY_LABELS } from '@/types';
 import { HabitDetailModal } from './HabitDetailModal';
 import { AllHabitsModal } from './AllHabitsModal';
 import { HabitItem } from './HabitItem';
+import { BadHabitCongratulationsModal } from '@/components/modals/BadHabitCongratulationsModal';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, addWeeks, format, startOfYear, getDaysInMonth, startOfQuarter, endOfQuarter, differenceInDays, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -427,6 +428,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
   const [showAllHabitsModal, setShowAllHabitsModal] = useState(false);
   const [selectedXPReward, setSelectedXPReward] = useState<number>(20);
+  const [showBadHabitModal, setShowBadHabitModal] = useState(false);
+  const [badHabitName, setBadHabitName] = useState('');
   
   // Date range state for habit recurrence
   const [habitStartDate, setHabitStartDate] = useState<string>('');
@@ -542,8 +545,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     // Check XP limit
     if (!isXPAvailable(selectedXPReward, habits)) {
       toast({
-        title: 'Limite de XP atingido',
-        description: `Você já atingiu o limite de hábitos com ${selectedXPReward} XP.`,
+        title: 'Limite de dificuldade atingido',
+        description: `Você já atingiu o limite de hábitos com dificuldade "${DIFFICULTY_LABELS[selectedXPReward]}".`,
         variant: 'destructive',
       });
       return;
@@ -1120,10 +1123,10 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">XP por conclusão</span>
+                        <span className="text-sm text-muted-foreground">Nível de dificuldade</span>
                       </div>
                       
-                      <div className="grid grid-cols-6 gap-1">
+                      <div className="grid grid-cols-3 gap-2">
                         {XP_OPTIONS.map((xp) => {
                           const limit = XP_LIMITS[xp];
                           const currentCount = xpCounts[xp] || 0;
@@ -1131,13 +1134,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                           const isSelected = selectedXPReward === xp;
                           
                           return (
-                            <div key={xp} className="flex flex-col items-center">
+                            <div key={xp} className="flex flex-col">
                               <button
                                 type="button"
                                 onClick={() => !isAtLimit && setSelectedXPReward(xp)}
                                 disabled={isAtLimit}
                                 className={cn(
-                                  'w-full py-2 rounded-lg text-xs font-medium transition-all',
+                                  'w-full py-2 px-2 rounded-lg text-xs font-medium transition-all',
                                   isAtLimit
                                     ? 'bg-destructive/20 text-destructive border border-destructive/30 cursor-not-allowed'
                                     : isSelected
@@ -1145,7 +1148,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                                       : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
                                 )}
                               >
-                                {xp}
+                                {DIFFICULTY_LABELS[xp]}
                               </button>
                               {limit !== undefined && (
                                 <span className={cn(
@@ -1591,6 +1594,10 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                   onClick={() => setSelectedHabit(habit)}
                   habitChecks={habitChecks}
                   delay={index * 0.05}
+                  onBadHabitComplete={habit.isBadHabit ? () => {
+                    setBadHabitName(habit.name);
+                    setShowBadHabitModal(true);
+                  } : undefined}
                 />
               );
             })}
@@ -1641,6 +1648,13 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
         habits={visibleHabits}
         viewDateStr={viewDateStr}
         onHabitClick={(habit) => setSelectedHabit(habit)}
+      />
+
+      {/* Bad Habit Congratulations Modal */}
+      <BadHabitCongratulationsModal
+        isOpen={showBadHabitModal}
+        onClose={() => setShowBadHabitModal(false)}
+        habitName={badHabitName}
       />
     </motion.div>
   );

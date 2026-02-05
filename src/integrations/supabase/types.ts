@@ -224,6 +224,7 @@ export type Database = {
           goal_id: string | null
           has_micro_goals: boolean
           id: string
+          is_bad_habit: boolean
           micro_goals_count: number
           micro_goals_names: string[]
           name: string
@@ -252,6 +253,7 @@ export type Database = {
           goal_id?: string | null
           has_micro_goals?: boolean
           id?: string
+          is_bad_habit?: boolean
           micro_goals_count?: number
           micro_goals_names?: string[]
           name: string
@@ -280,6 +282,7 @@ export type Database = {
           goal_id?: string | null
           has_micro_goals?: boolean
           id?: string
+          is_bad_habit?: boolean
           micro_goals_count?: number
           micro_goals_names?: string[]
           name?: string

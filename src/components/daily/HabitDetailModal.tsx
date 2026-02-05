@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, CustomCategory } from '@/types';
+import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, DIFFICULTY_LABELS } from '@/types';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, format, eachDayOfInterval, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -86,6 +86,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [hasMicroGoals, setHasMicroGoals] = useState(habit.hasMicroGoals || false);
   const [microGoalsCount, setMicroGoalsCount] = useState(habit.microGoalsCount || 2);
   const [microGoalsNames, setMicroGoalsNames] = useState<string[]>(habit.microGoalsNames || []);
+  const [isBadHabit, setIsBadHabit] = useState(habit.isBadHabit || false);
   
   // Date range state for editing
   const [startDate, setStartDate] = useState(habit.startDate || '');
@@ -205,6 +206,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       microGoalsNames: hasMicroGoals && microGoalsNames.length > 0 ? microGoalsNames : undefined,
       startDate: isOneTime ? undefined : (startDate || undefined),
       endDate: isOneTime ? undefined : (endDate || undefined),
+      isBadHabit,
     });
     toast({ title: 'Hábito atualizado!', description: 'As alterações foram salvas.' });
     onClose();
@@ -710,24 +712,53 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <h3 className="font-medium text-foreground">XP por Conclusão</h3>
+                <h3 className="font-medium text-foreground">Nível de dificuldade</h3>
               </div>
               
-              <div className="grid grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {XP_OPTIONS.map((xp) => (
                   <button
                     key={xp}
                     onClick={() => setXpReward(xp)}
                     className={cn(
-                      'py-2 rounded-xl text-sm font-medium transition-all',
+                      'py-2 px-2 rounded-xl text-xs font-medium transition-all',
                       xpReward === xp
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
                     )}
                   >
-                    {xp}
+                    {DIFFICULTY_LABELS[xp]}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Bad Habit Toggle */}
+            <div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Ban className="w-4 h-4 text-destructive" />
+                  <div>
+                    <h3 className="font-medium text-foreground">Mau hábito</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Marque se deseja parar este hábito
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsBadHabit(!isBadHabit)}
+                  className={cn(
+                    'w-10 h-5 rounded-full transition-all relative flex-shrink-0',
+                    isBadHabit ? 'bg-destructive' : 'bg-muted'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                      isBadHabit ? 'right-0.5' : 'left-0.5'
+                    )}
+                  />
+                </button>
               </div>
             </div>
 
@@ -823,7 +854,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                             <>
                               <span className="text-lg">{customCat.emoji}</span>
                               <span className="text-sm font-medium text-foreground">{customCat.name}</span>
-                              <span className="text-xs text-muted-foreground ml-auto">{customCat.xpReward} XP</span>
+                              <span className="text-xs text-muted-foreground ml-auto">{DIFFICULTY_LABELS[customCat.xpReward] || `${customCat.xpReward} XP`}</span>
                             </>
                           );
                         }
@@ -835,7 +866,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                             <span className="text-lg">{defaultCat.emoji}</span>
                             <span className="text-sm font-medium text-foreground">{defaultCat.name}</span>
                             {linkedGoal.categoryXP !== undefined && (
-                              <span className="text-xs text-muted-foreground ml-auto">{linkedGoal.categoryXP} XP</span>
+                              <span className="text-xs text-muted-foreground ml-auto">{DIFFICULTY_LABELS[linkedGoal.categoryXP] || `${linkedGoal.categoryXP} XP`}</span>
                             )}
                           </>
                         );
