@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Plus, Bell, Flame } from 'lucide-react';
+import { Check, Plus, Bell, Flame, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Habit, Goal, HabitCheck } from '@/types';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
+import { getDifficultyLabel } from '@/types';
 
 interface HabitItemProps {
   habit: Habit;
@@ -15,6 +16,7 @@ interface HabitItemProps {
   onClick: () => void;
   habitChecks: HabitCheck[];
   delay?: number;
+  onBadHabitComplete?: () => void;
 }
 
 const WEEK_DAYS = [
@@ -37,6 +39,7 @@ export const HabitItem = ({
   onClick,
   habitChecks,
   delay = 0,
+  onBadHabitComplete,
 }: HabitItemProps) => {
   const isCompleted = check?.completed ?? false;
   const hasMicroGoals = habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1;
@@ -49,8 +52,16 @@ export const HabitItem = ({
     e.stopPropagation();
     if (hasMicroGoals) {
       onIncrementMicroGoal();
+      // Check if bad habit and is completing (going from not complete to complete)
+      if (habit.isBadHabit && !isCompleted && microGoalsCompleted + 1 >= microGoalsCount) {
+        onBadHabitComplete?.();
+      }
     } else {
       onToggle();
+      // Check if bad habit and is completing
+      if (habit.isBadHabit && !isCompleted) {
+        onBadHabitComplete?.();
+      }
     }
   };
 
@@ -101,7 +112,11 @@ export const HabitItem = ({
               ))}
             </div>
             {isCompleted ? (
-              <Check className="w-4 h-4 text-primary-foreground relative z-10" />
+              habit.isBadHabit ? (
+                <X className="w-4 h-4 text-primary-foreground relative z-10" />
+              ) : (
+                <Check className="w-4 h-4 text-primary-foreground relative z-10" />
+              )
             ) : (
               <Plus className="w-4 h-4 text-muted-foreground relative z-10" />
             )}
@@ -116,7 +131,13 @@ export const HabitItem = ({
                 : 'border-muted-foreground/50 hover:border-primary'
             )}
           >
-            {isCompleted && <Check className="w-4 h-4 text-primary-foreground" />}
+            {isCompleted && (
+              habit.isBadHabit ? (
+                <X className="w-4 h-4 text-primary-foreground" />
+              ) : (
+                <Check className="w-4 h-4 text-primary-foreground" />
+              )
+            )}
           </button>
         )}
 
@@ -161,7 +182,7 @@ export const HabitItem = ({
           {habit.notificationEnabled && (
             <Bell className="w-3.5 h-3.5 text-primary" />
           )}
-          <span className="text-xs text-muted-foreground">+{habit.xpReward} XP</span>
+          <span className="text-xs text-muted-foreground">{getDifficultyLabel(habit.xpReward || 0)}</span>
         </div>
       </div>
     </motion.div>

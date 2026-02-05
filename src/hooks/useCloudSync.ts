@@ -280,6 +280,7 @@ export const useCloudSync = () => {
         microGoalsCount: h.micro_goals_count || 1,
         microGoalsNames: h.micro_goals_names || undefined,
         createdAt: h.created_at,
+        isBadHabit: h.is_bad_habit || false,
         // Schedule history fields
         scheduleUpdatedAt: h.schedule_updated_at || undefined,
         previousWeekDays: h.previous_selected_days || undefined,
@@ -542,6 +543,7 @@ export const useCloudSync = () => {
         has_micro_goals: habit.hasMicroGoals || false,
         micro_goals_count: habit.microGoalsCount || 1,
         micro_goals_names: habit.microGoalsNames || [],
+        is_bad_habit: habit.isBadHabit || false,
         // Schedule history fields
         schedule_updated_at: habit.scheduleUpdatedAt || null,
         previous_selected_days: habit.previousWeekDays || null,

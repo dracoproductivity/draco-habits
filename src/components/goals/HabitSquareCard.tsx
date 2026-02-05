@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Check, Flame, Bell, Target } from 'lucide-react';
+import { Check, Flame, Bell, Target, X } from 'lucide-react';
 import { Habit } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
 import { calculateHabitProgress } from '@/utils/habitInstanceCalculator';
 import { formatPercentage } from '@/utils/formatPercentage';
+import { getDifficultyLabel } from '@/types';
 
 interface HabitSquareCardProps {
   habit: Habit;
@@ -61,7 +62,13 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
               : 'border-muted-foreground/50 hover:border-primary'
           )}
         >
-          {isCompleted && <Check className="w-3 h-3 text-primary-foreground" />}
+          {isCompleted && (
+            habit.isBadHabit ? (
+              <X className="w-3 h-3 text-primary-foreground" />
+            ) : (
+              <Check className="w-3 h-3 text-primary-foreground" />
+            )
+          )}
         </button>
       </div>
       
@@ -94,7 +101,7 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
             <Bell className="w-2.5 h-2.5 text-primary" />
           )}
         </div>
-        <span className="text-[8px] font-medium text-primary">+{habit.xpReward} XP</span>
+        <span className="text-[8px] font-medium text-primary">{getDifficultyLabel(habit.xpReward || 0)}</span>
       </div>
     </motion.button>
   );

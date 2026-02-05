@@ -26,6 +26,7 @@ export interface Habit {
   microGoalsNames?: string[]; // Names for each micro goal
   startDate?: string; // ISO date string - start of recurrence period
   endDate?: string; // ISO date string - end of recurrence period
+  isBadHabit?: boolean; // If true, this is a habit the user wants to quit
   // Schedule history - used to apply old schedule to dates before the change
   scheduleUpdatedAt?: string; // ISO timestamp when schedule was last changed
   previousWeekDays?: number[]; // Previous weekDays before last change
@@ -150,3 +151,18 @@ export const DEFAULT_CATEGORIES: { id: GoalCategory; name: string; emoji: string
 ];
 
 export const XP_OPTIONS = [0, 10, 20, 30, 40, 50];
+
+// Difficulty labels for XP values (used instead of raw XP numbers in UI)
+export const DIFFICULTY_LABELS: Record<number, string> = {
+  0: 'Sem esforço',
+  10: 'Muito fácil',
+  20: 'Fácil',
+  30: 'Médio',
+  40: 'Difícil',
+  50: 'Muito difícil',
+};
+
+// Get difficulty label from XP value
+export const getDifficultyLabel = (xp: number): string => {
+  return DIFFICULTY_LABELS[xp] || `${xp} XP`;
+};

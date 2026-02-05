@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, Check } from 'lucide-react';
+import { X as CloseIcon, Check, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit } from '@/types';
@@ -83,7 +83,7 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
             onClick={onClose}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <CloseIcon className="w-5 h-5" />
           </button>
         </div>
 
@@ -119,7 +119,13 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
                         : 'border-2 border-muted-foreground/30 hover:border-primary/50'
                     )}
                   >
-                    {completed && <Check className="w-4 h-4 text-primary-foreground" />}
+                    {completed && (
+                      habit.isBadHabit ? (
+                        <X className="w-4 h-4 text-primary-foreground" />
+                      ) : (
+                        <Check className="w-4 h-4 text-primary-foreground" />
+                      )
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">

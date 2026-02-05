@@ -4,10 +4,11 @@ import { X, Calendar, Check, Repeat, Bell, Layers, Sparkles, AlertCircle, Calend
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { EmojiPickerButton } from '@/components/ui/EmojiPickerButton';
-import { Goal, XP_OPTIONS } from '@/types';
+import { Goal, XP_OPTIONS, DIFFICULTY_LABELS } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
+import { XP_LIMITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
 import { getPeriodBoundaries } from '@/utils/habitInstanceCalculator';
+import { Ban } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -40,6 +41,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
   const [hasMicroGoals, setHasMicroGoals] = useState(false);
   const [microGoalsCount, setMicroGoalsCount] = useState(4);
   const [microGoalsNames, setMicroGoalsNames] = useState<string[]>([]);
+  const [isBadHabit, setIsBadHabit] = useState(false);
   
   // Optional goal selection - use parentGoal if provided, otherwise allow user to select
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(parentGoal?.id || null);
@@ -145,7 +147,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
     if (!isXPAvailable(selectedXPReward, habits)) {
       toast({
         title: 'Limite de XP atingido',
-        description: `Você já atingiu o limite de hábitos com ${selectedXPReward} XP.`,
+        description: `Você já atingiu o limite de hábitos com dificuldade "${DIFFICULTY_LABELS[selectedXPReward]}".`,
         variant: 'destructive',
       });
       return;
@@ -166,6 +168,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
       microGoalsNames: hasMicroGoals && microGoalsNames.length > 0 ? microGoalsNames : undefined,
       startDate: isOneTimeHabit ? undefined : startDate,
       endDate: isOneTimeHabit ? undefined : endDate,
+      isBadHabit,
     });
 
     toast({
@@ -468,6 +471,35 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             )}
           </div>
 
+          {/* Bad Habit Toggle */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Ban className="w-4 h-4 text-destructive" />
+                <div>
+                  <span className="text-sm">Mau hábito</span>
+                  <p className="text-xs text-muted-foreground">
+                    Marque se deseja parar este hábito para melhorar sua qualidade de vida
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBadHabit(!isBadHabit)}
+                className={cn(
+                  'w-10 h-5 rounded-full transition-all relative flex-shrink-0',
+                  isBadHabit ? 'bg-destructive' : 'bg-muted'
+                )}
+              >
+                <div
+                  className={cn(
+                    'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                    isBadHabit ? 'right-0.5' : 'left-0.5'
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Notification */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -505,10 +537,10 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">XP por conclusão</span>
+              <span className="text-sm text-muted-foreground">Nível de dificuldade</span>
             </div>
             
-            <div className="grid grid-cols-6 gap-1">
+            <div className="grid grid-cols-3 gap-2">
               {XP_OPTIONS.map((xp) => {
                 const limit = XP_LIMITS[xp];
                 const currentCount = xpCounts[xp] || 0;
@@ -516,13 +548,13 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                 const isSelected = selectedXPReward === xp;
                 
                 return (
-                  <div key={xp} className="flex flex-col items-center">
+                  <div key={xp} className="flex flex-col">
                     <button
                       type="button"
                       onClick={() => !isAtLimit && setSelectedXPReward(xp)}
                       disabled={isAtLimit}
                       className={cn(
-                        'w-full py-2 rounded-lg text-xs font-medium transition-all',
+                        'w-full py-2 px-2 rounded-lg text-xs font-medium transition-all',
                         isAtLimit
                           ? 'bg-destructive/20 text-destructive border border-destructive/30 cursor-not-allowed'
                           : isSelected
@@ -530,7 +562,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
                             : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border/50'
                       )}
                     >
-                      {xp}
+                      {DIFFICULTY_LABELS[xp]}
                     </button>
                     {limit !== undefined && (
                       <span className={cn(
