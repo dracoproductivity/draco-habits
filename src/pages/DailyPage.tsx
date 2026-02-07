@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { DailyHeader } from '@/components/daily/DailyHeader';
-import { HabitList } from '@/components/daily/HabitList';
+import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart3 } from 'lucide-react';
+import { UniversalHeader } from '@/components/layout/UniversalHeader';
+import { DayCard } from '@/components/daily/DayCard';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { GoalCompletionModal } from '@/components/modals/GoalCompletionModal';
 import { FireCelebration } from '@/components/effects/FireCelebration';
 import { EvolutionChart } from '@/components/daily/EvolutionChart';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
-import { ProgressTimeline } from '@/components/daily/ProgressTimeline';
+import { GoalsHabitsSummary } from '@/components/daily/GoalsHabitsSummary';
+import { SleepChartMini, PhoneChartMini } from '@/components/daily/HealthChartsMini';
+import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
+import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
+import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
 import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
@@ -17,8 +22,11 @@ import { ProgressDisplayMode, Goal } from '@/types';
 import { formatLocalDate } from '@/utils/dateUtils';
 
 export const DailyPage = () => {
-  const { isDesktop, isTablet } = useResponsive();
+  const { isDesktop } = useResponsive();
   const { settings, updateSettings, goals, habits, habitChecks, updateGoal, getDailyProgress } = useAppStore();
+  
+  // Analytics charts toggle
+  const [showCharts, setShowCharts] = useState(false);
   
   // Goal completion modal state
   const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
@@ -33,7 +41,6 @@ export const DailyPage = () => {
   const dailyProgress = getDailyProgress(todayStr);
   
   useEffect(() => {
-    // Trigger fire celebration when daily progress hits 100%
     if (dailyProgress === 100 && lastCelebratedDate !== todayStr) {
       setShowFireCelebration(true);
       setLastCelebratedDate(todayStr);
@@ -52,7 +59,6 @@ export const DailyPage = () => {
     currentDate: new Date(),
   });
   
-  // Show modal for goals that need completion (only if not already processed)
   useEffect(() => {
     const pendingGoal = goalsNeedingCompletion.find(
       g => g.needsCompletion && !processedGoalIds.has(g.goalId)
@@ -98,68 +104,144 @@ export const DailyPage = () => {
       animate={{ opacity: 1 }}
       className={cn(
         'min-h-screen',
-        isDesktop ? 'pb-24 pt-6' : 'pb-20'
+        isDesktop ? 'pb-24' : 'pb-20'
       )}
     >
-      <DailyHeader />
+      {/* Header - flat, no glass background */}
+      <UniversalHeader />
 
-      <div className={cn(
-        'pt-2 pb-4',
-        isDesktop ? 'px-0' : 'px-4'
-      )}>
-        {isDesktop ? (
-          <>
-            {/* Desktop: 3-column layout */}
-            <div className="flex flex-col gap-6">
-              {/* Top row: Constância (left) + Habits (center) + Progresso (right) */}
-              <div className="grid grid-cols-3 gap-6" style={{ minHeight: '380px' }}>
-                {/* Left column - Constância chart */}
-                <div className="glass-card rounded-2xl p-5 flex flex-col justify-center">
-                  <EvolutionChart compact />
-                </div>
-                
-                {/* Middle column - Habits (centered title) */}
-                <div className="glass-card rounded-2xl p-4 flex flex-col h-full">
-                  <HabitList showProgressIndicators={false} centerTitle className="flex-1" />
-                </div>
-                
-                {/* Right column - Progresso chart */}
-                <div className="glass-card rounded-2xl p-5 flex flex-col justify-center">
-                  <ProgressCharts compact hideEmoji />
-                </div>
+      <div className={cn('px-4 pt-2 pb-4 space-y-6', isDesktop && 'max-w-6xl mx-auto')}>
+        
+        {/* ===== MAIN CENTRAL BOX ===== */}
+        <div className="glass-card rounded-2xl p-6">
+          {/* Greeting */}
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
+            Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
+          </h1>
+
+          {/* Day Card + Charts Area */}
+          <div className="flex flex-col items-center">
+            {/* Charts + Day Card Row */}
+            <div className={cn(
+              "flex items-start justify-center gap-4 w-full",
+              !showCharts && "flex-col items-center"
+            )}>
+              {/* Left Chart - Constância (only when charts toggled) */}
+              <AnimatePresence>
+                {showCharts && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20, width: 0 }}
+                    animate={{ opacity: 1, x: 0, width: 'auto' }}
+                    exit={{ opacity: 0, x: -20, width: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    className="flex-1 min-w-0 hidden lg:block"
+                  >
+                    <div className="glass-card rounded-2xl p-4">
+                      <EvolutionChart compact />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Day Card - centered */}
+              <div className={cn(
+                "flex justify-center",
+                showCharts ? "w-auto flex-shrink-0" : "w-full"
+              )}>
+                <DayCard />
               </div>
-              
-              {/* Bottom row: Period progress indicators centered */}
-              <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
-                <div className="flex items-center justify-end mb-2 w-full">
-                  <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
-                </div>
-                <div className="transform scale-90 origin-center">
-                  <PeriodProgressIndicators displayMode={localDisplayMode} />
-                </div>
-              </div>
+
+              {/* Right Chart - Progresso (only when charts toggled) */}
+              <AnimatePresence>
+                {showCharts && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20, width: 0 }}
+                    animate={{ opacity: 1, x: 0, width: 'auto' }}
+                    exit={{ opacity: 0, x: 20, width: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    className="flex-1 min-w-0 hidden lg:block"
+                  >
+                    <div className="glass-card rounded-2xl p-4">
+                      <ProgressCharts compact hideEmoji />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </>
-        ) : (
-          /* Mobile/Tablet: Vertical stack */
-          <div className="space-y-6">
-            <div className="glass-card rounded-2xl p-4">
-              <HabitList showProgressIndicators={false} centerTitle />
-            </div>
-            
-            {/* Progress indicators with toggle */}
-            <div className="glass-card rounded-2xl p-4 relative">
-              <div className="absolute right-4 top-4">
+
+            {/* Mobile charts - stacked below when toggled */}
+            <AnimatePresence>
+              {showCharts && !isDesktop && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="w-full space-y-4 mt-4"
+                >
+                  <div className="glass-card rounded-2xl p-4">
+                    <EvolutionChart compact />
+                  </div>
+                  <div className="glass-card rounded-2xl p-4">
+                    <ProgressCharts compact hideEmoji />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Period Progress Indicators */}
+            <div className="w-full mt-6">
+              <div className="flex items-center justify-end mb-2">
                 <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
               </div>
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
-            
-            <div className="glass-card rounded-2xl">
-              <ProgressTimeline />
-            </div>
+
+            {/* Analytics Toggle Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowCharts(prev => !prev)}
+              className={cn(
+                "mt-5 px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2",
+                showCharts 
+                  ? "gradient-primary text-primary-foreground" 
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/30"
+              )}
+            >
+              <BarChart3 className="w-4 h-4" />
+              {showCharts ? 'Ocultar Gráficos' : 'Ver Gráficos'}
+            </motion.button>
           </div>
-        )}
+        </div>
+
+        {/* ===== GOALS & HABITS SUMMARY ===== */}
+        <GoalsHabitsSummary />
+
+        {/* ===== HEALTH CHARTS ROW ===== */}
+        <div className={cn(
+          "grid gap-4",
+          isDesktop ? "grid-cols-3" : "grid-cols-1"
+        )}>
+          <SleepChartMini />
+          <div className="glass-card rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xs font-semibold text-foreground">Categorias</span>
+            </div>
+            <CategoryRadarChart compact />
+          </div>
+          <PhoneChartMini />
+        </div>
+
+        {/* ===== ANNUAL PROGRESS ===== */}
+        <div>
+          <h2 className="font-semibold text-lg text-foreground mb-4">Progresso Anual</h2>
+          <AnnualProgressView displayMode={localDisplayMode} />
+        </div>
+
+        {/* ===== CALENDAR ===== */}
+        <div className="glass-card rounded-2xl">
+          <HabitCalendar />
+        </div>
       </div>
       
       {/* Goal Completion Modal */}
