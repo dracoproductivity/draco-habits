@@ -57,14 +57,14 @@ export const DayCard = ({ className }: DayCardProps) => {
             className
           )}
         >
-          {/* Day number */}
-          <span className="text-6xl font-bold text-foreground leading-none">
-            {dayNumber}
+          {/* Month, Year - above the day number */}
+          <span className="text-sm text-muted-foreground">
+            {monthName}, {year}
           </span>
 
-          {/* Month, Year */}
-          <span className="text-sm text-muted-foreground mt-2">
-            {monthName}, {year}
+          {/* Day number */}
+          <span className="text-6xl font-bold text-foreground leading-none mt-1">
+            {dayNumber}
           </span>
 
           {/* Remaining habits or congratulations */}

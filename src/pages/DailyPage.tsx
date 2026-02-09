@@ -11,7 +11,6 @@ import { EvolutionChart } from '@/components/daily/EvolutionChart';
 import { ProgressCharts } from '@/components/charts/ProgressCharts';
 import { GoalsHabitsSummary } from '@/components/daily/GoalsHabitsSummary';
 import { SleepChartMini, PhoneChartMini } from '@/components/daily/HealthChartsMini';
-import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -25,7 +24,7 @@ export const DailyPage = () => {
   const { isDesktop } = useResponsive();
   const { settings, updateSettings, goals, habits, habitChecks, updateGoal, getDailyProgress } = useAppStore();
   
-  // Analytics charts toggle
+  // Analytics charts toggle - controls ALL charts/sections
   const [showCharts, setShowCharts] = useState(false);
   
   // Goal completion modal state
@@ -113,7 +112,7 @@ export const DailyPage = () => {
       <div className={cn('px-4 pt-2 pb-4 space-y-6', isDesktop && 'max-w-6xl mx-auto')}>
         
         {/* ===== MAIN CENTRAL BOX ===== */}
-        <div className="glass-card rounded-2xl p-6">
+        <div className="glass-card rounded-2xl p-6 max-w-4xl mx-auto">
           {/* Greeting */}
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
@@ -196,52 +195,58 @@ export const DailyPage = () => {
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
 
-            {/* Analytics Toggle Button */}
+            {/* Analytics Toggle Button - emoji only with glass style */}
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => setShowCharts(prev => !prev)}
               className={cn(
-                "mt-5 px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2",
+                "mt-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
                 showCharts 
                   ? "gradient-primary text-primary-foreground" 
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/30"
+                  : "glass-card hover:border-primary/40"
               )}
             >
-              <BarChart3 className="w-4 h-4" />
-              {showCharts ? 'Ocultar Gráficos' : 'Ver Gráficos'}
+              <BarChart3 className="w-5 h-5" />
             </motion.button>
           </div>
         </div>
 
-        {/* ===== GOALS & HABITS SUMMARY ===== */}
-        <GoalsHabitsSummary />
+        {/* ===== BELOW SECTIONS - Only visible when charts toggled ===== */}
+        <AnimatePresence>
+          {showCharts && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="space-y-6 overflow-hidden"
+            >
+              {/* ===== GOALS, RADAR & HABITS SUMMARY ===== */}
+              <GoalsHabitsSummary />
 
-        {/* ===== HEALTH CHARTS ROW ===== */}
-        <div className={cn(
-          "grid gap-4",
-          isDesktop ? "grid-cols-3" : "grid-cols-1"
-        )}>
-          <SleepChartMini />
-          <div className="glass-card rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-semibold text-foreground">Categorias</span>
-            </div>
-            <CategoryRadarChart compact />
-          </div>
-          <PhoneChartMini />
-        </div>
+              {/* ===== HEALTH CHARTS ROW ===== */}
+              <div className={cn(
+                "grid gap-4",
+                isDesktop ? "grid-cols-2" : "grid-cols-1"
+              )}>
+                <SleepChartMini />
+                <PhoneChartMini />
+              </div>
 
-        {/* ===== ANNUAL PROGRESS ===== */}
-        <div>
-          <h2 className="font-semibold text-lg text-foreground mb-4">Progresso Anual</h2>
-          <AnnualProgressView displayMode={localDisplayMode} />
-        </div>
+              {/* ===== ANNUAL PROGRESS ===== */}
+              <div>
+                <h2 className="font-semibold text-lg text-foreground mb-4">Progresso Anual</h2>
+                <AnnualProgressView displayMode={localDisplayMode} />
+              </div>
 
-        {/* ===== CALENDAR ===== */}
-        <div className="glass-card rounded-2xl">
-          <HabitCalendar />
-        </div>
+              {/* ===== CALENDAR ===== */}
+              <div className="glass-card rounded-2xl">
+                <HabitCalendar />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
       {/* Goal Completion Modal */}
