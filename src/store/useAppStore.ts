@@ -288,225 +288,193 @@ export const useAppStore = create<AppStore>()(
       },
 
       toggleHabitCheck: (habitId, date) => {
-        const { habitChecks, habits, goals, draco } = get();
-        const existing = habitChecks.find(
-          (hc) => hc.habitId === habitId && hc.date === date
-        );
-        
+        const { habits } = get();
         const habit = habits.find((h) => h.id === habitId);
         
-        // Get XP from habit's own xpReward (no longer from goal's categoryXP)
-        let xpAmount = habit?.xpReward || 0;
+        // Get XP from habit's own xpReward
+        const xpAmount = habit?.xpReward || 0;
         
-        if (existing) {
-          const wasCompleted = existing.completed;
-          const newCompleted = !wasCompleted;
+        // Use callback form to always work with latest state
+        set((state) => {
+          const existing = state.habitChecks.find(
+            (hc) => hc.habitId === habitId && hc.date === date
+          );
           
-          // Update completion status
-          set({
-            habitChecks: habitChecks.map((hc) =>
-              hc.habitId === habitId && hc.date === date
-                ? { ...hc, completed: newCompleted }
-                : hc
-            ),
-          });
-          
-          // Add XP when marking complete, remove XP when unmarking
-          if (newCompleted && xpAmount > 0) {
-            // Adding XP
-            set((state) => {
-              const oldLevel = state.draco.level;
-              let newXP = state.draco.currentXP + xpAmount;
-              let newLevel = state.draco.level;
-              let xpToNext = state.draco.xpToNextLevel;
-              
+          if (existing) {
+            const newCompleted = !existing.completed;
+            
+            // Calculate new draco state
+            let newDraco = { ...state.draco };
+            if (newCompleted && xpAmount > 0) {
+              let newXP = newDraco.currentXP + xpAmount;
+              let newLevel = newDraco.level;
+              let xpToNext = newDraco.xpToNextLevel;
               while (newXP >= xpToNext) {
                 newXP -= xpToNext;
                 newLevel++;
                 xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
               }
-              
-              // Check if leveled up
-              const leveledUp = newLevel > oldLevel;
-              
-              return {
-                draco: {
-                  ...state.draco,
-                  level: newLevel,
-                  currentXP: newXP,
-                  xpToNextLevel: xpToNext,
-                  totalXP: state.draco.totalXP + xpAmount,
-                },
-                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
+              newDraco = {
+                ...newDraco,
+                level: newLevel,
+                currentXP: newXP,
+                xpToNextLevel: xpToNext,
+                totalXP: newDraco.totalXP + xpAmount,
               };
-            });
-          } else if (!newCompleted && xpAmount > 0) {
-            // Removing XP
-            set((state) => {
-              let newTotalXP = Math.max(0, state.draco.totalXP - xpAmount);
-              
-              // Recalculate level from total XP
+            } else if (!newCompleted && xpAmount > 0) {
+              const newTotalXP = Math.max(0, newDraco.totalXP - xpAmount);
               let level = 1;
               let xpRemaining = newTotalXP;
               let xpForLevel = 100;
-              
               while (xpRemaining >= xpForLevel) {
                 xpRemaining -= xpForLevel;
                 level++;
                 xpForLevel = Math.floor(100 * Math.pow(1.5, level - 1));
               }
-              
-              return {
-                draco: {
-                  ...state.draco,
-                  level: level,
-                  currentXP: xpRemaining,
-                  xpToNextLevel: xpForLevel,
-                  totalXP: newTotalXP,
-                },
+              newDraco = {
+                ...newDraco,
+                level,
+                currentXP: xpRemaining,
+                xpToNextLevel: xpForLevel,
+                totalXP: newTotalXP,
               };
-            });
-          }
-        } else {
-          set({
-            habitChecks: [...habitChecks, { habitId, date, completed: true }],
-          });
-          if (xpAmount > 0) {
-            set((state) => {
-              const oldLevel = state.draco.level;
-              let newXP = state.draco.currentXP + xpAmount;
-              let newLevel = state.draco.level;
-              let xpToNext = state.draco.xpToNextLevel;
-              
+            }
+            
+            const leveledUp = newDraco.level > state.draco.level;
+            
+            return {
+              habitChecks: state.habitChecks.map((hc) =>
+                hc.habitId === habitId && hc.date === date
+                  ? { ...hc, completed: newCompleted }
+                  : hc
+              ),
+              draco: newDraco,
+              levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+            };
+          } else {
+            // New check
+            let newDraco = { ...state.draco };
+            if (xpAmount > 0) {
+              let newXP = newDraco.currentXP + xpAmount;
+              let newLevel = newDraco.level;
+              let xpToNext = newDraco.xpToNextLevel;
               while (newXP >= xpToNext) {
                 newXP -= xpToNext;
                 newLevel++;
                 xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
               }
-              
-              // Check if leveled up
-              const leveledUp = newLevel > oldLevel;
-              
-              return {
-                draco: {
-                  ...state.draco,
-                  level: newLevel,
-                  currentXP: newXP,
-                  xpToNextLevel: xpToNext,
-                  totalXP: state.draco.totalXP + xpAmount,
-                },
-                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
+              newDraco = {
+                ...newDraco,
+                level: newLevel,
+                currentXP: newXP,
+                xpToNextLevel: xpToNext,
+                totalXP: newDraco.totalXP + xpAmount,
               };
-            });
+            }
+            
+            const leveledUp = newDraco.level > state.draco.level;
+            
+            return {
+              habitChecks: [...state.habitChecks, { habitId, date, completed: true, microGoalsCompleted: 0 }],
+              draco: newDraco,
+              levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+            };
           }
-        }
+        });
         
         // Recalculate all goal progress after check toggle
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       incrementMicroGoal: (habitId, date) => {
-        const { habitChecks, habits } = get();
+        const { habits } = get();
         const habit = habits.find((h) => h.id === habitId);
         
         if (!habit || !habit.hasMicroGoals || !habit.microGoalsCount) return;
         
-        const existing = habitChecks.find(
-          (hc) => hc.habitId === habitId && hc.date === date
-        );
-        
         const microGoalsCount = habit.microGoalsCount;
-        const currentMicroGoals = existing?.microGoalsCompleted || 0;
         const xpPerMicroGoal = Math.floor((habit.xpReward || 0) / microGoalsCount);
         
-        if (currentMicroGoals >= microGoalsCount) {
-          // Reset to 0 if already complete
-          set({
-            habitChecks: habitChecks.map((hc) =>
-              hc.habitId === habitId && hc.date === date
-                ? { ...hc, completed: false, microGoalsCompleted: 0 }
-                : hc
-            ),
-          });
+        // Use callback form to always work with latest state
+        set((state) => {
+          const existing = state.habitChecks.find(
+            (hc) => hc.habitId === habitId && hc.date === date
+          );
           
-          // Remove all XP for this habit
-          const totalXpToRemove = habit.xpReward || 0;
-          if (totalXpToRemove > 0) {
-            set((state) => {
-              let newTotalXP = Math.max(0, state.draco.totalXP - totalXpToRemove);
+          const currentMicroGoals = existing?.microGoalsCompleted || 0;
+          
+          if (currentMicroGoals >= microGoalsCount) {
+            // Reset to 0 if already complete
+            const totalXpToRemove = habit.xpReward || 0;
+            let newDraco = { ...state.draco };
+            
+            if (totalXpToRemove > 0) {
+              const newTotalXP = Math.max(0, newDraco.totalXP - totalXpToRemove);
               let level = 1;
               let xpRemaining = newTotalXP;
               let xpForLevel = 100;
-              
               while (xpRemaining >= xpForLevel) {
                 xpRemaining -= xpForLevel;
                 level++;
                 xpForLevel = Math.floor(100 * Math.pow(1.5, level - 1));
               }
-              
-              return {
-                draco: {
-                  ...state.draco,
-                  level,
-                  currentXP: xpRemaining,
-                  xpToNextLevel: xpForLevel,
-                  totalXP: newTotalXP,
-                },
-              };
-            });
-          }
-        } else {
-          const newMicroGoals = currentMicroGoals + 1;
-          const isNowComplete = newMicroGoals >= microGoalsCount;
-          
-          if (existing) {
-            set({
-              habitChecks: habitChecks.map((hc) =>
+              newDraco = { ...newDraco, level, currentXP: xpRemaining, xpToNextLevel: xpForLevel, totalXP: newTotalXP };
+            }
+            
+            return {
+              habitChecks: state.habitChecks.map((hc) =>
                 hc.habitId === habitId && hc.date === date
-                  ? { ...hc, completed: isNowComplete, microGoalsCompleted: newMicroGoals }
+                  ? { ...hc, completed: false, microGoalsCompleted: 0 }
                   : hc
               ),
-            });
+              draco: newDraco,
+            };
           } else {
-            set({
-              habitChecks: [...habitChecks, { 
-                habitId, 
-                date, 
-                completed: isNowComplete, 
-                microGoalsCompleted: newMicroGoals 
-              }],
-            });
-          }
-          
-          // Add XP for this micro goal
-          if (xpPerMicroGoal > 0) {
-            set((state) => {
-              const oldLevel = state.draco.level;
-              let newXP = state.draco.currentXP + xpPerMicroGoal;
-              let newLevel = state.draco.level;
-              let xpToNext = state.draco.xpToNextLevel;
-              
+            const newMicroGoals = currentMicroGoals + 1;
+            const isNowComplete = newMicroGoals >= microGoalsCount;
+            
+            let newDraco = { ...state.draco };
+            if (xpPerMicroGoal > 0) {
+              let newXP = newDraco.currentXP + xpPerMicroGoal;
+              let newLevel = newDraco.level;
+              let xpToNext = newDraco.xpToNextLevel;
               while (newXP >= xpToNext) {
                 newXP -= xpToNext;
                 newLevel++;
                 xpToNext = Math.floor(100 * Math.pow(1.5, newLevel - 1));
               }
-              
-              const leveledUp = newLevel > oldLevel;
-              
-              return {
-                draco: {
-                  ...state.draco,
-                  level: newLevel,
-                  currentXP: newXP,
-                  xpToNextLevel: xpToNext,
-                  totalXP: state.draco.totalXP + xpPerMicroGoal,
-                },
-                levelUpInfo: leveledUp ? { newLevel } : state.levelUpInfo,
+              newDraco = {
+                ...newDraco,
+                level: newLevel,
+                currentXP: newXP,
+                xpToNextLevel: xpToNext,
+                totalXP: newDraco.totalXP + xpPerMicroGoal,
               };
-            });
+            }
+            
+            const leveledUp = newDraco.level > state.draco.level;
+            
+            if (existing) {
+              return {
+                habitChecks: state.habitChecks.map((hc) =>
+                  hc.habitId === habitId && hc.date === date
+                    ? { ...hc, completed: isNowComplete, microGoalsCompleted: newMicroGoals }
+                    : hc
+                ),
+                draco: newDraco,
+                levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+              };
+            } else {
+              return {
+                habitChecks: [...state.habitChecks, { 
+                  habitId, date, completed: isNowComplete, microGoalsCompleted: newMicroGoals 
+                }],
+                draco: newDraco,
+                levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+              };
+            }
           }
-        }
+        });
         
         // Recalculate all goal progress after micro goal toggle
         setTimeout(() => get().recalculateAllGoalProgress(), 0);

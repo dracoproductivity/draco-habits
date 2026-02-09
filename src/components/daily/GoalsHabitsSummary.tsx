@@ -1,17 +1,23 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, ListTodo, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { CategoryRadarChart } from '@/components/charts/CategoryRadarChart';
 import { cn } from '@/lib/utils';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export const GoalsHabitsSummary = () => {
   const { goals, habits } = useAppStore();
+  const { isDesktop } = useResponsive();
   const [showGoals, setShowGoals] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className={cn(
+        "grid gap-4",
+        isDesktop ? "grid-cols-3" : "grid-cols-3"
+      )}>
         {/* Goals Box */}
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -19,10 +25,17 @@ export const GoalsHabitsSummary = () => {
           onClick={() => setShowGoals(true)}
           className="glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all"
         >
-          <Target className="w-6 h-6 text-primary mb-2" />
           <span className="text-sm font-semibold text-foreground">Objetivos</span>
-          <span className="text-2xl font-bold text-primary mt-1">{goals.length}</span>
+          <span className="text-2xl font-bold text-muted-foreground mt-1">{goals.length}</span>
         </motion.button>
+
+        {/* Category Radar - center */}
+        <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-foreground">Categorias</span>
+          </div>
+          <CategoryRadarChart compact />
+        </div>
 
         {/* Habits Box */}
         <motion.button
@@ -31,9 +44,8 @@ export const GoalsHabitsSummary = () => {
           onClick={() => setShowHabits(true)}
           className="glass-card rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all"
         >
-          <ListTodo className="w-6 h-6 text-primary mb-2" />
           <span className="text-sm font-semibold text-foreground">Hábitos</span>
-          <span className="text-2xl font-bold text-primary mt-1">{habits.length}</span>
+          <span className="text-2xl font-bold text-muted-foreground mt-1">{habits.length}</span>
         </motion.button>
       </div>
 
