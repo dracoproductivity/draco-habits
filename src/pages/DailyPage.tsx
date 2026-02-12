@@ -102,90 +102,34 @@ export const DailyPage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className={cn(
-        'min-h-screen',
+        'min-h-screen flex flex-col',
         isDesktop ? 'pb-24' : 'pb-20'
       )}
     >
       {/* Header - flat, no glass background */}
       <UniversalHeader />
 
-      <div className={cn('px-4 pt-2 pb-4 space-y-6', isDesktop && 'max-w-6xl mx-auto')}>
+      <div className={cn(
+        'px-4 pt-2 pb-4 flex-1 flex flex-col',
+        isDesktop && 'max-w-6xl mx-auto w-full'
+      )}>
         
         {/* ===== MAIN CENTRAL BOX ===== */}
-        <div className="glass-card rounded-2xl p-6 max-w-4xl mx-auto">
+        <div className={cn(
+          "glass-card rounded-2xl p-6 max-w-4xl mx-auto w-full",
+          !showCharts && "my-auto"
+        )}>
           {/* Greeting */}
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
           </h1>
 
-          {/* Day Card + Charts Area */}
+          {/* Day Card + Content */}
           <div className="flex flex-col items-center">
-            {/* Charts + Day Card Row */}
-            <div className={cn(
-              "flex items-start justify-center gap-4 w-full",
-              !showCharts && "flex-col items-center"
-            )}>
-              {/* Left Chart - Constância (only when charts toggled) */}
-              <AnimatePresence>
-                {showCharts && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -20, width: 0 }}
-                    animate={{ opacity: 1, x: 0, width: 'auto' }}
-                    exit={{ opacity: 0, x: -20, width: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="flex-1 min-w-0 hidden lg:block"
-                  >
-                    <div className="glass-card rounded-2xl p-4">
-                      <EvolutionChart compact />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Day Card - centered */}
-              <div className={cn(
-                "flex justify-center",
-                showCharts ? "w-auto flex-shrink-0" : "w-full"
-              )}>
-                <DayCard />
-              </div>
-
-              {/* Right Chart - Progresso (only when charts toggled) */}
-              <AnimatePresence>
-                {showCharts && (
-                  <motion.div
-                    initial={{ opacity: 0, x: 20, width: 0 }}
-                    animate={{ opacity: 1, x: 0, width: 'auto' }}
-                    exit={{ opacity: 0, x: 20, width: 0 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="flex-1 min-w-0 hidden lg:block"
-                  >
-                    <div className="glass-card rounded-2xl p-4">
-                      <ProgressCharts compact hideEmoji />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            {/* Day Card - centered */}
+            <div className="flex justify-center w-full">
+              <DayCard />
             </div>
-
-            {/* Mobile charts - stacked below when toggled */}
-            <AnimatePresence>
-              {showCharts && !isDesktop && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="w-full space-y-4 mt-4"
-                >
-                  <div className="glass-card rounded-2xl p-4">
-                    <EvolutionChart compact />
-                  </div>
-                  <div className="glass-card rounded-2xl p-4">
-                    <ProgressCharts compact hideEmoji />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Period Progress Indicators */}
             <div className="w-full mt-6">
@@ -194,6 +138,31 @@ export const DailyPage = () => {
               </div>
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
+
+            {/* Charts below percentages - only when toggled */}
+            <AnimatePresence>
+              {showCharts && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  className="w-full mt-4 overflow-hidden"
+                >
+                  <div className={cn(
+                    "grid gap-4",
+                    isDesktop ? "grid-cols-2" : "grid-cols-1"
+                  )}>
+                    <div className="glass-card rounded-2xl p-4">
+                      <EvolutionChart compact />
+                    </div>
+                    <div className="glass-card rounded-2xl p-4">
+                      <ProgressCharts compact hideEmoji />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Analytics Toggle Button - emoji only with glass style */}
             <motion.button
@@ -220,7 +189,7 @@ export const DailyPage = () => {
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="space-y-6 overflow-hidden"
+              className="space-y-6 overflow-hidden mt-6 max-w-4xl mx-auto w-full"
             >
               {/* ===== GOALS, RADAR & HABITS SUMMARY ===== */}
               <GoalsHabitsSummary />

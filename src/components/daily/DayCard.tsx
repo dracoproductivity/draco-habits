@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minimize2, Sparkles } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -12,12 +12,21 @@ const MONTHS_PT = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
+const STORAGE_KEY = 'draco-daycard-expanded';
+
 interface DayCardProps {
   className?: string;
 }
 
 export const DayCard = ({ className }: DayCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const { habits, habitChecks, goals, getDailyProgress } = useAppStore();
 
   const today = new Date();
@@ -25,6 +34,13 @@ export const DayCard = ({ className }: DayCardProps) => {
   const dayNumber = today.getDate();
   const monthName = MONTHS_PT[today.getMonth()];
   const year = today.getFullYear();
+
+  // Persist expanded state
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, String(isExpanded));
+    } catch {}
+  }, [isExpanded]);
 
   const scheduledHabits = useMemo(() => {
     return getHabitsForDate(today, habits, goals);
@@ -41,14 +57,13 @@ export const DayCard = ({ className }: DayCardProps) => {
   const dailyProgress = getDailyProgress(todayStr);
 
   return (
-    <AnimatePresence mode="wait">
-      {!isExpanded ? (
+    <>
+      {/* Collapsed: Day Card */}
+      {!isExpanded && (
         <motion.button
           key="card"
-          layoutId="daycard"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           onClick={() => setIsExpanded(true)}
           className={cn(
@@ -96,36 +111,51 @@ export const DayCard = ({ className }: DayCardProps) => {
             />
           </div>
         </motion.button>
-      ) : (
-        <motion.div
-          key="expanded"
-          layoutId="daycard"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className={cn(
-            "glass-card rounded-2xl p-4 w-full",
-            className
-          )}
-        >
-          {/* Minimize button */}
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => setIsExpanded(false)}
-              className="p-2 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <Minimize2 className="w-5 h-5" />
-            </button>
-            <span className="text-sm text-muted-foreground">
-              {dayNumber} de {monthName}, {year}
-            </span>
-          </div>
-
-          {/* Habit list */}
-          <HabitList showProgressIndicators={false} centerTitle />
-        </motion.div>
       )}
-    </AnimatePresence>
+
+      {/* Expanded: Full-screen overlay with habit list */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            key="expanded-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+            onClick={() => setIsExpanded(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "w-full max-w-md max-h-[85vh] bg-card border border-border rounded-2xl shadow-xl overflow-hidden",
+                className
+              )}
+            >
+              {/* Minimize button */}
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="p-2 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Minimize2 className="w-5 h-5" />
+                </button>
+                <span className="text-sm text-muted-foreground">
+                  {dayNumber} de {monthName}, {year}
+                </span>
+              </div>
+
+              {/* Habit list */}
+              <div className="overflow-y-auto max-h-[calc(85vh-70px)]">
+                <HabitList showProgressIndicators={false} centerTitle />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };

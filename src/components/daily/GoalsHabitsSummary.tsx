@@ -14,9 +14,11 @@ export const GoalsHabitsSummary = () => {
 
   return (
     <>
+      {/* Desktop: 3 columns - Goals | Radar | Habits */}
+      {/* Mobile: 2 columns for boxes, radar below */}
       <div className={cn(
         "grid gap-4",
-        isDesktop ? "grid-cols-3" : "grid-cols-3"
+        isDesktop ? "grid-cols-3" : "grid-cols-2"
       )}>
         {/* Goals Box */}
         <motion.button
@@ -29,13 +31,15 @@ export const GoalsHabitsSummary = () => {
           <span className="text-2xl font-bold text-muted-foreground mt-1">{goals.length}</span>
         </motion.button>
 
-        {/* Category Radar - center */}
-        <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold text-foreground">Categorias</span>
+        {/* Category Radar - center on desktop, full width below on mobile */}
+        {isDesktop && (
+          <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold text-foreground">Categorias</span>
+            </div>
+            <CategoryRadarChart compact />
           </div>
-          <CategoryRadarChart compact />
-        </div>
+        )}
 
         {/* Habits Box */}
         <motion.button
@@ -48,6 +52,16 @@ export const GoalsHabitsSummary = () => {
           <span className="text-2xl font-bold text-muted-foreground mt-1">{habits.length}</span>
         </motion.button>
       </div>
+
+      {/* Mobile/Tablet: Radar below the boxes */}
+      {!isDesktop && (
+        <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold text-foreground">Categorias</span>
+          </div>
+          <CategoryRadarChart compact />
+        </div>
+      )}
 
       {/* Goals Modal */}
       <AnimatePresence>
