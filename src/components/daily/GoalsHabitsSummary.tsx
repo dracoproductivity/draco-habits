@@ -33,11 +33,13 @@ export const GoalsHabitsSummary = () => {
 
         {/* Category Radar - center on desktop, full width below on mobile */}
         {isDesktop && (
-          <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+          <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center min-h-[200px]">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-semibold text-foreground">Categorias</span>
             </div>
-            <CategoryRadarChart compact />
+            <div className="w-full flex-1">
+              <CategoryRadarChart compact />
+            </div>
           </div>
         )}
 
@@ -55,11 +57,13 @@ export const GoalsHabitsSummary = () => {
 
       {/* Mobile/Tablet: Radar below the boxes */}
       {!isDesktop && (
-        <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center mt-4">
+        <div className="glass-card rounded-2xl p-4 flex flex-col items-center justify-center mt-4 min-h-[200px]">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-semibold text-foreground">Categorias</span>
           </div>
-          <CategoryRadarChart compact />
+          <div className="w-full flex-1">
+            <CategoryRadarChart compact />
+          </div>
         </div>
       )}
 

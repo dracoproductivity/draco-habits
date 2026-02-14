@@ -396,7 +396,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Hábito com Micro Objetivos</span>
+                <span className="text-sm">Hábito com Tarefas</span>
               </div>
               <button
                 onClick={() => setHasMicroGoals(!hasMicroGoals)}
@@ -417,7 +417,7 @@ export const HabitCreationForm = ({ parentGoal, onClose, onCreated }: HabitCreat
             {hasMicroGoals && (
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
-                  💡 Ex: Beber 2L de água, com micro objetivos de 250ml. Cada vez que você beber 250ml, marca uma parte do hábito.
+                  💡 Ex: Beber 2L de água, com tarefas de 250ml. Cada vez que você beber 250ml, marca uma parte do hábito.
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Quantidade:</span>

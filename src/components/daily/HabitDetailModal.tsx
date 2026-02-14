@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -289,7 +290,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -767,7 +768,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <h3 className="font-medium text-foreground">Micro Objetivos</h3>
+                  <h3 className="font-medium text-foreground">Tarefas</h3>
                 </div>
                 <button
                   onClick={() => setHasMicroGoals(!hasMicroGoals)}
@@ -960,6 +961,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
