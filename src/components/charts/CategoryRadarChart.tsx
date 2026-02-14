@@ -44,45 +44,45 @@ export const CategoryRadarChart = ({ className, compact = false }: CategoryRadar
   };
 
   const radarData = useMemo(() => {
-    // Count goals per category (only used categories)
     const categoryCount: Record<string, { name: string; count: number; emoji: string }> = {};
 
     goals.forEach((goal) => {
-      // Check for category (can be default category ID or custom category name stored as string)
-      if (goal.category) {
-        const displayInfo = getCategoryDisplayInfo(goal.category);
-        
-        if (displayInfo) {
-          if (!categoryCount[goal.category]) {
-            categoryCount[goal.category] = { name: displayInfo.name, count: 0, emoji: displayInfo.emoji };
-          }
-          categoryCount[goal.category].count++;
-        } else {
-          // It might be a category name stored directly (custom category)
-          const customCat = customCategories.find((c) => c.name === goal.category);
-          if (customCat) {
-            if (!categoryCount[goal.category]) {
-              categoryCount[goal.category] = { name: customCat.name, count: 0, emoji: customCat.emoji || '' };
-            }
-            categoryCount[goal.category].count++;
-          }
-        }
-      }
-      
-      // Also check customCategoryId
+      let catKey: string | null = null;
+      let catName: string | null = null;
+      let catEmoji = '';
+
+      // If goal has a customCategoryId, use that (takes priority)
       if (goal.customCategoryId) {
         const customCat = customCategories.find((c) => c.id === goal.customCategoryId);
         if (customCat) {
-          if (!categoryCount[goal.customCategoryId]) {
-            categoryCount[goal.customCategoryId] = { name: customCat.name, count: 0, emoji: customCat.emoji || '' };
-          }
-          categoryCount[goal.customCategoryId].count++;
+          catKey = goal.customCategoryId;
+          catName = customCat.name;
+          catEmoji = customCat.emoji || '';
         }
+      }
+      
+      // Otherwise check default category (skip 'custom' which is handled by customCategoryId)
+      if (!catKey && goal.category && goal.category !== 'custom') {
+        const defaultCat = DEFAULT_CATEGORIES.find((c) => c.id === goal.category);
+        if (defaultCat) {
+          // Check for custom override
+          const override = customCategories.find(c => c.id === `default_${goal.category}`);
+          catKey = goal.category;
+          catName = override?.name || defaultCat.name;
+          catEmoji = override?.emoji || defaultCat.emoji;
+        }
+      }
+
+      if (catKey && catName) {
+        if (!categoryCount[catKey]) {
+          categoryCount[catKey] = { name: catName, count: 0, emoji: catEmoji };
+        }
+        categoryCount[catKey].count++;
       }
     });
 
     return Object.entries(categoryCount)
-      .filter(([_, data]) => data.count > 0) // Only categories with usage
+      .filter(([_, data]) => data.count > 0)
       .map(([_, data]) => ({
         category: `${data.emoji || ''} ${data.name}`.trim(),
         value: data.count,

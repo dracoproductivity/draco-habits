@@ -45,7 +45,7 @@ export const SleepChartMini = () => {
         hours: log?.sleepHours ?? null,
       };
     });
-  }, [dailyLogs]);
+  }, [dailyLogs, dailyLogs.length]);
 
   return (
     <div className="glass-card rounded-2xl p-4">
@@ -93,7 +93,7 @@ export const PhoneChartMini = () => {
         hours: log?.phoneUsageHours ?? null,
       };
     });
-  }, [dailyLogs]);
+  }, [dailyLogs, dailyLogs.length]);
 
   return (
     <div className="glass-card rounded-2xl p-4">

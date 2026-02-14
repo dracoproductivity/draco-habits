@@ -161,7 +161,7 @@ export const HabitItem = ({
           </div>
           {linkedGoal && (
             <span className="text-xs text-muted-foreground">
-              🎯 {linkedGoal.name}
+              {linkedGoal.emoji ? `${linkedGoal.emoji} ` : ''}{linkedGoal.name}
             </span>
           )}
           {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
