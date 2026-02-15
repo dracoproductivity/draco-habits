@@ -114,6 +114,14 @@ export interface DailyLog {
   phoneUsageHours: number;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  noteDate: string; // YYYY-MM-DD
+  createdAt: string;
+}
+
 export interface PageProgressDisplayModes {
   home: ProgressDisplayMode;
   goals: ProgressDisplayMode;
@@ -141,7 +149,7 @@ export interface AppSettings {
   glassOpacity: number; // 0-100 opacity percentage
 }
 
-export type TabType = 'home' | 'goals' | 'analytics' | 'data' | 'settings';
+export type TabType = 'home' | 'goals' | 'notes' | 'analytics' | 'data' | 'settings';
 
 export const DEFAULT_CATEGORIES: { id: GoalCategory; name: string; emoji: string }[] = [
   { id: 'physical_health', name: 'Saúde Física', emoji: '💪' },

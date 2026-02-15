@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory, DailyLog } from '@/types';
+import { User, Habit, HabitCheck, Goal, DracoState, AppSettings, TabType, CustomCategory, DailyLog, Note } from '@/types';
 import {
   calculateHabitProgress,
   calculateGoalProgress,
@@ -42,6 +42,9 @@ interface AppStore {
   // Daily Logs (sleep/phone)
   dailyLogs: DailyLog[];
   
+  // Notes
+  notes: Note[];
+  
   // Settings
   settings: AppSettings;
   
@@ -74,6 +77,10 @@ interface AppStore {
   
   addDailyLog: (log: DailyLog) => void;
   getDailyLogs: (startDate: string, endDate: string) => DailyLog[];
+  
+  addNote: (note: Omit<Note, 'id' | 'createdAt'>) => Note;
+  updateNote: (id: string, updates: Partial<Note>) => void;
+  removeNote: (id: string) => void;
   
   updateSettings: (settings: Partial<AppSettings>) => void;
   setActiveTab: (tab: TabType) => void;
@@ -140,6 +147,7 @@ export const useAppStore = create<AppStore>()(
       goals: defaultGoals,
       customCategories: [],
       dailyLogs: [],
+      notes: [],
       settings: defaultSettings,
       activeTab: 'home',
       showWelcomeModal: false,
@@ -200,6 +208,7 @@ export const useAppStore = create<AppStore>()(
           goals: [],
           customCategories: [],
           dailyLogs: [],
+          notes: [],
           draco: defaultDraco,
           settings: defaultSettings,
           showWelcomeModal: false,
@@ -550,6 +559,28 @@ export const useAppStore = create<AppStore>()(
       getDailyLogs: (startDate, endDate) => {
         const { dailyLogs } = get();
         return dailyLogs.filter((log) => log.date >= startDate && log.date <= endDate);
+      },
+
+      addNote: (noteData) => {
+        const newNote: Note = {
+          ...noteData,
+          id: generateUUID(),
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ notes: [...state.notes, newNote] }));
+        return newNote;
+      },
+
+      updateNote: (id, updates) => {
+        set((state) => ({
+          notes: state.notes.map((n) => n.id === id ? { ...n, ...updates } : n),
+        }));
+      },
+
+      removeNote: (id) => {
+        set((state) => ({
+          notes: state.notes.filter((n) => n.id !== id),
+        }));
       },
 
       updateSettings: (updates) => {

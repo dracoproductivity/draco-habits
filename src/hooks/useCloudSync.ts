@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/hooks/use-toast";
-import type { Habit, Goal, HabitCheck, DailyLog, AppSettings, DracoState, CustomCategory, User } from "@/types";
+import type { Habit, Goal, HabitCheck, DailyLog, AppSettings, DracoState, CustomCategory, User, Note } from "@/types";
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -132,6 +132,8 @@ const globalState = {
     draco: "",
     user: "",
     settings: "",
+    dailyLogs: "",
+    notes: "",
   },
 };
 
@@ -317,6 +319,17 @@ export const useCloudSync = () => {
         xpReward: c.xp_reward,
       }));
 
+      // Load notes
+      const { data: notesData } = await (supabase as any).from("notes").select("*").eq("user_id", userId);
+
+      const notes: Note[] = ((notesData as any[]) || []).map((n: any) => ({
+        id: n.id,
+        title: n.title || '',
+        content: n.content || '',
+        noteDate: n.note_date,
+        createdAt: n.created_at,
+      }));
+
       // Set all data at once
       useAppStore.setState({
         habits,
@@ -324,6 +337,7 @@ export const useCloudSync = () => {
         habitChecks,
         dailyLogs,
         customCategories,
+        notes,
       });
 
       // Update last synced data to prevent immediate re-sync
@@ -335,6 +349,8 @@ export const useCloudSync = () => {
         draco: JSON.stringify(dracoData),
         user: JSON.stringify(profile),
         settings: JSON.stringify(settingsData),
+        dailyLogs: JSON.stringify(dailyLogs),
+        notes: JSON.stringify(notes),
       };
     } catch (error) {
       console.error("Error loading from cloud:", error);
@@ -647,6 +663,38 @@ export const useCloudSync = () => {
     [user?.id],
   );
 
+  // Save note to cloud
+  const saveNote = useCallback(
+    async (note: Note) => {
+      const userId = userIdRef.current || user?.id;
+      if (!userId) return;
+      if (!isValidUUID(note.id)) return;
+
+      const { error } = await (supabase as any).from("notes").upsert({
+        id: note.id,
+        user_id: userId,
+        title: note.title,
+        content: note.content,
+        note_date: note.noteDate,
+      });
+
+      if (error) console.error("Error saving note:", error);
+    },
+    [user?.id],
+  );
+
+  // Delete note from cloud
+  const deleteNote = useCallback(
+    async (noteId: string) => {
+      const userId = userIdRef.current || user?.id;
+      if (!userId || !isValidUUID(noteId)) return;
+
+      const { error } = await (supabase as any).from("notes").delete().eq("id", noteId).eq("user_id", userId);
+      if (error) console.error("Error deleting note:", error);
+    },
+    [user?.id],
+  );
+
   // Save custom category to cloud
   const saveCustomCategory = useCallback(
     async (category: CustomCategory) => {
@@ -915,6 +963,52 @@ export const useCloudSync = () => {
           globalState.lastSyncedData.settings = currentSettingsStr;
         }
       }
+
+      // Sync daily logs
+      if (state.dailyLogs !== prevState.dailyLogs) {
+        const currentLogsStr = JSON.stringify(state.dailyLogs);
+        if (currentLogsStr !== globalState.lastSyncedData.dailyLogs) {
+          const previousLogs: DailyLog[] = globalState.lastSyncedData.dailyLogs
+            ? JSON.parse(globalState.lastSyncedData.dailyLogs)
+            : [];
+
+          state.dailyLogs.forEach((log) => {
+            const prev = previousLogs.find((l) => l.date === log.date);
+            if (!prev || JSON.stringify(prev) !== JSON.stringify(log)) {
+              saveDailyLog(log);
+            }
+          });
+
+          globalState.lastSyncedData.dailyLogs = currentLogsStr;
+        }
+      }
+
+      // Sync notes
+      if (state.notes !== prevState.notes) {
+        const currentNotesStr = JSON.stringify(state.notes);
+        if (currentNotesStr !== globalState.lastSyncedData.notes) {
+          const previousNotes: Note[] = globalState.lastSyncedData.notes
+            ? JSON.parse(globalState.lastSyncedData.notes)
+            : [];
+          const currentIds = new Set(state.notes.map((n) => n.id));
+
+          state.notes.forEach((note) => {
+            if (!isValidUUID(note.id)) return;
+            const prev = previousNotes.find((n) => n.id === note.id);
+            if (!prev || JSON.stringify(prev) !== JSON.stringify(note)) {
+              saveNote(note);
+            }
+          });
+
+          previousNotes.forEach((note) => {
+            if (!currentIds.has(note.id) && isValidUUID(note.id)) {
+              deleteNote(note.id);
+            }
+          });
+
+          globalState.lastSyncedData.notes = currentNotesStr;
+        }
+      }
     });
 
     return () => unsubscribe();
@@ -930,6 +1024,9 @@ export const useCloudSync = () => {
     saveDraco,
     saveProfile,
     saveSettings,
+    saveDailyLog,
+    saveNote,
+    deleteNote,
   ]);
 
   return {
@@ -945,5 +1042,7 @@ export const useCloudSync = () => {
     saveDailyLog,
     saveCustomCategory,
     deleteCustomCategory,
+    saveNote,
+    deleteNote,
   };
 };
