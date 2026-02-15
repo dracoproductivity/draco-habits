@@ -5,6 +5,7 @@ import { useCloudSync } from '@/hooks/useCloudSync';
 import { AuthPage } from './AuthPage';
 import { DailyPage } from './DailyPage';
 import { GoalsPage } from './GoalsPage';
+import { NotesPage } from './NotesPage';
 import { AnalyticsPage } from './AnalyticsPage';
 import { DataPage } from './DataPage';
 import { SettingsPage } from './SettingsPage';
@@ -125,6 +126,8 @@ const Index = () => {
         return <DailyPage />;
       case 'goals':
         return <GoalsPage />;
+      case 'notes':
+        return <NotesPage />;
       case 'analytics':
         return <AnalyticsPage />;
       case 'data':

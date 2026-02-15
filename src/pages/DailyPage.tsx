@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, Info, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { DayCard } from '@/components/daily/DayCard';
 import { PeriodProgressIndicators } from '@/components/daily/PeriodProgressIndicators';
@@ -13,11 +14,12 @@ import { GoalsHabitsSummary } from '@/components/daily/GoalsHabitsSummary';
 import { SleepChartMini, PhoneChartMini } from '@/components/daily/HealthChartsMini';
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
+import { NoteEditorModal } from '@/components/notes/NoteEditorModal';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
 import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
 import { cn } from '@/lib/utils';
-import { ProgressDisplayMode, Goal } from '@/types';
+import { ProgressDisplayMode, Goal, Note } from '@/types';
 import { formatLocalDate } from '@/utils/dateUtils';
 
 export const DailyPage = () => {
@@ -97,6 +99,18 @@ export const DailyPage = () => {
     });
   };
 
+  // Note shortcut state
+  const [showNoteEditor, setShowNoteEditor] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+
+  const newNoteTemplate: Note = {
+    id: '',
+    title: '',
+    content: '',
+    noteDate: formatLocalDate(new Date()),
+    createdAt: new Date().toISOString(),
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -123,6 +137,20 @@ export const DailyPage = () => {
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
           </h1>
+
+          {/* Note shortcut button */}
+          <button
+            onClick={() => setShowNoteEditor(true)}
+            className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4 hover:border-primary/40 transition-all"
+          >
+            <span className="text-sm text-muted-foreground">O que deseja registrar hoje?</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
+              className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all"
+            >
+              <Info className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          </button>
 
           {/* Day Card + Content */}
           <div className="flex flex-col items-center">
@@ -236,6 +264,46 @@ export const DailyPage = () => {
         isActive={showFireCelebration} 
         onComplete={handleFireCelebrationComplete} 
       />
+
+      {/* Note Editor Modal (shortcut) */}
+      <AnimatePresence>
+        {showNoteEditor && (
+          <NoteEditorModal
+            note={newNoteTemplate}
+            isNew={true}
+            onClose={() => setShowNoteEditor(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Info Modal */}
+      {showInfoModal && createPortal(
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowInfoModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="w-full max-w-md bg-card border border-border/50 rounded-2xl shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">📝 Por que anotar?</h3>
+              <button onClick={() => setShowInfoModal(false)} className="p-1 rounded-lg hover:bg-muted/50">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Cada dia contém algo de diferente, algo especial. A vida passa rápido, por isso, nós da Draco aconselhamos você a criar uma anotação por dia, que registre o que você fez, o que concluiu, o que deseja melhorar, o que teve de diferente no dia atual, etc. Assim, você faz o dia atual não passar despercebido. Faça cada dia contar, escreva sua história, porque ao chegar no topo da montanha você verá que cada dia valeu a pena. Lembre-se, ao chegar lá, tenha certeza de que foi com boas companhias, amor e paz no coração, não para olhar o mundo de cima, e sim para apreciar tudo que ele tem a mostrar, que lá de baixo, não conseguimos ver.
+            </p>
+          </motion.div>
+        </motion.div>,
+        document.body
+      )}
     </motion.div>
   );
 };

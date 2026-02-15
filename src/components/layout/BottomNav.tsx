@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Home, Target, Settings, CalendarDays, BarChart3 } from 'lucide-react';
+import { Home, Target, Settings, CalendarDays, BarChart3, StickyNote } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { TabType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 const tabs: { id: TabType; label: string; icon: typeof CalendarDays }[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'goals', label: 'Objetivos', icon: Target },
+  { id: 'notes', label: 'Notas', icon: StickyNote },
   { id: 'analytics', label: 'Análises', icon: BarChart3 },
   { id: 'data', label: 'Data', icon: CalendarDays },
   { id: 'settings', label: 'Config', icon: Settings },
