@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban, Archive } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, DIFFICULTY_LABELS } from '@/types';
@@ -58,6 +58,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   } = useAppStore();
 
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showArchiveConfirmation, setShowArchiveConfirmation] = useState(false);
   const [habitEmoji, setHabitEmoji] = useState(habit.emoji || '');
   const [habitName, setHabitName] = useState(habit.name);
   
@@ -925,6 +926,15 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               Salvar Alterações
             </button>
 
+            {/* Archive Button */}
+            <button
+              onClick={() => setShowArchiveConfirmation(true)}
+              className="w-full py-3 flex items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 rounded-xl transition-colors"
+            >
+              <Archive className="w-4 h-4" />
+              <span>Arquivar hábito</span>
+            </button>
+
             {/* Delete Button */}
             <button
               onClick={() => setShowDeleteConfirmation(true)}
@@ -957,6 +967,30 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Archive Confirmation Dialog */}
+      <AlertDialog open={showArchiveConfirmation} onOpenChange={setShowArchiveConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Arquivar hábito</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja arquivar o hábito "{habit.name}"? Ele será movido para a seção Arquivados na aba Histórico e poderá ser desarquivado depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                updateHabit(habit.id, { archived: true });
+                toast({ title: 'Hábito arquivado!', description: `"${habit.name}" foi movido para Arquivados.` });
+                onClose();
+              }}
+            >
+              Arquivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

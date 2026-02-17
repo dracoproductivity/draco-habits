@@ -1,21 +1,23 @@
 import { Habit, Goal } from '@/types';
 
-// XP limits for active habits
+// XP limits for active (non-archived) recurring habits
 export const XP_LIMITS: Record<number, number> = {
-  50: 1, // Only 1 habit with 50XP
-  40: 1, // Only 1 habit with 40XP
-  30: 2, // Only 2 habits with 30XP
-  20: 3, // Only 3 habits with 20XP
-  10: 3, // Only 3 habits with 10XP
+  50: 2,  // Muito difícil = 2
+  40: 4,  // Difícil = 4
+  30: 6,  // Médio = 6
+  20: 8,  // Fácil = 8
+  10: 10, // Muito fácil = 10
 };
 
-export const MAX_ACTIVE_HABITS = 10;
-export const MAX_GOALS = 50;
+export const MAX_ACTIVE_HABITS = 30;
+export const MAX_GOALS_PER_YEAR = 100;
 
 /**
- * Check if a habit is currently active (has scheduled instances for today or future dates)
+ * Check if a habit is currently active (recurring and not archived)
  */
 export const isHabitActive = (habit: Habit): boolean => {
+  if (habit.archived) return false;
+  
   const today = new Date();
   
   // One-time habits are considered active if they were created recently (within 30 days)
@@ -25,8 +27,13 @@ export const isHabitActive = (habit: Habit): boolean => {
     return daysDiff <= 30;
   }
   
+  // If habit has an end date in the past, it's no longer active/recurring
+  if (habit.endDate) {
+    const endDate = new Date(habit.endDate);
+    if (endDate < today) return false;
+  }
+  
   // Regular repeating habits are always considered active
-  // (they repeat on their scheduled days indefinitely)
   if (habit.weekDays && habit.weekDays.length > 0) {
     return true;
   }
@@ -101,4 +108,22 @@ export const getRemainingSlots = (habits: Habit[]): Record<number, number> => {
     10: Math.max(0, XP_LIMITS[10] - counts[10]),
     0: Infinity, // No limit for 0 XP
   };
+};
+
+/**
+ * Count goals for a specific year
+ */
+export const getGoalsCountForYear = (goals: Goal[], year: number): number => {
+  return goals.filter(g => {
+    if (g.archived) return false;
+    // Check if the goal's period contains the year
+    return g.period?.includes(year.toString()) || false;
+  }).length;
+};
+
+/**
+ * Check if user can create a new goal for the given year
+ */
+export const canCreateGoalForYear = (goals: Goal[], year: number): boolean => {
+  return getGoalsCountForYear(goals, year) < MAX_GOALS_PER_YEAR;
 };

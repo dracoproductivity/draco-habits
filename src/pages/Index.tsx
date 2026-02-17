@@ -130,7 +130,7 @@ const Index = () => {
         return <NotesPage />;
       case 'analytics':
         return <AnalyticsPage />;
-      case 'data':
+      case 'history':
         return <DataPage />;
       case 'settings':
         return <SettingsPage />;

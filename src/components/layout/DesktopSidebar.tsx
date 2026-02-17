@@ -10,7 +10,7 @@ const tabs: { id: TabType; label: string; icon: typeof CalendarDays }[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'goals', label: 'Objetivos', icon: Target },
   { id: 'analytics', label: 'Análises', icon: BarChart3 },
-  { id: 'data', label: 'Data', icon: CalendarDays },
+  { id: 'history', label: 'Histórico', icon: CalendarDays },
   { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 

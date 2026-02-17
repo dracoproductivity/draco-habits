@@ -430,6 +430,7 @@ export const getHabitsForDate = (
   goals: Goal[]
 ): Habit[] => {
   return habits.filter(habit => {
+    if (habit.archived) return false;
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
     return isHabitScheduledForDate(habit, date, linkedGoal);
   });

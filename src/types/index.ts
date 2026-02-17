@@ -27,6 +27,7 @@ export interface Habit {
   startDate?: string; // ISO date string - start of recurrence period
   endDate?: string; // ISO date string - end of recurrence period
   isBadHabit?: boolean; // If true, this is a habit the user wants to quit
+  archived?: boolean; // If true, habit is archived
   // Schedule history - used to apply old schedule to dates before the change
   scheduleUpdatedAt?: string; // ISO timestamp when schedule was last changed
   previousWeekDays?: number[]; // Previous weekDays before last change
@@ -78,6 +79,7 @@ export interface Goal {
   categoryXP?: number; // XP reward for habits linked to this goal (0, 10, 20, 30, 40, 50)
   createdAt: string;
   completionStatus?: GoalCompletionStatus; // Status when goal period ends
+  archived?: boolean; // If true, goal is archived
 }
 
 export interface DracoState {
@@ -149,7 +151,7 @@ export interface AppSettings {
   glassOpacity: number; // 0-100 opacity percentage
 }
 
-export type TabType = 'home' | 'goals' | 'notes' | 'analytics' | 'data' | 'settings';
+export type TabType = 'home' | 'goals' | 'notes' | 'analytics' | 'history' | 'settings';
 
 export const DEFAULT_CATEGORIES: { id: GoalCategory; name: string; emoji: string }[] = [
   { id: 'physical_health', name: 'Saúde Física', emoji: '💪' },

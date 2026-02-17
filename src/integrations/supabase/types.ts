@@ -112,6 +112,7 @@ export type Database = {
       }
       goals: {
         Row: {
+          archived: boolean
           category: string | null
           category_xp: number | null
           completion_status: string | null
@@ -128,6 +129,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived?: boolean
           category?: string | null
           category_xp?: number | null
           completion_status?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived?: boolean
           category?: string | null
           category_xp?: number | null
           completion_status?: string | null
@@ -216,6 +219,7 @@ export type Database = {
       }
       habits: {
         Row: {
+          archived: boolean
           created_at: string
           description: string | null
           emoji: string | null
@@ -245,6 +249,7 @@ export type Database = {
           xp_reward: number | null
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           description?: string | null
           emoji?: string | null
@@ -274,6 +279,7 @@ export type Database = {
           xp_reward?: number | null
         }
         Update: {
+          archived?: boolean
           created_at?: string
           description?: string | null
           emoji?: string | null
