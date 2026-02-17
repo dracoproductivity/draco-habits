@@ -30,7 +30,7 @@ const typeColors: Record<Goal['type'], string> = {
 export const GoalSquareCard = ({ goal, index, onClick }: GoalSquareCardProps) => {
   const { settings, habits, customCategories } = useAppStore();
 
-  const linkedHabits = habits.filter(h => h.goalId === goal.id);
+  const linkedHabits = habits.filter(h => h.goalId === goal.id && !h.archived);
 
   // Get category info with proper label
   const getCategoryDisplay = () => {

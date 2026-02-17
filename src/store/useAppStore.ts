@@ -492,10 +492,11 @@ export const useAppStore = create<AppStore>()(
       addGoal: (goal) => {
         const { goals } = get();
         
-        // Check goal limit
-        if (goals.length >= 50) {
-          console.warn('Goal limit reached (50 goals)');
-          // Still create the goal but log warning - validation should be done in UI
+        // Check goal limit per year (100 per year)
+        const currentYear = new Date().getFullYear();
+        const goalsThisYear = goals.filter(g => !g.archived && g.period?.includes(currentYear.toString())).length;
+        if (goalsThisYear >= 100) {
+          console.warn('Goal limit reached (100 goals per year)');
         }
         
         const newGoal: Goal = {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil, Archive } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalSquareCard } from '@/components/goals/GoalSquareCard';
 import { HabitSquareCard } from '@/components/goals/HabitSquareCard';
@@ -317,10 +317,11 @@ export const GoalsPage = () => {
   const [showDeleteGoalConfirmation, setShowDeleteGoalConfirmation] = useState(false);
   const [showMigrateHabitsModal, setShowMigrateHabitsModal] = useState(false);
   const [migrateToGoalId, setMigrateToGoalId] = useState<string | null>(null);
+  const [showArchiveGoalConfirmation, setShowArchiveGoalConfirmation] = useState(false);
   
   // Get linked habits for selected goal
   const linkedHabitsToSelectedGoal = selectedGoal 
-    ? habits.filter(h => h.goalId === selectedGoal.id)
+    ? habits.filter(h => h.goalId === selectedGoal.id && !h.archived)
     : [];
 
   // Habit creation from Goals page
@@ -349,9 +350,10 @@ export const GoalsPage = () => {
     return habits.filter(h => h.goalId === goalId);
   };
 
-  const filteredGoals = filter === 'all'
+  const filteredGoals = (filter === 'all'
     ? goals
-    : goals.filter((g) => g.type === filter);
+    : goals.filter((g) => g.type === filter)
+  ).filter(g => !g.archived);
 
   const handleProgressChange = (value: number) => {
     if (selectedGoal) {
@@ -450,11 +452,13 @@ export const GoalsPage = () => {
   const handleCreateGoal = () => {
     if (!newGoalName.trim() || !newGoalType || !newGoalPeriod) return;
     
-    // Check goal limit
-    if (goals.length >= 50) {
+    // Check goal limit per year
+    const currentYear = new Date().getFullYear();
+    const goalsThisYear = goals.filter(g => !g.archived && g.period?.includes(currentYear.toString())).length;
+    if (goalsThisYear >= 100) {
       toast({
         title: 'Limite atingido',
-        description: 'Você atingiu o limite de 50 objetivos.',
+        description: 'Você atingiu o limite de 100 objetivos por ano.',
         variant: 'destructive',
       });
       return;
@@ -1677,6 +1681,15 @@ export const GoalsPage = () => {
                   </div>
                 )}
 
+                {/* Archive */}
+                <button
+                  onClick={() => setShowArchiveGoalConfirmation(true)}
+                  className="w-full py-3 flex items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 rounded-xl transition-colors"
+                >
+                  <Archive className="w-4 h-4" />
+                  <span>Arquivar objetivo</span>
+                </button>
+
                 {/* Delete */}
                 <button
                   onClick={() => setShowDeleteGoalConfirmation(true)}
@@ -1754,6 +1767,31 @@ export const GoalsPage = () => {
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Archive Goal Confirmation Dialog */}
+                <AlertDialog open={showArchiveGoalConfirmation} onOpenChange={setShowArchiveGoalConfirmation}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Arquivar objetivo</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Deseja arquivar o objetivo "{selectedGoal.name}"? Ele será movido para a seção Arquivados na aba Histórico.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          updateGoal(selectedGoal.id, { archived: true });
+                          setShowArchiveGoalConfirmation(false);
+                          setSelectedGoal(null);
+                          toast({ title: 'Objetivo arquivado!', description: `"${selectedGoal.name}" foi movido para Arquivados.` });
+                        }}
+                      >
+                        Arquivar
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

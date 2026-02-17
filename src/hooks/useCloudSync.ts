@@ -65,6 +65,7 @@ interface GoalRow {
   category_xp: number | null;
   custom_category_id: string | null;
   completion_status: string | null;
+  archived: boolean;
   created_at: string;
 }
 
@@ -87,6 +88,11 @@ interface HabitRow {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+  is_bad_habit: boolean;
+  has_micro_goals: boolean;
+  micro_goals_count: number;
+  micro_goals_names: string[];
+  archived: boolean;
   // Schedule history fields
   schedule_updated_at: string | null;
   previous_selected_days: number[] | null;
@@ -258,6 +264,7 @@ export const useCloudSync = () => {
         categoryXP: g.category_xp || undefined,
         customCategoryId: g.custom_category_id || undefined,
         completionStatus: g.completion_status as Goal["completionStatus"],
+        archived: g.archived || false,
         createdAt: g.created_at,
       }));
 
@@ -283,6 +290,7 @@ export const useCloudSync = () => {
         microGoalsNames: h.micro_goals_names || undefined,
         createdAt: h.created_at,
         isBadHabit: h.is_bad_habit || false,
+        archived: h.archived || false,
         // Schedule history fields
         scheduleUpdatedAt: h.schedule_updated_at || undefined,
         previousWeekDays: h.previous_selected_days || undefined,
@@ -493,6 +501,7 @@ export const useCloudSync = () => {
         category_xp: goal.categoryXP,
         custom_category_id: goal.customCategoryId && isValidUUID(goal.customCategoryId) ? goal.customCategoryId : null,
         completion_status: goal.completionStatus,
+        archived: goal.archived || false,
       });
 
       if (error) {
@@ -560,6 +569,7 @@ export const useCloudSync = () => {
         micro_goals_count: habit.microGoalsCount || 1,
         micro_goals_names: habit.microGoalsNames || [],
         is_bad_habit: habit.isBadHabit || false,
+        archived: habit.archived || false,
         // Schedule history fields
         schedule_updated_at: habit.scheduleUpdatedAt || null,
         previous_selected_days: habit.previousWeekDays || null,

@@ -138,22 +138,23 @@ export const DailyPage = () => {
             Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
           </h1>
 
-          {/* Note shortcut button */}
-          <button
-            onClick={() => setShowNoteEditor(true)}
-            className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4 hover:border-primary/40 transition-all"
-          >
-            <span className="text-sm text-muted-foreground">O que deseja registrar hoje?</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
-              className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all"
-            >
-              <Info className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-          </button>
-
-          {/* Day Card + Content */}
+          {/* Note shortcut button - same width container as day card */}
           <div className="flex flex-col items-center">
+            <div className="glass-card rounded-xl px-4 py-3 w-full max-w-[280px] flex items-center justify-between mb-4">
+              <span
+                onClick={() => setShowNoteEditor(true)}
+                className="text-sm text-muted-foreground cursor-pointer flex-1"
+              >
+                O que deseja registrar hoje?
+              </span>
+              <div
+                onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
+                className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all cursor-pointer"
+              >
+                <Info className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+            </div>
+
             {/* Day Card - centered */}
             <div className="flex justify-center w-full">
               <DayCard />
