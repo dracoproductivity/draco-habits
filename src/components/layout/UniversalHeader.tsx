@@ -211,45 +211,54 @@ export const UniversalHeader = () => {
       <header className={isMobile ? "px-4 py-3" : "flex items-center justify-between px-4 py-3"}>
         {isMobile ? (
           <>
-            {/* Mobile: Top row - Logo + User photo | Draco info */}
+            {/* Mobile Row 1: Logo + "Habits" | Action buttons */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0">
                   <img src={dracoLogo} alt="Draco Habits" className="w-full h-full object-cover" />
                 </div>
-                <div className="relative" ref={profileRef}>
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
-                  >
-                    {user?.photo ? (
-                      <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {showProfileMenu && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                        className="absolute left-0 top-12 z-50 w-44 glass-card rounded-xl p-2 shadow-2xl border border-border/50"
+                <span className="font-bold text-lg text-foreground">Habits</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {actionButtons}
+              </div>
+            </div>
+
+            {/* Mobile Row 2: User photo | Draco info */}
+            <div className="flex items-center justify-between mt-2">
+              {/* User photo (far left) */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
+                >
+                  {user?.photo ? (
+                    <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {showProfileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                      className="absolute left-0 top-12 z-50 w-44 glass-card rounded-xl p-2 shadow-2xl border border-border/50"
+                    >
+                      <button
+                        onClick={() => { setActiveTab('settings'); setShowProfileMenu(false); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
-                        <button
-                          onClick={() => { setActiveTab('settings'); setShowProfileMenu(false); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/50 transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-muted-foreground" />
-                          Configurações
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                        Configurações
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {/* Draco info (right side) */}
+              {/* Draco info (far right) */}
               <div className="flex items-center gap-2">
                 <div className="flex flex-col items-end">
                   <span className="text-sm text-primary font-semibold">{draco.name}</span>
@@ -266,11 +275,6 @@ export const UniversalHeader = () => {
                   <DracoIcon level={draco.level} color={draco.color} />
                 </div>
               </div>
-            </div>
-
-            {/* Mobile: Second row - Action buttons centered below Draco */}
-            <div className="flex items-center justify-center gap-3 mt-2">
-              {actionButtons}
             </div>
           </>
         ) : (
