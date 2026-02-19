@@ -378,8 +378,8 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 
 export const HabitList = ({ showProgressIndicators = true, centerTitle = false, className }: { showProgressIndicators?: boolean; centerTitle?: boolean; className?: string }) => {
   const {
-    habits,
-    goals,
+    habits: storeHabits,
+    goals: storeGoals,
     settings,
     addHabit,
     removeHabit,
@@ -396,6 +396,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     updateCustomCategory,
     toggleDracoSave,
   } = useAppStore();
+
+  const habits = storeHabits || [];
+  const goals = storeGoals || [];
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
