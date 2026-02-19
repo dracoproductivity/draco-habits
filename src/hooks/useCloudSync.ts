@@ -223,7 +223,8 @@ export const useCloudSync = () => {
         if (settings.notification_reminders) {
           if (typeof settings.notification_reminders === "string") {
             try {
-              notificationReminders = JSON.parse(settings.notification_reminders);
+              const parsed = JSON.parse(settings.notification_reminders);
+              notificationReminders = Array.isArray(parsed) ? parsed : [];
             } catch {
               notificationReminders = [];
             }
@@ -249,8 +250,8 @@ export const useCloudSync = () => {
           wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
-          dracoSaves: settings.draco_saves ?? 0,
-          tabPosition: (settings.tab_position as any) || 'bottom',
+          ...(settings.draco_saves != null ? { dracoSaves: settings.draco_saves } : {}),
+          ...(settings.tab_position ? { tabPosition: settings.tab_position as any } : {}),
         });
 
         // Only overwrite streakColor if cloud has an actual value
@@ -362,16 +363,20 @@ export const useCloudSync = () => {
       });
 
       // Update last synced data to prevent immediate re-sync
+      // IMPORTANT: Store lastSyncedData in the SAME format that the subscriber will compare
+      // (camelCase state objects), NOT the raw DB format (snake_case). Otherwise every
+      // subscriber call after load will see a diff and trigger an unnecessary save.
+      const currentState = useAppStore.getState();
       globalState.lastSyncedData = {
-        habits: JSON.stringify(habits),
-        goals: JSON.stringify(goals),
-        habitChecks: JSON.stringify(habitChecks),
-        customCategories: JSON.stringify(customCategories),
-        draco: JSON.stringify(dracoData),
-        user: JSON.stringify(profile),
-        settings: JSON.stringify(settingsData),
-        dailyLogs: JSON.stringify(dailyLogs),
-        notes: JSON.stringify(notes),
+        habits: JSON.stringify(currentState.habits),
+        goals: JSON.stringify(currentState.goals),
+        habitChecks: JSON.stringify(currentState.habitChecks),
+        customCategories: JSON.stringify(currentState.customCategories),
+        draco: JSON.stringify(currentState.draco),
+        user: JSON.stringify(currentState.user),
+        settings: JSON.stringify(currentState.settings),
+        dailyLogs: JSON.stringify(currentState.dailyLogs),
+        notes: JSON.stringify(currentState.notes),
       };
     } catch (error) {
       console.error("Error loading from cloud:", error);
@@ -660,22 +665,30 @@ export const useCloudSync = () => {
         return;
       }
 
+      const coreCheck = {
+        user_id: userId,
+        habit_id: habitId,
+        date: date,
+        completed: completed,
+        micro_goals_completed: microGoalsCompleted || 0,
+      };
+
+      // Try with all fields first
       const { error } = await supabase.from("habit_checks").upsert(
-        {
-          user_id: userId,
-          habit_id: habitId,
-          date: date,
-          completed: completed,
-          micro_goals_completed: microGoalsCompleted || 0,
-          draco_save_used: dracoSaveUsed || false,
-        },
-        {
-          onConflict: "habit_id,date",
-        },
+        { ...coreCheck, draco_save_used: dracoSaveUsed || false },
+        { onConflict: "habit_id,date" },
       );
 
       if (error) {
-        console.error("Error saving habit check:", error);
+        console.warn("saveHabitCheck: Extended save failed, retrying without draco_save_used:", error.message);
+        // Retry without draco_save_used in case column doesn't exist
+        const { error: fallbackError } = await supabase.from("habit_checks").upsert(
+          coreCheck,
+          { onConflict: "habit_id,date" },
+        );
+        if (fallbackError) {
+          console.error("Error saving habit check (fallback):", fallbackError);
+        }
       }
     },
     [user?.id],

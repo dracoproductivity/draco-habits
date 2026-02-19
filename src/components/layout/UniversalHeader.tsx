@@ -36,7 +36,8 @@ export const UniversalHeader = () => {
     }
   }, [settings.dracoSavesDelta]);
 
-  const notifications = (settings.notificationReminders || []).filter(
+  const remindersArr = Array.isArray(settings.notificationReminders) ? settings.notificationReminders : [];
+  const notifications = remindersArr.filter(
     r => r.enabled && !dismissedNotifications.includes(r.id)
   );
 
