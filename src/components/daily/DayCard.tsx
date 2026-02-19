@@ -28,7 +28,7 @@ export const DayCard = ({ className }: DayCardProps) => {
     }
   });
 
-  const { habits, habitChecks, goals, getDailyProgress } = useAppStore();
+  const { habits, habitChecks, goals, getDailyProgress, settings } = useAppStore();
 
   const today = new Date();
   const todayStr = formatLocalDate(today);
@@ -92,8 +92,8 @@ export const DayCard = ({ className }: DayCardProps) => {
           {/* Day streak */}
           {dayStreak > 0 && (
             <div className="flex items-center gap-1 mt-2">
-              <Flame className="w-4 h-4 text-orange-400" />
-              <span className="text-sm font-semibold text-orange-400">{dayStreak}</span>
+              <Flame className="w-4 h-4" style={{ color: settings.streakColor || '#fb923c' }} />
+              <span className="text-sm font-semibold" style={{ color: settings.streakColor || '#fb923c' }}>{dayStreak}</span>
             </div>
           )}
 

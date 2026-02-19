@@ -857,10 +857,11 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           {/* Day Streak */}
           {(() => {
             const dayStreak = calculateDayStreak(habits, habitChecks, goals);
+            const streakColor = settings.streakColor || '#fb923c';
             return dayStreak > 0 ? (
               <div className={cn("flex items-center gap-1.5 mb-2", shouldCenterTitle && "justify-center")}>
-                <Flame className="w-4 h-4 text-orange-400" />
-                <span className="text-sm font-semibold text-orange-400">{dayStreak} dia{dayStreak !== 1 ? 's' : ''} de streak</span>
+                <Flame className="w-4 h-4" style={{ color: streakColor }} />
+                <span className="text-sm font-semibold" style={{ color: streakColor }}>{dayStreak} dia{dayStreak !== 1 ? 's' : ''} de streak</span>
               </div>
             ) : null;
           })()}

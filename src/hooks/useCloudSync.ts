@@ -50,6 +50,7 @@ interface SettingsRow {
   wallpaper_mobile_dark: string | null;
   glass_blur: number;
   glass_opacity: number;
+  streak_color: string | null;
 }
 
 interface GoalRow {
@@ -246,6 +247,7 @@ export const useCloudSync = () => {
           wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
+          streakColor: settings.streak_color || undefined,
         });
       }
 
@@ -465,6 +467,7 @@ export const useCloudSync = () => {
           wallpaper_mobile_dark: mergedSettings.wallpaperMobileDark ?? null,
           glass_blur: mergedSettings.glassBlur ?? 20,
           glass_opacity: mergedSettings.glassOpacity ?? 65,
+          streak_color: mergedSettings.streakColor ?? null,
         },
         { onConflict: "user_id" },
       );

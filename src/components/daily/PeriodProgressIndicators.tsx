@@ -4,14 +4,19 @@ import { calculateHierarchicalPeriodProgress, getPeriodIdentifier } from '@/util
 import { formatPercentage, calculateRawPercentage } from '@/utils/formatPercentage';
 import { cn } from '@/lib/utils';
 import { ProgressDisplayMode } from '@/types';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface PeriodProgressIndicatorsProps {
   className?: string;
   displayMode?: ProgressDisplayMode;
 }
 
-const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: string; delay?: number }) => {
-  const circumference = 2 * Math.PI * 24;
+const CircularProgress = ({ value, label, delay = 0, small = false }: { value: number; label: string; delay?: number; small?: boolean }) => {
+  const size = small ? 44 : 56;
+  const r = small ? 17 : 24;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
   const offset = circumference - (value / 100) * circumference;
 
   return (
@@ -21,23 +26,23 @@ const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: s
       transition={{ delay }}
       className="flex flex-col items-center"
     >
-      <div className="relative w-14 h-14">
+      <div style={{ width: size, height: size }} className="relative">
         <svg className="w-full h-full -rotate-90">
           <circle
-            cx="28"
-            cy="28"
-            r="24"
+            cx={cx}
+            cy={cy}
+            r={r}
             fill="none"
             stroke="hsl(var(--muted) / 0.3)"
-            strokeWidth="3"
+            strokeWidth={small ? 2.5 : 3}
           />
           <motion.circle
-            cx="28"
-            cy="28"
-            r="24"
+            cx={cx}
+            cy={cy}
+            r={r}
             fill="none"
             stroke="hsl(var(--primary))"
-            strokeWidth="3"
+            strokeWidth={small ? 2.5 : 3}
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
@@ -46,10 +51,10 @@ const CircularProgress = ({ value, label, delay = 0 }: { value: number; label: s
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[10px] font-bold text-foreground">{formatPercentage(value)}</span>
+          <span className={cn("font-bold text-foreground", small ? "text-[8px]" : "text-[10px]")}>{formatPercentage(value)}</span>
         </div>
       </div>
-      <span className="text-[10px] text-muted-foreground mt-1">{label}</span>
+      <span className={cn("text-muted-foreground mt-1", small ? "text-[8px]" : "text-[10px]")}>{label}</span>
     </motion.div>
   );
 };
@@ -81,6 +86,7 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 
 export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgressIndicatorsProps) => {
   const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
+  const { isDesktop } = useResponsive();
 
   // Use passed displayMode prop if available, otherwise fall back to settings
   const isCircular = displayMode
@@ -163,8 +169,10 @@ export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgr
 
   return (
     <div className={cn(
-      'flex justify-center flex-wrap overflow-x-auto',
-      isCircular ? 'gap-3 sm:gap-4' : 'gap-2 sm:gap-3',
+      'flex justify-center',
+      isCircular
+        ? (isDesktop ? 'gap-4' : 'gap-2')
+        : (isDesktop ? 'gap-3' : 'gap-1.5'),
       className
     )}>
       {periods.map((period) => (
@@ -174,6 +182,7 @@ export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgr
             value={period.value}
             label={period.label}
             delay={period.delay}
+            small={!isDesktop}
           />
         ) : (
           <LinearProgress

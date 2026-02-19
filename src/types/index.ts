@@ -154,6 +154,7 @@ export interface AppSettings {
   glassOpacity: number; // 0-100 opacity percentage
   dracoSaves?: number; // Draco Saves balance (earned +1 per habit, spent -20 to save streak)
   dracoSavesDelta?: number | null; // Transient: delta for animation (+1, -20, +20)
+  streakColor?: string; // Custom color for streak display (CSS color string, defaults to orange-400)
 }
 
 export type TabType = 'home' | 'goals' | 'notes' | 'analytics' | 'history' | 'settings';
