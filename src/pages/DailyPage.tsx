@@ -25,33 +25,33 @@ import { formatLocalDate } from '@/utils/dateUtils';
 export const DailyPage = () => {
   const { isDesktop } = useResponsive();
   const { settings, updateSettings, goals, habits, habitChecks, updateGoal, getDailyProgress } = useAppStore();
-  
+
   // Analytics charts toggle - controls ALL charts/sections
   const [showCharts, setShowCharts] = useState(false);
-  
+
   // Goal completion modal state
   const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
   const [processedGoalIds, setProcessedGoalIds] = useState<Set<string>>(new Set());
-  
+
   // Fire celebration state
   const [showFireCelebration, setShowFireCelebration] = useState(false);
   const [lastCelebratedDate, setLastCelebratedDate] = useState<string | null>(null);
-  
+
   // Check for 100% daily progress
   const todayStr = formatLocalDate(new Date());
   const dailyProgress = getDailyProgress(todayStr);
-  
+
   useEffect(() => {
     if (dailyProgress === 100 && lastCelebratedDate !== todayStr) {
       setShowFireCelebration(true);
       setLastCelebratedDate(todayStr);
     }
   }, [dailyProgress, todayStr, lastCelebratedDate]);
-  
+
   const handleFireCelebrationComplete = useCallback(() => {
     setShowFireCelebration(false);
   }, []);
-  
+
   // Check for goals that need completion feedback
   const goalsNeedingCompletion = useGoalCompletionCheck({
     goals,
@@ -59,12 +59,12 @@ export const DailyPage = () => {
     habitChecks,
     currentDate: new Date(),
   });
-  
+
   useEffect(() => {
     const pendingGoal = goalsNeedingCompletion.find(
       g => g.needsCompletion && !processedGoalIds.has(g.goalId)
     );
-    
+
     if (pendingGoal) {
       const goal = goals.find(g => g.id === pendingGoal.goalId);
       if (goal && !goal.completionStatus) {
@@ -72,7 +72,7 @@ export const DailyPage = () => {
       }
     }
   }, [goalsNeedingCompletion, goals, processedGoalIds]);
-  
+
   const handleGoalCompletion = (status: 'completed' | 'failed') => {
     if (goalToComplete) {
       updateGoal(goalToComplete.id, { completionStatus: status });
@@ -80,12 +80,12 @@ export const DailyPage = () => {
       setGoalToComplete(null);
     }
   };
-  
+
   // Per-page progress display mode
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
     settings.pageProgressDisplayModes?.home || settings.progressDisplayMode
   );
-  
+
   const toggleDisplayMode = () => {
     const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
     setLocalDisplayMode(newMode);
@@ -127,7 +127,7 @@ export const DailyPage = () => {
         'px-4 pt-2 pb-4 flex-1 flex flex-col',
         isDesktop && 'max-w-6xl mx-auto w-full'
       )}>
-        
+
         {/* ===== MAIN CENTRAL BOX ===== */}
         <div className={cn(
           "glass-card rounded-2xl p-6 max-w-4xl mx-auto w-full",
@@ -140,7 +140,7 @@ export const DailyPage = () => {
 
           {/* Note shortcut button - same width container as day card */}
           <div className="flex flex-col items-center">
-            <div className="glass-card rounded-xl px-4 py-3 w-full max-w-[280px] flex items-center justify-between mb-4">
+            <div className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4">
               <span
                 onClick={() => setShowNoteEditor(true)}
                 className="text-sm text-muted-foreground cursor-pointer flex-1"
@@ -200,8 +200,8 @@ export const DailyPage = () => {
               onClick={() => setShowCharts(prev => !prev)}
               className={cn(
                 "mt-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                showCharts 
-                  ? "gradient-primary text-primary-foreground" 
+                showCharts
+                  ? "gradient-primary text-primary-foreground"
                   : "glass-card hover:border-primary/40"
               )}
             >
@@ -246,7 +246,7 @@ export const DailyPage = () => {
           )}
         </AnimatePresence>
       </div>
-      
+
       {/* Goal Completion Modal */}
       {goalToComplete && (
         <GoalCompletionModal
@@ -259,11 +259,11 @@ export const DailyPage = () => {
           }}
         />
       )}
-      
+
       {/* Fire Celebration for 100% daily completion */}
-      <FireCelebration 
-        isActive={showFireCelebration} 
-        onComplete={handleFireCelebrationComplete} 
+      <FireCelebration
+        isActive={showFireCelebration}
+        onComplete={handleFireCelebrationComplete}
       />
 
       {/* Note Editor Modal (shortcut) */}

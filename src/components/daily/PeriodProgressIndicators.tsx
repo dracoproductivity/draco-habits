@@ -81,13 +81,13 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 
 export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgressIndicatorsProps) => {
   const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
-  
+
   // Use passed displayMode prop if available, otherwise fall back to settings
-  const isCircular = displayMode 
-    ? displayMode === 'circular' 
+  const isCircular = displayMode
+    ? displayMode === 'circular'
     : settings.progressDisplayMode === 'circular';
   const today = new Date();
-  
+
   // Use local timezone formatting to avoid UTC one-day shift
   const formatLocalDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -163,8 +163,8 @@ export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgr
 
   return (
     <div className={cn(
-      'flex justify-center gap-3',
-      isCircular ? 'gap-4' : 'gap-2',
+      'flex justify-center flex-wrap overflow-x-auto',
+      isCircular ? 'gap-3 sm:gap-4' : 'gap-2 sm:gap-3',
       className
     )}>
       {periods.map((period) => (

@@ -15,6 +15,7 @@ import { ptBR } from 'date-fns/locale';
 import { isHabitScheduledForDate, calculateHabitProgress, getPeriodBoundaries } from '@/utils/habitInstanceCalculator';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
 import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
+import { calculateDayStreak } from '@/utils/calculateDayStreak';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -853,6 +854,16 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       <div className={cn("flex items-start", showProgress ? "gap-6" : "")}>
         {/* Habit list section */}
         <div className="flex-1">
+          {/* Day Streak */}
+          {(() => {
+            const dayStreak = calculateDayStreak(habits, habitChecks, goals);
+            return dayStreak > 0 ? (
+              <div className={cn("flex items-center gap-1.5 mb-2", shouldCenterTitle && "justify-center")}>
+                <Flame className="w-4 h-4 text-orange-400" />
+                <span className="text-sm font-semibold text-orange-400">{dayStreak} dia{dayStreak !== 1 ? 's' : ''} de streak</span>
+              </div>
+            ) : null;
+          })()}
           {/* Title */}
           <h3 className={cn(
             "font-semibold text-foreground text-lg mb-3",

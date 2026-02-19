@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Minimize2, Sparkles } from 'lucide-react';
+import { Minimize2, Sparkles, Flame } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { HabitList } from './HabitList';
 import { getHabitsForDate } from '@/utils/habitInstanceCalculator';
+import { calculateDayStreak } from '@/utils/calculateDayStreak';
 import { formatLocalDate } from '@/utils/dateUtils';
 import { cn } from '@/lib/utils';
 
@@ -35,11 +36,16 @@ export const DayCard = ({ className }: DayCardProps) => {
   const monthName = MONTHS_PT[today.getMonth()];
   const year = today.getFullYear();
 
+  // Day streak calculation
+  const dayStreak = useMemo(() => {
+    return calculateDayStreak(habits, habitChecks, goals);
+  }, [habits, habitChecks, goals]);
+
   // Persist expanded state
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, String(isExpanded));
-    } catch {}
+    } catch { }
   }, [isExpanded]);
 
   const scheduledHabits = useMemo(() => {
@@ -82,6 +88,14 @@ export const DayCard = ({ className }: DayCardProps) => {
           <span className="text-6xl font-bold text-foreground leading-none mt-1">
             {dayNumber}
           </span>
+
+          {/* Day streak */}
+          {dayStreak > 0 && (
+            <div className="flex items-center gap-1 mt-2">
+              <Flame className="w-4 h-4 text-orange-400" />
+              <span className="text-sm font-semibold text-orange-400">{dayStreak}</span>
+            </div>
+          )}
 
           {/* Remaining habits or congratulations */}
           <div className="mt-4">
