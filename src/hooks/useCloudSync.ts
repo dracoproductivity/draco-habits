@@ -265,6 +265,7 @@ export const useCloudSync = () => {
         customCategoryId: g.custom_category_id || undefined,
         completionStatus: g.completion_status as Goal["completionStatus"],
         archived: g.archived || false,
+        color: (g as any).color || undefined,
         createdAt: g.created_at,
       }));
 
@@ -502,6 +503,7 @@ export const useCloudSync = () => {
         custom_category_id: goal.customCategoryId && isValidUUID(goal.customCategoryId) ? goal.customCategoryId : null,
         completion_status: goal.completionStatus,
         archived: goal.archived || false,
+        color: goal.color || null,
       });
 
       if (error) {

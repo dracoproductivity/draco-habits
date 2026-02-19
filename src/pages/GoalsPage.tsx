@@ -279,6 +279,7 @@ export const GoalsPage = () => {
   const [newGoalCategory, setNewGoalCategory] = useState<GoalCategory | ''>('');
   const [newGoalCategoryXP, setNewGoalCategoryXP] = useState<number>(20);
   const [newGoalEmoji, setNewGoalEmoji] = useState('');
+  const [newGoalColor, setNewGoalColor] = useState('');
   const [creationMode, setCreationMode] = useState<'single' | 'hierarchical'>('single');
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [goalCreationData, setGoalCreationData] = useState<Record<GoalType, { name: string; periods: string[] }>>({
@@ -472,6 +473,7 @@ export const GoalsPage = () => {
       category: newGoalCategory || undefined,
       categoryXP: newGoalCategoryXP,
       emoji: newGoalEmoji || undefined,
+      color: newGoalColor || undefined,
     });
     resetGoalCreation();
     toast({
@@ -488,6 +490,7 @@ export const GoalsPage = () => {
     setNewGoalCategory('');
     setNewGoalCategoryXP(20);
     setNewGoalEmoji('');
+    setNewGoalColor('');
     setCreationMode('single');
     setGoalCreationStep('yearly');
     setShowCategoryStep(false);
@@ -684,6 +687,13 @@ export const GoalsPage = () => {
     setNewCategoryEmoji('🎯');
     setNewCategoryXP(20);
     setNewCategoryHasEmoji(true);
+  };
+
+  const handleGoalColorChange = (color: string | undefined) => {
+    if (selectedGoal) {
+      updateGoal(selectedGoal.id, { color });
+      setSelectedGoal({ ...selectedGoal, color });
+    }
   };
 
 
@@ -1068,6 +1078,39 @@ export const GoalsPage = () => {
                       </select>
                     </div>
                   )}
+
+                  {/* Color picker (optional) */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Cor (opcional)</label>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => setNewGoalColor('')}
+                        className={cn(
+                          'w-7 h-7 rounded-full border-2 flex items-center justify-center',
+                          !newGoalColor ? 'border-primary' : 'border-border/50'
+                        )}
+                      >
+                        <X className="w-3 h-3 text-muted-foreground" />
+                      </button>
+                      {['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899','#6b7280','#f43f5e'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setNewGoalColor(c)}
+                          className={cn(
+                            'w-7 h-7 rounded-full border-2 transition-all',
+                            newGoalColor === c ? 'border-foreground scale-110' : 'border-transparent'
+                          )}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                      <input
+                        type="color"
+                        value={newGoalColor || '#3b82f6'}
+                        onChange={(e) => setNewGoalColor(e.target.value)}
+                        className="w-7 h-7 rounded-full cursor-pointer border-0 p-0"
+                      />
+                    </div>
+                  </div>
 
                   <button
                     onClick={handleSingleGoalProceedToCategory}

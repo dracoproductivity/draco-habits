@@ -29,21 +29,29 @@ export const HealthLogModal = ({ isOpen, onClose, type, initialDate }: HealthLog
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
   const existingLog = dailyLogs.find(l => l.date === dateStr);
   
-  const [hours, setHours] = useState<string>(
-    type === 'sleep' 
-      ? (existingLog?.sleepHours?.toString() || '') 
-      : (existingLog?.phoneUsageHours?.toString() || '')
+  const existingValue = type === 'sleep' 
+    ? existingLog?.sleepHours 
+    : existingLog?.phoneUsageHours;
+  
+  const [inputHours, setInputHours] = useState<string>(
+    existingValue !== undefined ? Math.floor(existingValue).toString() : ''
+  );
+  const [inputMinutes, setInputMinutes] = useState<string>(
+    existingValue !== undefined ? Math.round((existingValue - Math.floor(existingValue)) * 60).toString() : ''
   );
   
   const [saving, setSaving] = useState(false);
 
-  // Update hours when date changes
+  // Update input when date changes
   useMemo(() => {
     const log = dailyLogs.find(l => l.date === dateStr);
     if (log) {
-      setHours(type === 'sleep' ? log.sleepHours.toString() : log.phoneUsageHours.toString());
+      const val = type === 'sleep' ? log.sleepHours : log.phoneUsageHours;
+      setInputHours(Math.floor(val).toString());
+      setInputMinutes(Math.round((val - Math.floor(val)) * 60).toString());
     } else {
-      setHours('');
+      setInputHours('');
+      setInputMinutes('');
     }
   }, [dateStr, dailyLogs, type]);
 
@@ -63,11 +71,23 @@ export const HealthLogModal = ({ isOpen, onClose, type, initialDate }: HealthLog
   };
 
   const handleSave = async () => {
-    const numHours = parseFloat(hours);
-    if (isNaN(numHours) || numHours < 0 || numHours > 24) {
+    const h = parseInt(inputHours || '0');
+    const m = parseInt(inputMinutes || '0');
+    
+    if (isNaN(h) || h < 0 || h > 24 || isNaN(m) || m < 0 || m > 59) {
       toast({
         title: 'Valor inválido',
-        description: 'Por favor, insira um valor entre 0 e 24 horas',
+        description: 'Por favor, insira valores válidos de horas (0-24) e minutos (0-59)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const numHours = h + m / 60;
+    if (numHours > 24) {
+      toast({
+        title: 'Valor inválido',
+        description: 'O total não pode exceder 24 horas',
         variant: 'destructive',
       });
       return;
@@ -192,18 +212,31 @@ export const HealthLogModal = ({ isOpen, onClose, type, initialDate }: HealthLog
                   ? 'Quantas horas você dormiu?' 
                   : 'Quantas horas de celular inútil?'}
               </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  max="24"
-                  step="0.5"
-                  value={hours}
-                  onChange={(e) => setHours(e.target.value)}
-                  placeholder="0"
-                  className="flex-1 bg-muted/30 border border-border rounded-xl px-4 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <span className="text-muted-foreground font-medium">horas</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="24"
+                    value={inputHours}
+                    onChange={(e) => setInputHours(e.target.value)}
+                    placeholder="0"
+                    className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                  />
+                  <span className="text-muted-foreground font-medium text-sm">h</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={inputMinutes}
+                    onChange={(e) => setInputMinutes(e.target.value)}
+                    placeholder="0"
+                    className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                  />
+                  <span className="text-muted-foreground font-medium text-sm">min</span>
+                </div>
               </div>
             </div>
 
@@ -217,10 +250,10 @@ export const HealthLogModal = ({ isOpen, onClose, type, initialDate }: HealthLog
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !hours}
+                disabled={saving || (!inputHours && !inputMinutes)}
                 className={cn(
                   'flex-1 py-3 rounded-xl font-medium transition-all',
-                  hours 
+                  (inputHours || inputMinutes)
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90' 
                     : 'bg-muted/30 text-muted-foreground cursor-not-allowed'
                 )}

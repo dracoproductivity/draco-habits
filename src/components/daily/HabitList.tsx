@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
-import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers, Sparkles, AlertCircle, CalendarRange } from 'lucide-react';
+import { Check, Plus, X, ChevronLeft, ChevronRight, Bell, Target, Calendar, ChevronDown, Pencil, Flame, Layers, Sparkles, AlertCircle, CalendarRange, Ban } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -430,7 +430,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const [selectedXPReward, setSelectedXPReward] = useState<number>(20);
   const [showBadHabitModal, setShowBadHabitModal] = useState(false);
   const [badHabitName, setBadHabitName] = useState('');
-  
+  const [isBadHabit, setIsBadHabit] = useState(false);
   // Date range state for habit recurrence
   const [habitStartDate, setHabitStartDate] = useState<string>('');
   const [habitEndDate, setHabitEndDate] = useState<string>('');
@@ -564,6 +564,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       microGoalsCount: hasMicroGoals ? microGoalsCount : undefined,
       startDate: isOneTimeHabit ? undefined : habitStartDate || undefined,
       endDate: isOneTimeHabit ? undefined : habitEndDate || undefined,
+      isBadHabit,
     });
     setNewHabitName('');
     setNewHabitEmoji('');
@@ -576,6 +577,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     setSelectedXPReward(20);
     setHabitStartDate('');
     setHabitEndDate('');
+    setIsBadHabit(false);
     setShowAddForm(false);
     toast({
       title: 'Hábito adicionado!',
@@ -819,9 +821,19 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
   // Filter habits to show only on scheduled days using new utility
   const visibleHabits = useMemo(() => {
-    return habits.filter((habit) => {
+    const filtered = habits.filter((habit) => {
       const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
       return isHabitScheduledForDate(habit, viewDate, linkedGoal);
+    });
+    
+    // Sort by goal to group habits by their linked goal
+    return filtered.sort((a, b) => {
+      const goalA = a.goalId || '';
+      const goalB = b.goalId || '';
+      if (goalA === goalB) return 0;
+      if (!goalA) return 1; // habits without goal go to the end
+      if (!goalB) return -1;
+      return goalA.localeCompare(goalB);
     });
   }, [habits, viewDate, goals]);
 
@@ -1119,6 +1131,35 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                       )}
                     </div>
 
+                    {/* Bad Habit Toggle */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Ban className="w-4 h-4 text-destructive" />
+                          <div>
+                            <span className="text-sm">Mau hábito</span>
+                            <p className="text-xs text-muted-foreground">
+                              Marque se deseja parar este hábito
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsBadHabit(!isBadHabit)}
+                          className={cn(
+                            'w-10 h-5 rounded-full transition-all relative flex-shrink-0',
+                            isBadHabit ? 'bg-destructive' : 'bg-muted'
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                              isBadHabit ? 'right-0.5' : 'left-0.5'
+                            )}
+                          />
+                        </button>
+                      </div>
+                    </div>
                     {/* XP Reward Selection */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">

@@ -65,26 +65,36 @@ export const HabitItem = ({
     }
   };
 
+  // Get goal color for stripe
+  const goalColor = linkedGoal?.color;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay }}
-      className="relative glass-card rounded-xl overflow-hidden cursor-pointer group"
+      className="relative glass-card rounded-xl overflow-hidden cursor-pointer group flex"
       onClick={onClick}
     >
+      {/* Goal color stripe */}
+      {goalColor && (
+        <div 
+          className="w-1 flex-shrink-0"
+          style={{ backgroundColor: goalColor }}
+        />
+      )}
       {/* Background fill animation */}
       <motion.div
         className="absolute inset-0 bg-primary/15"
         initial={{ scaleX: 0 }}
         animate={{ scaleX: microProgress / 100 }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
-        style={{ transformOrigin: 'left' }}
+        style={{ transformOrigin: 'left', left: goalColor ? '4px' : '0' }}
       />
       
       {/* Content */}
       <div className={cn(
-        'relative flex items-center gap-3 p-3 transition-all',
+        'relative flex items-center gap-3 p-3 transition-all flex-1',
         !isCompleted && !microGoalsCompleted && 'hover:bg-muted/20'
       )}>
         {/* Checkbox / Micro goals button */}
