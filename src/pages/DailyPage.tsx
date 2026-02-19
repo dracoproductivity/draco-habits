@@ -130,7 +130,7 @@ export const DailyPage = () => {
 
         {/* ===== MAIN CENTRAL BOX ===== */}
         <div className={cn(
-          "glass-card rounded-2xl p-6 max-w-4xl mx-auto w-full",
+          "glass-card rounded-2xl p-6 max-w-4xl mx-auto w-full overflow-hidden",
           !showCharts && "my-auto"
         )}>
           {/* Greeting */}

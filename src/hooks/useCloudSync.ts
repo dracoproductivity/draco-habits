@@ -247,8 +247,12 @@ export const useCloudSync = () => {
           wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
-          streakColor: settings.streak_color || undefined,
         });
+
+        // Only overwrite streakColor if cloud has an actual value
+        if (settings.streak_color) {
+          useAppStore.getState().updateSettings({ streakColor: settings.streak_color });
+        }
       }
 
       // Load goals

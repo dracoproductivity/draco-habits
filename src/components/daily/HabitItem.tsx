@@ -114,7 +114,7 @@ export const HabitItem = ({
 
       {/* Content */}
       <div className={cn(
-        'relative flex items-center gap-3 p-3 transition-all flex-1',
+        'relative flex items-center gap-2 p-2.5 transition-all flex-1 min-w-0',
         !isCompleted && !microGoalsCompleted && 'hover:bg-muted/20'
       )}>
         {/* Checkbox / Micro goals button */}
@@ -176,25 +176,25 @@ export const HabitItem = ({
         )}
 
         {/* Habit info */}
-        <div className="flex-1 flex flex-col gap-0.5">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
             {showEmojis && habit.emoji && (
-              <span className="text-lg">{habit.emoji}</span>
+              <span className="text-base flex-shrink-0">{habit.emoji}</span>
             )}
             <span className={cn(
-              'font-medium transition-all',
+              'font-medium transition-all text-sm truncate',
               isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
             )}>
               {habit.name}
             </span>
             {hasMicroGoals && (
-              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex-shrink-0">
                 {microGoalsCompleted}/{microGoalsCount}
               </span>
             )}
           </div>
           {linkedGoal && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground truncate">
               {linkedGoal.emoji ? `${linkedGoal.emoji} ` : ''}{linkedGoal.name}
             </span>
           )}
@@ -206,7 +206,7 @@ export const HabitItem = ({
         </div>
 
         {/* Right side info */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {streak > 0 && (
             <div className="flex items-center gap-0.5 text-muted-foreground">
               <Flame className="w-3.5 h-3.5 text-orange-400" />

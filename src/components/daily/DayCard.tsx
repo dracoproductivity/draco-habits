@@ -74,60 +74,62 @@ export const DayCard = ({ className }: DayCardProps) => {
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           onClick={() => setIsExpanded(true)}
           className={cn(
-            "glass-card rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer",
-            "hover:border-primary/40 transition-all w-full aspect-square max-w-[280px]",
+            "glass-card rounded-2xl p-5 flex items-center gap-4 cursor-pointer",
+            "hover:border-primary/40 transition-all w-full",
             className
           )}
         >
-          {/* Month, Year - above the day number */}
-          <span className="text-sm text-muted-foreground">
-            {monthName}, {year}
-          </span>
-
           {/* Day number */}
-          <span className="text-6xl font-bold text-foreground leading-none mt-1">
-            {dayNumber}
-          </span>
-
-          {/* Day streak */}
-          {dayStreak > 0 && (() => {
-            const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
-            const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
-            return (
-              <div className="flex items-center gap-1 mt-2">
-                <Flame className="w-4 h-4" style={{ color: streakColor }} />
-                <span className="text-sm font-semibold" style={{ color: streakColor }}>{dayStreak}</span>
-              </div>
-            );
-          })()}
-
-          {/* Remaining habits or congratulations */}
-          <div className="mt-4">
-            {allCompleted ? (
-              <div className="flex items-center gap-1.5 text-primary">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-xs font-medium text-center">
-                  Parabéns, você concluiu todos os hábitos de hoje!
-                </span>
-              </div>
-            ) : scheduledHabits.length === 0 ? (
-              <span className="text-xs text-muted-foreground">Nenhum hábito programado</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {remainingCount} hábito{remainingCount !== 1 ? 's' : ''} restante{remainingCount !== 1 ? 's' : ''}
-              </span>
-            )}
+          <div className="flex flex-col items-center min-w-[60px]">
+            <span className="text-4xl font-bold text-foreground leading-none">
+              {dayNumber}
+            </span>
+            <span className="text-xs text-muted-foreground mt-0.5">
+              {monthName}
+            </span>
           </div>
 
-          {/* Mini progress indicator */}
-          <div className="w-full mt-4 h-1.5 bg-muted/30 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: 'var(--gradient-progress)' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${dailyProgress}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
+          {/* Divider */}
+          <div className="w-px h-12 bg-border/50" />
+
+          {/* Info section */}
+          <div className="flex-1 flex flex-col gap-1.5">
+            {/* Streak + status */}
+            <div className="flex items-center gap-3">
+              {dayStreak > 0 && (() => {
+                const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
+                const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
+                return (
+                  <div className="flex items-center gap-1">
+                    <Flame className="w-3.5 h-3.5" style={{ color: streakColor }} />
+                    <span className="text-xs font-semibold" style={{ color: streakColor }}>{dayStreak}</span>
+                  </div>
+                );
+              })()}
+              {allCompleted ? (
+                <div className="flex items-center gap-1 text-primary">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">Tudo concluído!</span>
+                </div>
+              ) : scheduledHabits.length === 0 ? (
+                <span className="text-xs text-muted-foreground">Nenhum hábito programado</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  {remainingCount} hábito{remainingCount !== 1 ? 's' : ''} restante{remainingCount !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: 'var(--gradient-progress)' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${dailyProgress}%` }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+            </div>
           </div>
         </motion.button>
       ) : (
@@ -139,7 +141,7 @@ export const DayCard = ({ className }: DayCardProps) => {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className={cn(
-            "glass-card rounded-2xl p-4 w-full",
+            "glass-card rounded-2xl p-4 w-full overflow-hidden",
             className
           )}
         >
