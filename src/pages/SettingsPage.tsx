@@ -49,20 +49,20 @@ const THEME_OPTIONS: { id: ThemeColor; name: string; color: string }[] = [
   { id: 'mint', name: 'Menta', color: '170 70% 50%' },
 ];
 
-const DRACO_OPTIONS: { id: DracoState['color']; name: string }[] = [
-  { id: 'white', name: 'Branco' },
-  { id: 'gray', name: 'Cinza' },
-  { id: 'lavender', name: 'Lavanda' },
-  { id: 'orange', name: 'Laranja' },
-  { id: 'pink', name: 'Rosa' },
-  { id: 'purple', name: 'Roxo' },
-  { id: 'red', name: 'Vermelho' },
-  { id: 'black', name: 'Preto' },
-  { id: 'silver', name: 'Prata' },
-  { id: 'gold', name: 'Dourado' },
-  { id: 'rainbow', name: 'Arco-íris' },
-  { id: 'green', name: 'Verde' },
-  { id: 'blue', name: 'Azul' },
+const DRACO_OPTIONS: { id: DracoState['color']; name: string; hex: string }[] = [
+  { id: 'white', name: 'Branco', hex: '#f5f5f5' },
+  { id: 'gray', name: 'Cinza', hex: '#9ca3af' },
+  { id: 'lavender', name: 'Lavanda', hex: '#c4b5fd' },
+  { id: 'orange', name: 'Laranja', hex: '#fb923c' },
+  { id: 'pink', name: 'Rosa', hex: '#f9a8d4' },
+  { id: 'purple', name: 'Roxo', hex: '#a855f7' },
+  { id: 'red', name: 'Vermelho', hex: '#ef4444' },
+  { id: 'black', name: 'Preto', hex: '#1f2937' },
+  { id: 'silver', name: 'Prata', hex: '#d1d5db' },
+  { id: 'gold', name: 'Dourado', hex: '#fbbf24' },
+  { id: 'rainbow', name: 'Arco-íris', hex: 'linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7)' },
+  { id: 'green', name: 'Verde', hex: '#22c55e' },
+  { id: 'blue', name: 'Azul', hex: '#3b82f6' },
 ];
 
 
@@ -474,21 +474,19 @@ export const SettingsPage = () => {
                       key={option.id}
                       onClick={() => updateDraco({ color: option.id })}
                       className={cn(
-                        'relative w-8 h-8 rounded-full overflow-hidden border-2 transition-all',
+                        'relative w-8 h-8 rounded-full border-2 transition-all',
                         draco.color === option.id
                           ? 'border-primary ring-2 ring-primary/50 scale-110'
                           : 'border-border/50 hover:border-primary/50 hover:scale-105'
                       )}
                       title={option.name}
+                      style={{
+                        background: option.hex.startsWith('linear') ? option.hex : option.hex,
+                      }}
                     >
-                      <img
-                        src={DRACO_IMAGES[option.id]}
-                        alt={option.name}
-                        className="w-full h-full object-cover"
-                      />
                       {draco.color === option.id && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
-                          <Check className="w-4 h-4 text-primary-foreground drop-shadow-md" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                          <Check className="w-4 h-4 text-white drop-shadow-md" />
                         </div>
                       )}
                     </button>
