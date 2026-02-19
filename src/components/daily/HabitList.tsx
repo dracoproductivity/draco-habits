@@ -865,17 +865,14 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
             const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
             return dayStreak > 0 ? (
-              <div className={cn("flex items-center gap-1.5 mb-2", shouldCenterTitle && "justify-center")}>
+              <div className={cn("flex items-center gap-1.5 mb-2 justify-center", shouldCenterTitle && "justify-center")}>
                 <Flame className="w-4 h-4" style={{ color: streakColor }} />
                 <span className="text-sm font-semibold" style={{ color: streakColor }}>{dayStreak} dia{dayStreak !== 1 ? 's' : ''} de streak</span>
               </div>
             ) : null;
           })()}
           {/* Title */}
-          <h3 className={cn(
-            "font-semibold text-foreground text-lg mb-3",
-            shouldCenterTitle && "text-center"
-          )}>Hábitos do dia</h3>
+
 
           {/* ... (rest of the component until container) ... */}
           {/* I cannot easily skip lines in replace_file_content unless I use multiple chunks or make it targeted. */}
@@ -884,10 +881,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           {/* I will use `replace_file_content` specifically for the hook call first, then another for the container. */}
 
           {/* Title */}
-          <h3 className={cn(
-            "font-semibold text-foreground text-lg mb-3",
-            shouldCenterTitle && "text-center"
-          )}>Hábitos do dia</h3>
+          {/* Title - Centered */}
+          <h3 className="font-semibold text-foreground text-lg mb-3 text-center">Hábitos do dia</h3>
 
           {/* Day navigation and Add button */}
           <div className="flex items-center justify-between mb-4">
@@ -1689,24 +1684,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
         </div>
 
         {/* Progress indicators on the right side - only if showProgress is true */}
-        {showProgress && (
-          <div className={cn(
-            "flex flex-col justify-center gap-4 self-center",
-            isCircular ? "items-center" : "min-w-[110px]"
-          )}>
-            {isCircular ? (
-              <>
-                <CircularProgress value={dailyProgress} label="Dia" delay={0} />
-                <CircularProgress value={weeklyProgress} label="Semana" delay={0.1} />
-              </>
-            ) : (
-              <>
-                <LinearProgress value={dailyProgress} label="Dia" delay={0} />
-                <LinearProgress value={weeklyProgress} label="Semana" delay={0.1} />
-              </>
-            )}
-          </div>
-        )}
+
       </div>
 
       {/* Habit Detail Modal */}

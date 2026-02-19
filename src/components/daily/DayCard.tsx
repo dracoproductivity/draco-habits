@@ -34,7 +34,7 @@ export const DayCard = ({ className, expanded = false, onToggle }: DayCardProps)
   const dailyProgress = scheduledHabits.length > 0 ? (completedCount / scheduledHabits.length) * 100 : 0;
 
   // Calculate streak based on ALL habits
-  const dayStreak = calculateDayStreak(habits, dailyLogs, new Date());
+  const dayStreak = calculateDayStreak(habits, useAppStore.getState().habitChecks, goals);
 
   return (
     <AnimatePresence mode="wait">
