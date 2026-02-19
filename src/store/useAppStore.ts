@@ -854,6 +854,15 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'draco-habits-storage',
+      // Only persist UI state, NOT cloud-synced data.
+      // Settings, habits, goals, habitChecks, draco, dailyLogs, notes,
+      // customCategories, and user all come from Supabase cloud sync.
+      // Persisting them causes stale localStorage to overwrite fresh cloud data.
+      partialize: (state: AppStore) => ({
+        activeTab: state.activeTab,
+        levelUpInfo: state.levelUpInfo,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

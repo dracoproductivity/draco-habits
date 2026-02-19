@@ -382,10 +382,11 @@ export const useCloudSync = () => {
       console.error("Error loading from cloud:", error);
     } finally {
       globalState.syncInProgress = false;
-      // Mark initial load as complete after a short delay
+      // Mark initial load as complete after a delay to prevent subscriber from
+      // firing with stale data during load. 2s gives cloud sync time to finish.
       setTimeout(() => {
         globalState.isInitialLoad = false;
-      }, 500);
+      }, 2000);
     }
   }, []);
 
