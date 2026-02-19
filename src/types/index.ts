@@ -71,6 +71,7 @@ export interface Goal {
   period: string; // e.g., "2025", "Q1-2025", "March-2025", "Week-13-2025"
   progress: number; // 0-100
   wallpaper?: string;
+  color?: string; // Optional HSL color string for goal color stripe
   parentGoalId?: string; // Reference to parent goal (weekly→monthly→quarterly→yearly)
   weekDays?: number[]; // 0=Sunday, 1=Monday, etc. (for weekly goals)
   repeatWeekly?: boolean; // If true, repeats every week; if false, only for selected period

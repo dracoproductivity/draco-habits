@@ -57,9 +57,16 @@ export const GoalSquareCard = ({ goal, index, onClick }: GoalSquareCardProps) =>
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
-      className="w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between min-h-0 rounded-2xl"
+      className="w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between min-h-0 rounded-2xl overflow-hidden"
       style={{ maxWidth: '140px', maxHeight: '140px' }}
     >
+      {/* Goal color stripe at top */}
+      {goal.color && (
+        <div 
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+          style={{ backgroundColor: goal.color }}
+        />
+      )}
       {/* Top section - Emoji and Type */}
       <div className="flex items-start justify-between gap-1">
         {settings.showEmojis && goal.emoji && (

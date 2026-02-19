@@ -1,18 +1,22 @@
-import { useState } from 'react';
-import { User, Bell, Sun, Moon, X } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { User, Bell, Sun, Moon, X, Settings } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
 import { DracoIcon } from '@/components/icons/DracoIcon';
 import { XPBar } from '@/components/ui/XPBar';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useNavigate } from 'react-router-dom';
 import dracoLogo from '@/assets/draco-logo-new.png';
 
 export const UniversalHeader = () => {
-  const { user, draco, settings, updateSettings } = useAppStore();
+  const { user, draco, settings, updateSettings, setActiveTab } = useAppStore();
   const { isDesktop } = useResponsive();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const notifications = (settings.notificationReminders || []).filter(
     r => r.enabled && !dismissedNotifications.includes(r.id)
@@ -42,12 +46,38 @@ export const UniversalHeader = () => {
           {isDesktop && (
             <span className="font-bold text-lg text-foreground mr-2">Draco Habits</span>
           )}
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30">
-            {user?.photo ? (
-              <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-5 h-5 text-muted-foreground" />
-            )}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
+            >
+              {user?.photo ? (
+                <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5 text-muted-foreground" />
+              )}
+            </button>
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                  className="absolute left-0 top-12 z-50 w-44 glass-card rounded-xl p-2 shadow-2xl border border-border/50"
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab('settings');
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Settings className="w-4 h-4 text-muted-foreground" />
+                    Configurações
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

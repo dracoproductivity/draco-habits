@@ -40,11 +40,18 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
       transition={{ delay: index * 0.03 }}
       onClick={onClick}
       className={cn(
-        "w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between transition-all min-h-0 rounded-2xl",
+        "w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between transition-all min-h-0 rounded-2xl overflow-hidden relative",
         isCompleted && 'opacity-70'
       )}
       style={{ maxWidth: '140px', maxHeight: '140px' }}
     >
+      {/* Goal color stripe at top */}
+      {linkedGoal?.color && (
+        <div 
+          className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
+          style={{ backgroundColor: linkedGoal.color }}
+        />
+      )}
       {/* Top section - Emoji and Check */}
       <div className="flex items-start justify-between gap-1">
         {settings.showEmojis && habit.emoji && (

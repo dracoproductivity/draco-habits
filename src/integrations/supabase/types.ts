@@ -115,6 +115,7 @@ export type Database = {
           archived: boolean
           category: string | null
           category_xp: number | null
+          color: string | null
           completion_status: string | null
           created_at: string
           custom_category_id: string | null
@@ -132,6 +133,7 @@ export type Database = {
           archived?: boolean
           category?: string | null
           category_xp?: number | null
+          color?: string | null
           completion_status?: string | null
           created_at?: string
           custom_category_id?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           archived?: boolean
           category?: string | null
           category_xp?: number | null
+          color?: string | null
           completion_status?: string | null
           created_at?: string
           custom_category_id?: string | null
