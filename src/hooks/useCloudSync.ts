@@ -292,6 +292,7 @@ export const useCloudSync = () => {
         createdAt: h.created_at,
         isBadHabit: h.is_bad_habit || false,
         archived: h.archived || false,
+        vacationMode: h.vacation_mode || false,
         // Schedule history fields
         scheduleUpdatedAt: h.schedule_updated_at || undefined,
         previousWeekDays: h.previous_selected_days || undefined,
@@ -307,6 +308,7 @@ export const useCloudSync = () => {
         date: c.date,
         completed: c.completed,
         microGoalsCompleted: c.micro_goals_completed || 0,
+        dracoSaveUsed: c.draco_save_used || false,
       }));
 
       // Load daily logs
@@ -572,6 +574,7 @@ export const useCloudSync = () => {
         micro_goals_names: habit.microGoalsNames || [],
         is_bad_habit: habit.isBadHabit || false,
         archived: habit.archived || false,
+        vacation_mode: habit.vacationMode || false,
         // Schedule history fields
         schedule_updated_at: habit.scheduleUpdatedAt || null,
         previous_selected_days: habit.previousWeekDays || null,

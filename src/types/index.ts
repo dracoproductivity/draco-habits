@@ -28,6 +28,7 @@ export interface Habit {
   endDate?: string; // ISO date string - end of recurrence period
   isBadHabit?: boolean; // If true, this is a habit the user wants to quit
   archived?: boolean; // If true, habit is archived
+  vacationMode?: boolean; // If true, habit is in vacation mode (streak frozen, excluded from daily %)
   // Schedule history - used to apply old schedule to dates before the change
   scheduleUpdatedAt?: string; // ISO timestamp when schedule was last changed
   previousWeekDays?: number[]; // Previous weekDays before last change
@@ -40,6 +41,7 @@ export interface HabitCheck {
   date: string;
   completed: boolean;
   microGoalsCompleted?: number; // Number of micro goals completed for this date (0 to microGoalsCount)
+  dracoSaveUsed?: boolean; // If true, Draco Save was used for this habit on this date
 }
 
 export type GoalType = 'weekly' | 'monthly' | 'quarterly' | 'semestral' | 'yearly';
@@ -49,11 +51,11 @@ export type GoalCompletionStatus = 'completed' | 'failed' | null;
 // Goal types that can be created (excludes weekly)
 export type CreatableGoalType = 'monthly' | 'quarterly' | 'semestral' | 'yearly';
 
-export type GoalCategory = 
-  | 'physical_health' 
-  | 'study' 
-  | 'mental_health' 
-  | 'work' 
+export type GoalCategory =
+  | 'physical_health'
+  | 'study'
+  | 'mental_health'
+  | 'work'
   | 'custom';
 
 export interface CustomCategory {
@@ -89,9 +91,9 @@ export interface DracoState {
   xpToNextLevel: number;
   totalXP: number;
   name: string;
-  color: 'white' | 'gray' | 'lavender' | 'orange' | 'pink' | 'purple' | 'red' | 'black' | 'silver' | 'gold' | 'rainbow' | 'green' | 'blue' | 
-         // Legacy colors - keep for backwards compatibility
-         'yellow' | 'neutral' | 'lilac' | 'mint';
+  color: 'white' | 'gray' | 'lavender' | 'orange' | 'pink' | 'purple' | 'red' | 'black' | 'silver' | 'gold' | 'rainbow' | 'green' | 'blue' |
+  // Legacy colors - keep for backwards compatibility
+  'yellow' | 'neutral' | 'lilac' | 'mint';
 }
 
 export type ThemeColor = 'blue' | 'green' | 'yellow' | 'neutral' | 'red' | 'purple' | 'pink' | 'orange' | 'lilac' | 'gray' | 'mint' | 'custom';
@@ -150,6 +152,8 @@ export interface AppSettings {
   wallpaperMobileDark?: string; // URL or data URL for dark mode wallpaper (mobile)
   glassBlur: number; // 0-40 blur level in px
   glassOpacity: number; // 0-100 opacity percentage
+  dracoSaves?: number; // Draco Saves balance (earned +1 per habit, spent -20 to save streak)
+  dracoSavesDelta?: number | null; // Transient: delta for animation (+1, -20, +20)
 }
 
 export type TabType = 'home' | 'goals' | 'notes' | 'analytics' | 'history' | 'settings';

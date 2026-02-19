@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Plus, Bell, Flame, X } from 'lucide-react';
+import { Check, Plus, Bell, Flame, X, Lock, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Habit, Goal, HabitCheck } from '@/types';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
@@ -17,6 +17,8 @@ interface HabitItemProps {
   habitChecks: HabitCheck[];
   delay?: number;
   onBadHabitComplete?: () => void;
+  onToggleDracoSave?: () => void;
+  dracoSaves?: number;
 }
 
 const WEEK_DAYS = [
@@ -40,6 +42,8 @@ export const HabitItem = ({
   habitChecks,
   delay = 0,
   onBadHabitComplete,
+  onToggleDracoSave,
+  dracoSaves = 0,
 }: HabitItemProps) => {
   const isCompleted = check?.completed ?? false;
   const hasMicroGoals = habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1;
@@ -47,22 +51,28 @@ export const HabitItem = ({
   const microGoalsCompleted = check?.microGoalsCompleted || 0;
   const microProgress = hasMicroGoals ? (microGoalsCompleted / microGoalsCount) * 100 : (isCompleted ? 100 : 0);
   const streak = calculateHabitStreak(habit, habitChecks, linkedGoal);
+  const isDracoSaveUsed = check?.dracoSaveUsed ?? false;
 
   const handleCheckClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (habit.vacationMode) return; // Block completion in vacation mode
     if (hasMicroGoals) {
       onIncrementMicroGoal();
-      // Check if bad habit and is completing (going from not complete to complete)
       if (habit.isBadHabit && !isCompleted && microGoalsCompleted + 1 >= microGoalsCount) {
         onBadHabitComplete?.();
       }
     } else {
       onToggle();
-      // Check if bad habit and is completing
       if (habit.isBadHabit && !isCompleted) {
         onBadHabitComplete?.();
       }
     }
+  };
+
+  const handleDracoSaveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (habit.vacationMode) return;
+    onToggleDracoSave?.();
   };
 
   // Get goal color for stripe
@@ -78,7 +88,7 @@ export const HabitItem = ({
     >
       {/* Goal color stripe */}
       {goalColor && (
-        <div 
+        <div
           className="w-1 flex-shrink-0"
           style={{ backgroundColor: goalColor }}
         />
@@ -91,7 +101,17 @@ export const HabitItem = ({
         transition={{ duration: 0.4, ease: 'easeOut' }}
         style={{ transformOrigin: 'left', left: goalColor ? '4px' : '0' }}
       />
-      
+
+      {/* Vacation Mode Overlay */}
+      {habit.vacationMode && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[2px] rounded-xl">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+            <Lock className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-[10px] font-medium text-emerald-400">Férias</span>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className={cn(
         'relative flex items-center gap-3 p-3 transition-all flex-1',
@@ -101,11 +121,13 @@ export const HabitItem = ({
         {hasMicroGoals ? (
           <button
             onClick={handleCheckClick}
+            disabled={habit.vacationMode}
             className={cn(
               'w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all relative overflow-hidden',
-              isCompleted 
-                ? 'bg-primary border-primary' 
-                : 'border-muted-foreground/50 hover:border-primary'
+              isCompleted
+                ? 'bg-primary border-primary'
+                : 'border-muted-foreground/50 hover:border-primary',
+              habit.vacationMode && 'opacity-30'
             )}
           >
             {/* Segmented progress for micro goals */}
@@ -134,11 +156,13 @@ export const HabitItem = ({
         ) : (
           <button
             onClick={handleCheckClick}
+            disabled={habit.vacationMode}
             className={cn(
               'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
-              isCompleted 
-                ? 'bg-primary border-primary' 
-                : 'border-muted-foreground/50 hover:border-primary'
+              isCompleted
+                ? 'bg-primary border-primary'
+                : 'border-muted-foreground/50 hover:border-primary',
+              habit.vacationMode && 'opacity-30'
             )}
           >
             {isCompleted && (
@@ -193,6 +217,24 @@ export const HabitItem = ({
             <Bell className="w-3.5 h-3.5 text-primary" />
           )}
           <span className="text-xs text-muted-foreground">{getDifficultyLabel(habit.xpReward || 0)}</span>
+          {/* Draco Save button */}
+          {!habit.vacationMode && !isCompleted && (
+            <button
+              onClick={handleDracoSaveClick}
+              disabled={!isDracoSaveUsed && dracoSaves < 20}
+              className={cn(
+                'p-1 rounded-md transition-all',
+                isDracoSaveUsed
+                  ? 'text-primary'
+                  : dracoSaves >= 20
+                    ? 'text-muted-foreground/40 hover:text-primary/60'
+                    : 'text-muted-foreground/20 cursor-not-allowed'
+              )}
+              title={isDracoSaveUsed ? 'Draco Save ativo (clique para remover)' : dracoSaves >= 20 ? 'Usar Draco Save (-20)' : `Saldo insuficiente (${dracoSaves}/20)`}
+            >
+              <Heart className={cn('w-3.5 h-3.5', isDracoSaveUsed && 'fill-current')} />
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

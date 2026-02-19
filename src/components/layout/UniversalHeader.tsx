@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Bell, Sun, Moon, X, Settings } from 'lucide-react';
+import { User, Bell, Sun, Moon, X, Settings, Heart } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/store/useAppStore';
@@ -15,8 +15,27 @@ export const UniversalHeader = () => {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showDracoSavesInfo, setShowDracoSavesInfo] = useState(false);
   const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  // Draco Saves animation state
+  const [animDelta, setAnimDelta] = useState<number | null>(null);
+  const prevDelta = useRef<number | null>(null);
+
+  useEffect(() => {
+    const delta = settings.dracoSavesDelta;
+    if (delta !== null && delta !== undefined && delta !== prevDelta.current) {
+      setAnimDelta(delta);
+      prevDelta.current = delta;
+      // Clear animation after delay
+      const timer = setTimeout(() => {
+        setAnimDelta(null);
+        updateSettings({ dracoSavesDelta: null });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [settings.dracoSavesDelta]);
 
   const notifications = (settings.notificationReminders || []).filter(
     r => r.enabled && !dismissedNotifications.includes(r.id)
@@ -34,6 +53,8 @@ export const UniversalHeader = () => {
   const toggleDarkMode = () => {
     updateSettings({ darkMode: !settings.darkMode });
   };
+
+  const dracoSaves = settings.dracoSaves || 0;
 
   return (
     <>
@@ -81,8 +102,69 @@ export const UniversalHeader = () => {
           </div>
         </div>
 
-        {/* Right side - Dark mode + Notifications + Draco & XP */}
+        {/* Right side - Draco Saves + Dark mode + Notifications + Draco & XP */}
         <div className="flex items-center gap-2">
+          {/* Draco Saves */}
+          <div className="relative">
+            <button
+              onClick={() => setShowDracoSavesInfo(!showDracoSavesInfo)}
+              className="flex flex-col items-center gap-0 w-8 h-10 justify-center"
+            >
+              <Heart className="w-5 h-5 text-primary fill-primary" />
+              <span className="text-[9px] font-medium text-muted-foreground leading-none">{dracoSaves}</span>
+            </button>
+            {/* Delta Animation */}
+            <AnimatePresence>
+              {animDelta !== null && (
+                <motion.div
+                  key={animDelta}
+                  initial={{ opacity: 1, y: 0 }}
+                  animate={{ opacity: 0, y: -20 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1.2 }}
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
+                >
+                  <span className={`text-xs font-bold ${animDelta > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {animDelta > 0 ? `+${animDelta}` : animDelta}
+                  </span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {/* Info Popover */}
+            <AnimatePresence>
+              {showDracoSavesInfo && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  className="absolute right-0 top-12 z-50 w-72 glass-card rounded-2xl p-4 shadow-2xl border border-border/50"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-primary fill-primary" />
+                      <h4 className="text-sm font-semibold text-foreground">O que são Draco Saves?</h4>
+                    </div>
+                    <button
+                      onClick={() => setShowDracoSavesInfo(false)}
+                      className="p-1 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Draco Saves são salvadores de streaks que você pode utilizar para não perder a streak de um hábito ou de dias. Ao completar 1 hábito você ganha 1 Draco Save, mas para salvar uma streak você precisa utilizar 20 Draco Saves do seu saldo. Utilize com cuidado e sabedoria.
+                  </p>
+                  <div className="mt-3 p-2 rounded-lg bg-muted/30 border border-border/30">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Seu saldo</span>
+                      <span className="text-sm font-bold text-primary">{dracoSaves}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* Dark/Light mode toggle */}
           <button
             onClick={toggleDarkMode}

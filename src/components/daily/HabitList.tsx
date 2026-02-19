@@ -29,13 +29,13 @@ const WEEK_DAYS = [
 // Calculate total days for a period
 const calculateTotalDaysForPeriod = (type: GoalType, period: string): number => {
   const now = new Date();
-  
+
   switch (type) {
     case 'yearly': {
       const year = parseInt(period);
       const startOfPeriod = new Date(year, 0, 1);
       const endOfPeriod = new Date(year, 11, 31);
-      
+
       // If it's the current year, count from today
       if (year === now.getFullYear()) {
         return Math.max(1, differenceInDays(endOfPeriod, now) + 1);
@@ -50,7 +50,7 @@ const calculateTotalDaysForPeriod = (type: GoalType, period: string): number => 
       const year = parseInt(match[2]);
       const quarterStart = startOfQuarter(new Date(year, (quarter - 1) * 3, 1));
       const quarterEnd = endOfQuarter(quarterStart);
-      
+
       // If it's the current quarter, count from today
       if (year === now.getFullYear() && quarter === Math.ceil((now.getMonth() + 1) / 3)) {
         return Math.max(1, differenceInDays(quarterEnd, now) + 1);
@@ -59,17 +59,17 @@ const calculateTotalDaysForPeriod = (type: GoalType, period: string): number => 
     }
     case 'monthly': {
       // Format: "Janeiro 2025"
-      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       const parts = period.split(' ');
       const monthIndex = months.indexOf(parts[0]);
       const year = parseInt(parts[1]);
-      
+
       if (monthIndex === -1) return 30;
-      
+
       const monthStart = startOfMonth(new Date(year, monthIndex, 1));
       const monthEnd = endOfMonth(monthStart);
-      
+
       // If it's the current month, count from today
       if (year === now.getFullYear() && monthIndex === now.getMonth()) {
         return Math.max(1, differenceInDays(monthEnd, now) + 1);
@@ -90,7 +90,7 @@ const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean =>
     if (!habit.weekDays || habit.weekDays.length === 0) return true;
     return habit.weekDays.includes(date.getDay());
   }
-  
+
   // Get linked goal to determine period
   const linkedGoal = goals.find(g => g.id === habit.goalId);
   if (!linkedGoal) {
@@ -98,13 +98,13 @@ const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean =>
     if (!habit.weekDays || habit.weekDays.length === 0) return true;
     return habit.weekDays.includes(date.getDay());
   }
-  
+
   const period = linkedGoal.period;
   const type = linkedGoal.type;
-  
+
   // Check if date is within the goal's period
   let isWithinPeriod = false;
-  
+
   switch (type) {
     case 'yearly': {
       const year = parseInt(period);
@@ -124,7 +124,7 @@ const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean =>
     }
     case 'monthly': {
       const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       const parts = period.split(' ');
       const monthIndex = months.indexOf(parts[0]);
       const year = parseInt(parts[1]);
@@ -147,9 +147,9 @@ const isHabitActiveOnDate = (habit: Habit, date: Date, goals: any[]): boolean =>
       break;
     }
   }
-  
+
   if (!isWithinPeriod) return false;
-  
+
   // Now check weekdays
   if (habit.isOneTime) return true;
   if (!habit.weekDays || habit.weekDays.length === 0) return true;
@@ -164,40 +164,40 @@ const generateWeekOptions = (filterYear?: number, filterMonth?: number) => {
   const currentWeek = Math.ceil(
     (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
-  
+
   const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
-  
+
   yearsToGenerate.forEach(year => {
     const yearStart = startOfYear(new Date(year, 0, 1));
     const startWeek = year === currentYear ? currentWeek : 1;
-    
+
     for (let i = startWeek; i <= 52; i++) {
       const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
       const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
-      
+
       // Filter by month if specified
       if (filterMonth !== undefined) {
         if (weekStart.getMonth() !== filterMonth && weekEnd.getMonth() !== filterMonth) {
           continue;
         }
       }
-      
+
       const startDay = format(weekStart, 'd', { locale: ptBR });
       const endDay = format(weekEnd, 'd', { locale: ptBR });
       const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
       const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
-      
-      const dateRange = startMonth === endMonth 
+
+      const dateRange = startMonth === endMonth
         ? `${startDay}-${endDay} de ${startMonth}`
         : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
-      
-      options.push({ 
-        value: `Semana ${i} - ${year}`, 
-        label: `Semana ${i} - ${dateRange} (${year})` 
+
+      options.push({
+        value: `Semana ${i} - ${year}`,
+        label: `Semana ${i} - ${dateRange} (${year})`
       });
     }
   });
-  
+
   return options;
 };
 
@@ -209,25 +209,25 @@ const generateMonthOptions = (filterYear?: number, filterQuarter?: number) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  
+
   const options: { value: string; label: string }[] = [];
-  
+
   const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
-  
+
   yearsToGenerate.forEach(year => {
     const startMonth = year === currentYear ? currentMonth : 0;
-    
+
     for (let i = startMonth; i < 12; i++) {
       // Filter by quarter if specified
       if (filterQuarter !== undefined) {
         const monthQuarter = Math.ceil((i + 1) / 3);
         if (monthQuarter !== filterQuarter) continue;
       }
-      
+
       options.push({ value: `${months[i]} ${year}`, label: `${months[i]} ${year}` });
     }
   });
-  
+
   return options;
 };
 
@@ -235,23 +235,23 @@ const generateQuarterOptions = (filterYear?: number) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
-  
+
   const options: { value: string; label: string }[] = [];
   const quarterLabels = ['Jan-Mar', 'Abr-Jun', 'Jul-Set', 'Out-Dez'];
-  
+
   const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
-  
+
   yearsToGenerate.forEach(year => {
     const startQ = year === currentYear ? currentQuarter : 1;
-    
+
     for (let q = startQ; q <= 4; q++) {
-      options.push({ 
-        value: `${q}º Tri - ${year}`, 
-        label: `${q}º Tri - ${year} (${quarterLabels[q - 1]})` 
+      options.push({
+        value: `${q}º Tri - ${year}`,
+        label: `${q}º Tri - ${year} (${quarterLabels[q - 1]})`
       });
     }
   });
-  
+
   return options;
 };
 
@@ -267,23 +267,23 @@ const generateSemesterOptions = (filterYear?: number) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentSemester = now.getMonth() < 6 ? 1 : 2;
-  
+
   const options: { value: string; label: string }[] = [];
   const semesterLabels = ['Jan-Jun', 'Jul-Dez'];
-  
+
   const yearsToGenerate = filterYear ? [filterYear] : [currentYear, currentYear + 1];
-  
+
   yearsToGenerate.forEach(year => {
     const startS = year === currentYear ? currentSemester : 1;
-    
+
     for (let s = startS; s <= 2; s++) {
-      options.push({ 
-        value: `${s}º Sem - ${year}`, 
-        label: `${s}º Sem - ${year} (${semesterLabels[s - 1]})` 
+      options.push({
+        value: `${s}º Sem - ${year}`,
+        label: `${s}º Sem - ${year} (${semesterLabels[s - 1]})`
       });
     }
   });
-  
+
   return options;
 };
 
@@ -375,14 +375,14 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 };
 
 export const HabitList = ({ showProgressIndicators = true, centerTitle = false, className }: { showProgressIndicators?: boolean; centerTitle?: boolean; className?: string }) => {
-  const { 
-    habits, 
-    goals, 
-    settings, 
-    addHabit, 
-    removeHabit, 
+  const {
+    habits,
+    goals,
+    settings,
+    addHabit,
+    removeHabit,
     toggleHabitCheck,
-    incrementMicroGoal, 
+    incrementMicroGoal,
     getHabitCheckForDate,
     habitChecks,
     addGoal,
@@ -392,8 +392,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     customCategories,
     addCustomCategory,
     updateCustomCategory,
+    toggleDracoSave,
   } = useAppStore();
-  
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitEmoji, setNewHabitEmoji] = useState('');
@@ -403,19 +404,19 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const [singleGoalType, setSingleGoalType] = useState<GoalType | ''>('');
   const [singleGoalPeriod, setSingleGoalPeriod] = useState('');
   const [singleGoalName, setSingleGoalName] = useState('');
-  
+
   // Category and XP selection for goal creation
   const [selectedCategory, setSelectedCategory] = useState<GoalCategory | string>('');
   const [selectedCategoryXP, setSelectedCategoryXP] = useState<number>(20);
   const [showCategoryStep, setShowCategoryStep] = useState(false);
-  
+
   // Custom category creation/edit state
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
   const [newCategoryXP, setNewCategoryXP] = useState<number>(20);
   const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
-  
+
   // Hierarchical creation state
   const [goalCreationStep, setGoalCreationStep] = useState<GoalType>('yearly');
   const [newGoalName, setNewGoalName] = useState('');
@@ -442,14 +443,14 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     monthly: { name: '', periods: [] },
     weekly: { name: '', periods: [] }, // Keep for backward compatibility but not used in creation
   });
-  
+
   // Habit limits check
   const totalActiveHabits = getTotalActiveHabits(habits);
   const xpCounts = getActiveHabitCountsByXP(habits);
   const canAddNewHabit = canCreateHabit(habits);
-  
+
   const [viewDate, setViewDate] = useState(new Date());
-  
+
   // Use local timezone date formatting to avoid UTC one-day shift
   const formatLocalDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -457,11 +458,11 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   const viewDateStr = formatLocalDate(viewDate);
   const today = new Date();
   const todayStr = formatLocalDate(today);
-  
+
   // Show all habits – no limit – use scroll
   const isToday = viewDateStr === todayStr;
 
@@ -505,8 +506,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
   const toggleWeekDay = (day: number) => {
     if (isOneTimeHabit) return;
-    setSelectedWeekDays(prev => 
-      prev.includes(day) 
+    setSelectedWeekDays(prev =>
+      prev.includes(day)
         ? prev.filter(d => d !== day)
         : [...prev, day].sort()
     );
@@ -604,7 +605,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
   const handleCreateSingleGoal = () => {
     const totalDays = calculateTotalDaysForPeriod(singleGoalType as GoalType, singleGoalPeriod);
-    
+
     const newGoal = addGoal({
       name: singleGoalName.trim(),
       emoji: newGoalEmoji || undefined,
@@ -614,12 +615,12 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       category: selectedCategory as GoalCategory || undefined,
       categoryXP: selectedCategoryXP,
     });
-    
+
     setSelectedGoalId(newGoal.id);
     resetGoalCreation();
-    toast({ 
-      title: 'Objetivo criado!', 
-      description: `Objetivo "${singleGoalName}" com ${totalDays} dias criado` 
+    toast({
+      title: 'Objetivo criado!',
+      description: `Objetivo "${singleGoalName}" com ${totalDays} dias criado`
     });
   };
 
@@ -628,7 +629,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
     const yearlyPeriods = goalCreationData.yearly.periods;
     const semestralPeriods = goalCreationData.semestral.periods;
     const quarterlyPeriods = goalCreationData.quarterly.periods;
-    
+
     switch (type) {
       case 'yearly':
         return getPeriodOptions('yearly');
@@ -646,7 +647,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             const year = parseInt(match[2]);
             // Filter quarters based on semester
             const quarters = semester === 1 ? [1, 2] : [3, 4];
-            return getPeriodOptions('quarterly', year).filter(opt => 
+            return getPeriodOptions('quarterly', year).filter(opt =>
               quarters.some(q => opt.value.includes(`${q}º Tri`))
             );
           }
@@ -679,7 +680,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       const newPeriods = currentPeriods.includes(period)
         ? currentPeriods.filter(p => p !== period)
         : [...currentPeriods, period];
-      
+
       return {
         ...prev,
         [type]: { ...prev[type], periods: newPeriods }
@@ -699,7 +700,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
     setGoalCreationData(prev => ({
       ...prev,
-      [goalCreationStep]: { 
+      [goalCreationStep]: {
         ...prev[goalCreationStep],
         name: newGoalName.trim()
       }
@@ -722,32 +723,32 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       toast({ title: 'Erro', description: 'Selecione pelo menos um período', variant: 'destructive' });
       return;
     }
-    
+
     // Store the last step data
     setGoalCreationData(prev => ({
       ...prev,
-      [goalCreationStep]: { 
-        name: newGoalName.trim(), 
-        periods: prev[goalCreationStep].periods 
+      [goalCreationStep]: {
+        name: newGoalName.trim(),
+        periods: prev[goalCreationStep].periods
       }
     }));
-    
+
     setShowCategoryStep(true);
   };
 
   const handleFinalizeHierarchicalCreation = () => {
     const finalData = {
       ...goalCreationData,
-      [goalCreationStep]: { 
-        name: newGoalName.trim(), 
-        periods: goalCreationData[goalCreationStep].periods 
+      [goalCreationStep]: {
+        name: newGoalName.trim(),
+        periods: goalCreationData[goalCreationStep].periods
       }
     };
 
     // Create all goals in order: yearly -> semestral -> quarterly -> monthly
     const steps: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
     let lastCreatedGoalId: string | null = null;
-    
+
     steps.forEach((step) => {
       if (finalData[step].name && finalData[step].periods.length > 0) {
         // Create a goal for each selected period
@@ -825,7 +826,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
       const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
       return isHabitScheduledForDate(habit, viewDate, linkedGoal);
     });
-    
+
     // Sort by goal to group habits by their linked goal
     return filtered.sort((a, b) => {
       const goalA = a.goalId || '';
@@ -844,7 +845,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const shouldCenterTitle = centerTitle === true;
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={className}
@@ -857,11 +858,11 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             "font-semibold text-foreground text-lg mb-3",
             shouldCenterTitle && "text-center"
           )}>Hábitos do dia</h3>
-          
+
           {/* Day navigation and Add button */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1" />
-          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="flex items-center gap-1 bg-muted/20 rounded-xl px-2 py-1">
                 <button
                   onClick={() => navigateDay(-1)}
@@ -921,7 +922,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                         onKeyDown={(e) => e.key === 'Enter' && handleAddHabit()}
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <Target className="w-4 h-4 text-muted-foreground" />
                       <select
@@ -950,7 +951,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Repetição</span>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -977,7 +978,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                           Evento único
                         </button>
                       </div>
-                      
+
                       {!isOneTimeHabit && (
                         <>
                           {/* Frequency selection */}
@@ -1028,25 +1029,25 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                           {selectedGoalId && (() => {
                             const linkedGoal = goals.find(g => g.id === selectedGoalId);
                             if (!linkedGoal) return null;
-                            
+
                             const periodBoundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
                             if (!periodBoundaries) return null;
-                            
+
                             const minDate = format(periodBoundaries.start, 'yyyy-MM-dd');
                             const maxDate = format(periodBoundaries.end, 'yyyy-MM-dd');
                             const periodLabel = `${format(periodBoundaries.start, 'd MMM yyyy', { locale: ptBR })} - ${format(periodBoundaries.end, 'd MMM yyyy', { locale: ptBR })}`;
-                            
+
                             return (
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2">
                                   <CalendarRange className="w-4 h-4 text-muted-foreground" />
                                   <span className="text-sm text-muted-foreground">Período da recorrência</span>
                                 </div>
-                                
+
                                 <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
                                   📅 Período do objetivo: {periodLabel}
                                 </p>
-                                
+
                                 <div className="grid grid-cols-2 gap-3">
                                   <div className="space-y-1">
                                     <label className="text-xs text-muted-foreground">Início</label>
@@ -1101,7 +1102,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                           />
                         </button>
                       </div>
-                      
+
                       {hasMicroGoals && (
                         <div className="space-y-2">
                           <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg">
@@ -1166,14 +1167,14 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                         <Sparkles className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Nível de dificuldade</span>
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-2">
                         {XP_OPTIONS.map((xp) => {
                           const limit = XP_LIMITS[xp];
                           const currentCount = xpCounts[xp] || 0;
                           const isAtLimit = limit !== undefined && currentCount >= limit;
                           const isSelected = selectedXPReward === xp;
-                          
+
                           return (
                             <div key={xp} className="flex flex-col">
                               <button
@@ -1239,7 +1240,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                     {showCategoryStep ? (
                       <div className="space-y-4">
                         <h5 className="text-sm font-medium text-foreground">Categoria e XP</h5>
-                        
+
                         {/* Category selection */}
                         <div>
                           <label className="text-xs text-muted-foreground mb-2 block">Categoria (opcional)</label>
@@ -1451,7 +1452,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                               <label className="text-xs text-muted-foreground mb-1 block">
                                 Períodos (selecione um ou mais)
                               </label>
-                              
+
                               {/* Select All button */}
                               <button
                                 onClick={() => {
@@ -1459,9 +1460,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                                   const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
                                   setGoalCreationData(prev => ({
                                     ...prev,
-                                    [goalCreationStep]: { 
-                                      ...prev[goalCreationStep], 
-                                      periods: allSelected ? [] : allOptions 
+                                    [goalCreationStep]: {
+                                      ...prev[goalCreationStep],
+                                      periods: allSelected ? [] : allOptions
                                     }
                                   }));
                                 }}
@@ -1497,7 +1498,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                                 {goalCreationData[goalCreationStep].periods.length} selecionado(s)
                               </p>
                             </div>
-                            
+
                             <div className="flex gap-2">
                               {goalCreationStep !== 'yearly' ? (
                                 <button
@@ -1535,10 +1536,10 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                   </div>
                 )}
               </motion.div>
-              )}
-            </AnimatePresence>
+            )}
+          </AnimatePresence>
 
-            {/* New Category Modal */}
+          {/* New Category Modal */}
           <AnimatePresence>
             {(showNewCategoryModal || editingCategory) && (
               <motion.div
@@ -1560,8 +1561,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                     <div className="flex gap-2">
                       <EmojiPickerButton
                         value={editingCategory ? editingCategory.emoji || '' : newCategoryEmoji}
-                        onChange={(emoji) => editingCategory 
-                          ? setEditingCategory({...editingCategory, emoji})
+                        onChange={(emoji) => editingCategory
+                          ? setEditingCategory({ ...editingCategory, emoji })
                           : setNewCategoryEmoji(emoji)
                         }
                       />
@@ -1570,7 +1571,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                         placeholder="Nome da categoria"
                         value={editingCategory ? editingCategory.name : newCategoryName}
                         onChange={(e) => editingCategory
-                          ? setEditingCategory({...editingCategory, name: e.target.value})
+                          ? setEditingCategory({ ...editingCategory, name: e.target.value })
                           : setNewCategoryName(e.target.value)
                         }
                         className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
@@ -1615,7 +1616,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
             )}
           </AnimatePresence>
 
-          <div 
+          <div
             className="space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin"
             onTouchMove={(e) => e.stopPropagation()}
           >
@@ -1639,6 +1640,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                     setBadHabitName(habit.name);
                     setShowBadHabitModal(true);
                   } : undefined}
+                  onToggleDracoSave={() => toggleDracoSave(habit.id, viewDateStr)}
+                  dracoSaves={settings.dracoSaves || 0}
                 />
               );
             })}

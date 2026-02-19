@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban, Archive } from 'lucide-react';
+import { X, Target, Bell, Calendar, TrendingUp, Link, Sparkles, Trash2, ChevronLeft, ChevronRight, Check, Tag, Flame, CalendarRange, Ban, Archive, Palmtree } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit, GoalType, GoalCategory, DEFAULT_CATEGORIES, XP_OPTIONS, DIFFICULTY_LABELS } from '@/types';
@@ -48,10 +48,10 @@ const MONTH_WEEKS = [
 ];
 
 export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalProps) => {
-  const { 
-    goals, 
-    habitChecks, 
-    updateHabit, 
+  const {
+    goals,
+    habitChecks,
+    updateHabit,
     addGoal,
     customCategories,
     removeHabit
@@ -61,7 +61,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [showArchiveConfirmation, setShowArchiveConfirmation] = useState(false);
   const [habitEmoji, setHabitEmoji] = useState(habit.emoji || '');
   const [habitName, setHabitName] = useState(habit.name);
-  
+
   // Progress history view state
   const [historyView, setHistoryView] = useState<'week' | 'month'>('week');
   const [historyDate, setHistoryDate] = useState(new Date());
@@ -80,23 +80,24 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
   const [repeatFrequency, setRepeatFrequency] = useState<1 | 2 | 3 | 4>(habit.repeatFrequency || 1);
   const [notificationEnabled, setNotificationEnabled] = useState(habit.notificationEnabled || false);
   const [notificationTime, setNotificationTime] = useState(habit.notificationTime || '09:00');
-  
+
   // XP reward state
   const [xpReward, setXpReward] = useState<number>(habit.xpReward || 10);
-  
+
   // Micro goals editing state
   const [hasMicroGoals, setHasMicroGoals] = useState(habit.hasMicroGoals || false);
   const [microGoalsCount, setMicroGoalsCount] = useState(habit.microGoalsCount || 2);
   const [microGoalsNames, setMicroGoalsNames] = useState<string[]>(habit.microGoalsNames || []);
   const [isBadHabit, setIsBadHabit] = useState(habit.isBadHabit || false);
-  
+  const [vacationMode, setVacationMode] = useState(habit.vacationMode || false);
+
   // Date range state for editing
   const [startDate, setStartDate] = useState(habit.startDate || '');
   const [endDate, setEndDate] = useState(habit.endDate || '');
-  
+
   // Goal creation emoji
   const [newGoalEmoji, setNewGoalEmoji] = useState('');
-  
+
   // Calculate habit progress using the new utility
   const habitProgress = useMemo(() => {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
@@ -108,11 +109,11 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
     const history: { date: string; completed: boolean }[] = [];
     const today = new Date();
     const createdDate = new Date(habit.createdAt);
-    
+
     // Calculate days since creation (max 30)
     const daysSinceCreation = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysToShow = Math.min(daysSinceCreation + 1, 30);
-    
+
     for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
@@ -121,31 +122,31 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
       const check = habitChecks.find(hc => hc.habitId === habit.id && hc.date === dateStr);
       history.push({ date: dateStr, completed: check?.completed || false });
     }
-    
+
     return history;
   }, [habit.id, habit.createdAt, habitChecks]);
 
   // Get linked goals hierarchy
   const linkedGoals = useMemo(() => {
     if (!habit.goalId) return [];
-    
+
     const result: { goal: typeof goals[0]; type: GoalType }[] = [];
     let currentGoal = goals.find(g => g.id === habit.goalId);
-    
+
     while (currentGoal) {
       result.push({ goal: currentGoal, type: currentGoal.type });
-      currentGoal = currentGoal.parentGoalId 
-        ? goals.find(g => g.id === currentGoal!.parentGoalId) 
+      currentGoal = currentGoal.parentGoalId
+        ? goals.find(g => g.id === currentGoal!.parentGoalId)
         : undefined;
     }
-    
+
     return result;
   }, [habit.goalId, goals]);
 
   const toggleWeekDay = (day: number) => {
     if (isOneTime) return;
-    setWeekDays(prev => 
-      prev.includes(day) 
+    setWeekDays(prev =>
+      prev.includes(day)
         ? prev.filter(d => d !== day)
         : [...prev, day].sort()
     );
@@ -153,8 +154,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
 
   const toggleMonthWeek = (week: number) => {
     if (isOneTime) return;
-    setMonthWeeks(prev => 
-      prev.includes(week) 
+    setMonthWeeks(prev =>
+      prev.includes(week)
         ? prev.filter(w => w !== week)
         : [...prev, week].sort()
     );
@@ -364,7 +365,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   </button>
                 </div>
               </div>
-              
+
               {/* Navigation */}
               <div className="flex items-center justify-between mb-3">
                 <button
@@ -381,7 +382,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
-              
+
               {/* History Grid */}
               {historyView === 'week' ? (
                 <div className="grid grid-cols-7 gap-2">
@@ -395,16 +396,16 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     const isToday = isSameDay(day, new Date());
                     const linkedGoalForCheck = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
                     const isScheduled = isHabitScheduledForDate(habit, day, linkedGoalForCheck);
-                    
+
                     return (
                       <div
                         key={dateStr}
                         className={cn(
                           'aspect-square rounded-lg flex items-center justify-center transition-all text-[10px] font-medium',
-                          !isScheduled 
-                            ? 'bg-muted/20 text-muted-foreground' 
-                            : isCompleted 
-                              ? 'bg-primary' 
+                          !isScheduled
+                            ? 'bg-muted/20 text-muted-foreground'
+                            : isCompleted
+                              ? 'bg-primary'
                               : 'border-2 border-primary/50 bg-transparent',
                           isToday && 'ring-2 ring-primary ring-offset-2 ring-offset-card'
                         )}
@@ -436,16 +437,16 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     const isToday = isSameDay(day, new Date());
                     const linkedGoalForCheck = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
                     const isScheduled = isHabitScheduledForDate(habit, day, linkedGoalForCheck);
-                    
+
                     return (
                       <div
                         key={dateStr}
                         className={cn(
                           'aspect-square rounded flex items-center justify-center text-[8px] font-medium transition-all',
-                          !isScheduled 
-                            ? 'bg-muted/20 text-muted-foreground' 
-                            : isCompleted 
-                              ? 'bg-primary text-primary-foreground' 
+                          !isScheduled
+                            ? 'bg-muted/20 text-muted-foreground'
+                            : isCompleted
+                              ? 'bg-primary text-primary-foreground'
                               : 'border border-primary/50 bg-transparent text-muted-foreground',
                           isToday && 'ring-1 ring-primary'
                         )}
@@ -466,7 +467,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <Target className="w-4 h-4 text-primary" />
                   <h3 className="font-medium text-foreground">Progresso dos Objetivos</h3>
                 </div>
-                
+
                 <div className="space-y-3">
                   {linkedGoals.map(({ goal, type }) => (
                     <div key={goal.id} className="flex items-center gap-3">
@@ -498,7 +499,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <Link className="w-4 h-4 text-primary" />
                   <h3 className="font-medium text-foreground">Vincular a Objetivo</h3>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <select
                     value={selectedGoalId || ''}
@@ -536,7 +537,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-                
+
                 <div className="flex gap-1 mb-2">
                   {(['yearly', 'semestral', 'quarterly', 'monthly'] as GoalType[]).map((step, i) => (
                     <div
@@ -566,7 +567,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     className="flex-1 bg-muted/50 border border-border/50 rounded-xl px-4 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                   />
                 </div>
-                
+
                 <button
                   onClick={handleCreateGoalSequence}
                   className="w-full px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
@@ -582,7 +583,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 <Calendar className="w-4 h-4 text-primary" />
                 <h3 className="font-medium text-foreground">Repetição</h3>
               </div>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={() => setIsOneTime(!isOneTime)}
@@ -596,7 +597,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <Calendar className="w-4 h-4" />
                   Evento único (sem repetição)
                 </button>
-                
+
                 {!isOneTime && (
                   <>
                     {/* Frequency selection */}
@@ -663,8 +664,8 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {monthWeeks.length === 0 
-                          ? 'Todas as semanas do mês' 
+                        {monthWeeks.length === 0
+                          ? 'Todas as semanas do mês'
                           : `Apenas semana${monthWeeks.length > 1 ? 's' : ''} ${monthWeeks.join(', ')}`
                         }
                       </p>
@@ -681,7 +682,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <CalendarRange className="w-4 h-4 text-primary" />
                   <h3 className="font-medium text-foreground">Período da Recorrência</h3>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Data de início</label>
@@ -716,7 +717,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 <Sparkles className="w-4 h-4 text-primary" />
                 <h3 className="font-medium text-foreground">Nível de dificuldade</h3>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-2">
                 {XP_OPTIONS.map((xp) => (
                   <button
@@ -762,6 +763,39 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                     className={cn(
                       'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
                       isBadHabit ? 'right-0.5' : 'left-0.5'
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Vacation Mode toggle */}
+            <div className="p-3 rounded-xl bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Palmtree className="w-4 h-4 text-emerald-400" />
+                  <div>
+                    <h3 className="font-medium text-foreground">Modo Férias</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Congela a streak e ignora nas porcentagens
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const newValue = !vacationMode;
+                    setVacationMode(newValue);
+                    updateHabit(habit.id, { vacationMode: newValue });
+                  }}
+                  className={cn(
+                    'w-10 h-5 rounded-full transition-all relative flex-shrink-0',
+                    vacationMode ? 'bg-emerald-500' : 'bg-muted'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'absolute top-0.5 w-4 h-4 rounded-full bg-foreground transition-all',
+                      vacationMode ? 'right-0.5' : 'left-0.5'
                     )}
                   />
                 </button>
@@ -849,7 +883,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <Tag className="w-4 h-4 text-primary" />
                   <h3 className="font-medium text-foreground">Categoria</h3>
                 </div>
-                
+
                 <div className="p-3 bg-muted/30 rounded-xl border border-border/50">
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -893,7 +927,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                 <Bell className="w-4 h-4 text-primary" />
                 <h3 className="font-medium text-foreground">Notificações</h3>
               </div>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={() => setNotificationEnabled(!notificationEnabled)}
@@ -907,7 +941,7 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   <Bell className="w-4 h-4" />
                   {notificationEnabled ? 'Notificação ativada' : 'Ativar notificação'}
                 </button>
-                
+
                 {notificationEnabled && (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Horário:</span>

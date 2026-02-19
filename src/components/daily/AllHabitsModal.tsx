@@ -13,7 +13,7 @@ interface AllHabitsModalProps {
 }
 
 export const AllHabitsModal = ({ isOpen, onClose, habits, viewDateStr, onHabitClick }: AllHabitsModalProps) => {
-  const { goals, settings, toggleHabitCheck, incrementMicroGoal, getHabitCheckForDate, habitChecks } = useAppStore();
+  const { goals, settings, toggleHabitCheck, incrementMicroGoal, getHabitCheckForDate, habitChecks, toggleDracoSave } = useAppStore();
 
   return (
     <AnimatePresence>
@@ -64,6 +64,8 @@ export const AllHabitsModal = ({ isOpen, onClose, habits, viewDateStr, onHabitCl
                     }}
                     habitChecks={habitChecks}
                     delay={index * 0.03}
+                    onToggleDracoSave={() => toggleDracoSave(habit.id, viewDateStr)}
+                    dracoSaves={settings.dracoSaves || 0}
                   />
                 );
               })}

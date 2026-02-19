@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
-import { X as CloseIcon, Check, X } from 'lucide-react';
+import { X as CloseIcon, Check, X, Lock } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
 import { Habit } from '@/types';
-import { 
-  isHabitScheduledForDate, 
-  calculateHabitProgress 
+import {
+  isHabitScheduledForDate,
+  calculateHabitProgress
 } from '@/utils/habitInstanceCalculator';
 
 interface CalendarDayModalProps {
@@ -15,11 +15,11 @@ interface CalendarDayModalProps {
 
 export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
   const { habits, goals, habitChecks, toggleHabitCheck, settings } = useAppStore();
-  
+
   // Parse date string as local timezone (not UTC)
   const [year, month, day] = date.split('-').map(Number);
   const dateObj = new Date(year, month - 1, day);
-  
+
   const formattedDate = dateObj.toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
@@ -38,8 +38,9 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
     return check?.completed || false;
   };
 
-  const completedCount = activeHabits.filter(h => isHabitCompleted(h.id)).length;
-  const percentage = activeHabits.length > 0 ? Math.round((completedCount / activeHabits.length) * 100) : 0;
+  const completedCount = activeHabits.filter(h => !h.vacationMode && isHabitCompleted(h.id)).length;
+  const nonVacationCount = activeHabits.filter(h => !h.vacationMode).length;
+  const percentage = nonVacationCount > 0 ? Math.round((completedCount / nonVacationCount) * 100) : 0;
 
   const getPercentageColor = (pct: number) => {
     if (pct === 0) return 'text-muted-foreground';
@@ -76,7 +77,7 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
           <div>
             <h3 className="font-semibold text-foreground capitalize">{formattedDate}</h3>
             <p className={cn('text-sm font-medium', getPercentageColor(percentage))}>
-              {completedCount}/{activeHabits.length} concluídos ({percentage}%)
+              {completedCount}/{nonVacationCount} concluídos ({percentage}%)
             </p>
           </div>
           <button
@@ -98,7 +99,7 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
               const completed = isHabitCompleted(habit.id);
               const linkedGoal = goals.find(g => g.id === habit.goalId);
               const progress = getHabitProgressDisplay(habit);
-              
+
               return (
                 <motion.div
                   key={habit.id}
@@ -106,16 +107,22 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className={cn(
-                    'flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer',
+                    'relative flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer',
                     completed ? 'bg-primary/10' : 'bg-muted/30 hover:bg-muted/50'
                   )}
-                  onClick={() => toggleHabitCheck(habit.id, date)}
+                  onClick={() => !habit.vacationMode && toggleHabitCheck(habit.id, date)}
                 >
+                  {/* Vacation mode overlay */}
+                  {habit.vacationMode && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[2px] rounded-xl">
+                      <Lock className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  )}
                   <div
                     className={cn(
                       'w-6 h-6 rounded-lg flex items-center justify-center transition-all',
-                      completed 
-                        ? 'gradient-primary' 
+                      completed
+                        ? 'gradient-primary'
                         : 'border-2 border-muted-foreground/30 hover:border-primary/50'
                     )}
                   >
@@ -127,7 +134,7 @@ export const CalendarDayModal = ({ date, onClose }: CalendarDayModalProps) => {
                       )
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       {settings.showEmojis && habit.emoji && (

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Flame, Bell, Target, X } from 'lucide-react';
+import { Check, Flame, Bell, Target, X, Lock } from 'lucide-react';
 import { Habit } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -41,17 +41,28 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
       onClick={onClick}
       className={cn(
         "w-full aspect-square glass-card p-2 text-left card-hover flex flex-col justify-between transition-all min-h-0 rounded-2xl overflow-hidden relative",
-        isCompleted && 'opacity-70'
+        isCompleted && !habit.vacationMode && 'opacity-70'
       )}
       style={{ maxWidth: '140px', maxHeight: '140px' }}
     >
       {/* Goal color stripe at top */}
       {linkedGoal?.color && (
-        <div 
+        <div
           className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
           style={{ backgroundColor: linkedGoal.color }}
         />
       )}
+
+      {/* Vacation Mode Overlay */}
+      {habit.vacationMode && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/40 backdrop-blur-[2px] rounded-2xl">
+          <div className="flex flex-col items-center gap-1">
+            <Lock className="w-5 h-5 text-emerald-400" />
+            <span className="text-[9px] font-medium text-emerald-400">Férias</span>
+          </div>
+        </div>
+      )}
+
       {/* Top section - Emoji and Check */}
       <div className="flex items-start justify-between gap-1">
         {settings.showEmojis && habit.emoji && (
@@ -60,13 +71,16 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (habit.vacationMode) return; // Block in vacation mode
             toggleHabitCheck(habit.id, todayStr);
           }}
+          disabled={habit.vacationMode}
           className={cn(
             'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0',
-            isCompleted 
-              ? 'bg-primary border-primary' 
-              : 'border-muted-foreground/50 hover:border-primary'
+            isCompleted
+              ? 'bg-primary border-primary'
+              : 'border-muted-foreground/50 hover:border-primary',
+            habit.vacationMode && 'opacity-30'
           )}
         >
           {isCompleted && (
@@ -78,7 +92,7 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
           )}
         </button>
       </div>
-      
+
       {/* Middle section - Name */}
       <div className="flex-1 flex flex-col justify-center py-1 min-h-0">
         <h3 className={cn(
@@ -94,7 +108,7 @@ export const HabitSquareCard = ({ habit, index, onClick }: HabitSquareCardProps)
           </p>
         )}
       </div>
-      
+
       {/* Bottom section - Stats */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">

@@ -14,7 +14,7 @@ import {
 
 // Generate a proper UUID v4
 const generateUUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
     const r = Math.random() * 16 | 0;
     const v = c === 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -26,74 +26,75 @@ interface AppStore {
   isAuthenticated: boolean;
   isFirstTime: boolean;
   user: User | null;
-  
+
   // Draco
   draco: DracoState;
   levelUpInfo: { newLevel: number } | null; // For level up animation
-  
+
   // Habits
   habits: Habit[];
   habitChecks: HabitCheck[];
-  
+
   // Goals
   goals: Goal[];
   customCategories: CustomCategory[];
-  
+
   // Daily Logs (sleep/phone)
   dailyLogs: DailyLog[];
-  
+
   // Notes
   notes: Note[];
-  
+
   // Settings
   settings: AppSettings;
-  
+
   // UI
   activeTab: TabType;
   showWelcomeModal: boolean;
-  
+
   // Level up modal
   clearLevelUp: () => void;
-  
+
   // Actions
   login: (email: string, password: string) => boolean;
   signup: (user: Omit<User, 'id'>, password: string) => boolean;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
-  
+
   addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => Habit;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   removeHabit: (id: string) => void;
   toggleHabitCheck: (habitId: string, date: string) => void;
   incrementMicroGoal: (habitId: string, date: string) => void;
-  
+  toggleDracoSave: (habitId: string, date: string) => void;
+
   addGoal: (goal: Omit<Goal, 'id' | 'createdAt'>) => Goal;
   updateGoal: (id: string, updates: Partial<Goal>) => void;
   removeGoal: (id: string) => void;
-  
+
   addCustomCategory: (category: Omit<CustomCategory, 'id'>, customId?: string) => CustomCategory;
   updateCustomCategory: (id: string, updates: Partial<CustomCategory>) => void;
   removeCustomCategory: (id: string) => void;
-  
+
   addDailyLog: (log: DailyLog) => void;
   getDailyLogs: (startDate: string, endDate: string) => DailyLog[];
-  
+
   addNote: (note: Omit<Note, 'id' | 'createdAt'>) => Note;
   updateNote: (id: string, updates: Partial<Note>) => void;
   removeNote: (id: string) => void;
-  
+
   updateSettings: (settings: Partial<AppSettings>) => void;
   setActiveTab: (tab: TabType) => void;
   closeWelcomeModal: () => void;
-  
+
   updateDraco: (updates: Partial<DracoState>) => void;
   addXP: (amount: number) => void;
-  
+
   getHabitCheckForDate: (habitId: string, date: string) => HabitCheck | undefined;
   getDailyProgress: (date: string) => number;
   getWeeklyProgress: (weekStart: string) => number;
   getMonthlyProgress: (year: number, month: number) => number;
-  
+
   // New progress calculation methods
   getHabitProgress: (habitId: string) => { completed: number; total: number; percentage: number };
   getGoalProgress: (goalId: string) => number;
@@ -128,6 +129,8 @@ const defaultSettings: AppSettings = {
   maxPhoneHours: 2,
   glassBlur: 20,
   glassOpacity: 65,
+  dracoSaves: 0,
+  dracoSavesDelta: null,
 };
 
 // Empty defaults for first-time users
@@ -158,7 +161,7 @@ export const useAppStore = create<AppStore>()(
 
       login: (email, password) => {
         if (email && password) {
-          set({ 
+          set({
             isAuthenticated: true,
             user: {
               id: '1',
@@ -199,8 +202,8 @@ export const useAppStore = create<AppStore>()(
 
       logout: () => {
         // Clear all user data on logout to prevent data mixing between users
-        set({ 
-          isAuthenticated: false, 
+        set({
+          isAuthenticated: false,
           user: null,
           isFirstTime: true,
           habits: [],
@@ -213,7 +216,7 @@ export const useAppStore = create<AppStore>()(
           settings: defaultSettings,
           showWelcomeModal: false,
         });
-        
+
         // Also clear the persisted storage to ensure clean slate
         localStorage.removeItem('draco-habits-storage');
       },
@@ -224,16 +227,16 @@ export const useAppStore = create<AppStore>()(
           set({ user: { ...user, ...updates } });
         } else {
           // Initialize user if it doesn't exist (for initial load from cloud)
-          set({ 
-            user: { 
-              id: updates.id || '', 
-              email: updates.email || '', 
-              firstName: updates.firstName || '', 
+          set({
+            user: {
+              id: updates.id || '',
+              email: updates.email || '',
+              firstName: updates.firstName || '',
               lastName: updates.lastName || '',
               birthDate: updates.birthDate || '',
               photo: updates.photo || '',
-              ...updates 
-            } as User 
+              ...updates
+            } as User
           });
         }
       },
@@ -245,10 +248,10 @@ export const useAppStore = create<AppStore>()(
           createdAt: new Date().toISOString(),
         };
         set((state) => ({ habits: [...state.habits, newHabit] }));
-        
+
         // Recalculate goal progress after adding habit
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
-        
+
         return newHabit;
       },
 
@@ -256,13 +259,13 @@ export const useAppStore = create<AppStore>()(
         set((state) => ({
           habits: state.habits.map((h) => {
             if (h.id !== id) return h;
-            
+
             // Check if schedule-related fields are being changed
-            const isScheduleChange = 
+            const isScheduleChange =
               (updates.weekDays !== undefined && JSON.stringify(updates.weekDays) !== JSON.stringify(h.weekDays)) ||
               (updates.repeatFrequency !== undefined && updates.repeatFrequency !== h.repeatFrequency) ||
               (updates.monthWeeks !== undefined && JSON.stringify(updates.monthWeeks) !== JSON.stringify(h.monthWeeks));
-            
+
             if (isScheduleChange) {
               // Save previous schedule before applying changes
               // Only save if we don't already have a scheduleUpdatedAt set (first time)
@@ -277,11 +280,11 @@ export const useAppStore = create<AppStore>()(
                 previousMonthWeeks: h.monthWeeks,
               };
             }
-            
+
             return { ...h, ...updates };
           }),
         }));
-        
+
         // Recalculate goal progress after updating habit
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
@@ -291,7 +294,7 @@ export const useAppStore = create<AppStore>()(
           habits: state.habits.filter((h) => h.id !== id),
           habitChecks: state.habitChecks.filter((hc) => hc.habitId !== id),
         }));
-        
+
         // Recalculate goal progress after removing habit
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
@@ -299,19 +302,19 @@ export const useAppStore = create<AppStore>()(
       toggleHabitCheck: (habitId, date) => {
         const { habits } = get();
         const habit = habits.find((h) => h.id === habitId);
-        
+
         // Get XP from habit's own xpReward
         const xpAmount = habit?.xpReward || 0;
-        
+
         // Use callback form to always work with latest state
         set((state) => {
           const existing = state.habitChecks.find(
             (hc) => hc.habitId === habitId && hc.date === date
           );
-          
+
           if (existing) {
             const newCompleted = !existing.completed;
-            
+
             // Calculate new draco state
             let newDraco = { ...state.draco };
             if (newCompleted && xpAmount > 0) {
@@ -348,9 +351,9 @@ export const useAppStore = create<AppStore>()(
                 totalXP: newTotalXP,
               };
             }
-            
+
             const leveledUp = newDraco.level > state.draco.level;
-            
+
             return {
               habitChecks: state.habitChecks.map((hc) =>
                 hc.habitId === habitId && hc.date === date
@@ -359,6 +362,11 @@ export const useAppStore = create<AppStore>()(
               ),
               draco: newDraco,
               levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+              settings: {
+                ...state.settings,
+                dracoSaves: Math.max(0, (state.settings.dracoSaves || 0) + (newCompleted ? 1 : -1)),
+                dracoSavesDelta: newCompleted ? 1 : -1,
+              },
             };
           } else {
             // New check
@@ -380,43 +388,100 @@ export const useAppStore = create<AppStore>()(
                 totalXP: newDraco.totalXP + xpAmount,
               };
             }
-            
+
             const leveledUp = newDraco.level > state.draco.level;
-            
+
             return {
               habitChecks: [...state.habitChecks, { habitId, date, completed: true, microGoalsCompleted: 0 }],
               draco: newDraco,
               levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
+              settings: {
+                ...state.settings,
+                dracoSaves: (state.settings.dracoSaves || 0) + 1,
+                dracoSavesDelta: 1,
+              },
             };
           }
         });
-        
+
         // Recalculate all goal progress after check toggle
+        setTimeout(() => get().recalculateAllGoalProgress(), 0);
+      },
+
+      toggleDracoSave: (habitId, date) => {
+        set((state) => {
+          const existing = state.habitChecks.find(
+            (hc) => hc.habitId === habitId && hc.date === date
+          );
+          const currentBalance = state.settings.dracoSaves || 0;
+
+          if (existing?.dracoSaveUsed) {
+            // Unmarking Draco Save: +20 back
+            return {
+              habitChecks: state.habitChecks.map((hc) =>
+                hc.habitId === habitId && hc.date === date
+                  ? { ...hc, dracoSaveUsed: false }
+                  : hc
+              ),
+              settings: {
+                ...state.settings,
+                dracoSaves: currentBalance + 20,
+                dracoSavesDelta: 20,
+              },
+            };
+          } else if (currentBalance >= 20) {
+            // Using Draco Save: -20
+            if (existing) {
+              return {
+                habitChecks: state.habitChecks.map((hc) =>
+                  hc.habitId === habitId && hc.date === date
+                    ? { ...hc, dracoSaveUsed: true }
+                    : hc
+                ),
+                settings: {
+                  ...state.settings,
+                  dracoSaves: currentBalance - 20,
+                  dracoSavesDelta: -20,
+                },
+              };
+            } else {
+              return {
+                habitChecks: [...state.habitChecks, { habitId, date, completed: false, microGoalsCompleted: 0, dracoSaveUsed: true }],
+                settings: {
+                  ...state.settings,
+                  dracoSaves: currentBalance - 20,
+                  dracoSavesDelta: -20,
+                },
+              };
+            }
+          }
+          return {}; // Not enough balance, no change
+        });
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       incrementMicroGoal: (habitId, date) => {
         const { habits } = get();
         const habit = habits.find((h) => h.id === habitId);
-        
+
         if (!habit || !habit.hasMicroGoals || !habit.microGoalsCount) return;
-        
+
         const microGoalsCount = habit.microGoalsCount;
         const xpPerMicroGoal = Math.floor((habit.xpReward || 0) / microGoalsCount);
-        
+
         // Use callback form to always work with latest state
         set((state) => {
           const existing = state.habitChecks.find(
             (hc) => hc.habitId === habitId && hc.date === date
           );
-          
+
           const currentMicroGoals = existing?.microGoalsCompleted || 0;
-          
+
           if (currentMicroGoals >= microGoalsCount) {
             // Reset to 0 if already complete
             const totalXpToRemove = habit.xpReward || 0;
             let newDraco = { ...state.draco };
-            
+
             if (totalXpToRemove > 0) {
               const newTotalXP = Math.max(0, newDraco.totalXP - totalXpToRemove);
               let level = 1;
@@ -429,7 +494,7 @@ export const useAppStore = create<AppStore>()(
               }
               newDraco = { ...newDraco, level, currentXP: xpRemaining, xpToNextLevel: xpForLevel, totalXP: newTotalXP };
             }
-            
+
             return {
               habitChecks: state.habitChecks.map((hc) =>
                 hc.habitId === habitId && hc.date === date
@@ -441,7 +506,7 @@ export const useAppStore = create<AppStore>()(
           } else {
             const newMicroGoals = currentMicroGoals + 1;
             const isNowComplete = newMicroGoals >= microGoalsCount;
-            
+
             let newDraco = { ...state.draco };
             if (xpPerMicroGoal > 0) {
               let newXP = newDraco.currentXP + xpPerMicroGoal;
@@ -460,9 +525,9 @@ export const useAppStore = create<AppStore>()(
                 totalXP: newDraco.totalXP + xpPerMicroGoal,
               };
             }
-            
+
             const leveledUp = newDraco.level > state.draco.level;
-            
+
             if (existing) {
               return {
                 habitChecks: state.habitChecks.map((hc) =>
@@ -475,8 +540,8 @@ export const useAppStore = create<AppStore>()(
               };
             } else {
               return {
-                habitChecks: [...state.habitChecks, { 
-                  habitId, date, completed: isNowComplete, microGoalsCompleted: newMicroGoals 
+                habitChecks: [...state.habitChecks, {
+                  habitId, date, completed: isNowComplete, microGoalsCompleted: newMicroGoals
                 }],
                 draco: newDraco,
                 levelUpInfo: leveledUp ? { newLevel: newDraco.level } : state.levelUpInfo,
@@ -484,21 +549,21 @@ export const useAppStore = create<AppStore>()(
             }
           }
         });
-        
+
         // Recalculate all goal progress after micro goal toggle
         setTimeout(() => get().recalculateAllGoalProgress(), 0);
       },
 
       addGoal: (goal) => {
         const { goals } = get();
-        
+
         // Check goal limit per year (100 per year)
         const currentYear = new Date().getFullYear();
         const goalsThisYear = goals.filter(g => !g.archived && g.period?.includes(currentYear.toString())).length;
         if (goalsThisYear >= 100) {
           console.warn('Goal limit reached (100 goals per year)');
         }
-        
+
         const newGoal: Goal = {
           ...goal,
           id: generateUUID(),
@@ -609,13 +674,13 @@ export const useAppStore = create<AppStore>()(
         let newXP = draco.currentXP + amount;
         let newLevel = draco.level;
         let xpToNext = draco.xpToNextLevel;
-        
+
         while (newXP >= xpToNext) {
           newXP -= xpToNext;
           newLevel++;
           xpToNext = calculateXPForLevel(newLevel);
         }
-        
+
         set({
           draco: {
             ...draco,
@@ -638,11 +703,11 @@ export const useAppStore = create<AppStore>()(
       getHabitProgress: (habitId) => {
         const { habits, goals, habitChecks } = get();
         const habit = habits.find(h => h.id === habitId);
-        
+
         if (!habit) {
           return { completed: 0, total: 0, percentage: 0 };
         }
-        
+
         const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
         return calculateHabitProgress(habit, linkedGoal, habitChecks);
       },
@@ -651,9 +716,9 @@ export const useAppStore = create<AppStore>()(
       getGoalProgress: (goalId) => {
         const { goals, habits, habitChecks } = get();
         const goal = goals.find(g => g.id === goalId);
-        
+
         if (!goal) return 0;
-        
+
         return calculateGoalProgress(goal, habits, habitChecks);
       },
 
@@ -672,36 +737,39 @@ export const useAppStore = create<AppStore>()(
       // Recalculate all goal progress
       recalculateAllGoalProgress: () => {
         const { goals, habits, habitChecks } = get();
-        
+
         const updatedGoals = goals.map(goal => {
           const progress = calculateGoalProgress(goal, habits, habitChecks);
           return { ...goal, progress };
         });
-        
+
         set({ goals: updatedGoals });
       },
 
       getDailyProgress: (date) => {
         const { habits, habitChecks, goals } = get();
         // Parse date string as local timezone (not UTC) to avoid one-day shift
-        // "YYYY-MM-DD" passed to new Date() is interpreted as UTC, causing issues
         const [year, month, day] = date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
-        
-        // Get habits that should appear on this date
-        const habitsForDate = getHabitsForDate(dateObj, habits, goals);
-        
+
+        // Get habits that should appear on this date, exclude vacation mode
+        const habitsForDate = getHabitsForDate(dateObj, habits, goals)
+          .filter(h => !h.vacationMode);
+
         if (habitsForDate.length === 0) return 0;
-        
-        // Calculate progress considering micro-goals partial completion
+
+        // Calculate progress considering micro-goals partial completion and Draco Saves
         let totalProgress = 0;
-        
+
         for (const habit of habitsForDate) {
           const check = habitChecks.find(
             hc => hc.habitId === habit.id && hc.date === date
           );
-          
-          if (habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1) {
+
+          // Draco Save counts as completed
+          if (check?.dracoSaveUsed) {
+            totalProgress += 1;
+          } else if (habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1) {
             // For micro-goals habits, calculate partial progress
             const microGoalsCompleted = check?.microGoalsCompleted || 0;
             totalProgress += microGoalsCompleted / habit.microGoalsCount;
@@ -710,74 +778,74 @@ export const useAppStore = create<AppStore>()(
             totalProgress += check?.completed ? 1 : 0;
           }
         }
-        
+
         return Math.round((totalProgress / habitsForDate.length) * 100);
       },
 
       getWeeklyProgress: (weekStart) => {
         const { habits, habitChecks, goals } = get();
-        
+
         // Parse weekStart as local timezone to avoid UTC shift
         const [startYear, startMonth, startDay] = weekStart.split('-').map(Number);
         const start = new Date(startYear, startMonth - 1, startDay);
         const dates: string[] = [];
-        
+
         for (let i = 0; i < 7; i++) {
           const d = new Date(start);
           d.setDate(d.getDate() + i);
           // Use local timezone formatting to avoid UTC one-day shift
           dates.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
         }
-        
+
         let totalScheduled = 0;
         let totalCompleted = 0;
-        
+
         for (const dateStr of dates) {
           // Parse each date as local timezone
           const [y, m, d] = dateStr.split('-').map(Number);
           const dateObj = new Date(y, m - 1, d);
           const habitsForDate = getHabitsForDate(dateObj, habits, goals);
           totalScheduled += habitsForDate.length;
-          
+
           const completedOnDate = habitsForDate.filter(habit => {
             const check = habitChecks.find(
               hc => hc.habitId === habit.id && hc.date === dateStr && hc.completed
             );
             return check !== undefined;
           }).length;
-          
+
           totalCompleted += completedOnDate;
         }
-        
+
         if (totalScheduled === 0) return 0;
         return Math.round((totalCompleted / totalScheduled) * 100);
       },
 
       getMonthlyProgress: (year, month) => {
         const { habits, habitChecks, goals } = get();
-        
+
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
+
         let totalScheduled = 0;
         let totalCompleted = 0;
-        
+
         for (let day = 1; day <= daysInMonth; day++) {
           const dateObj = new Date(year, month, day);
           // Use local timezone formatting to avoid UTC one-day shift
           const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
           const habitsForDate = getHabitsForDate(dateObj, habits, goals);
           totalScheduled += habitsForDate.length;
-          
+
           const completedOnDate = habitsForDate.filter(habit => {
             const check = habitChecks.find(
               hc => hc.habitId === habit.id && hc.date === dateStr && hc.completed
             );
             return check !== undefined;
           }).length;
-          
+
           totalCompleted += completedOnDate;
         }
-        
+
         if (totalScheduled === 0) return 0;
         return Math.round((totalCompleted / totalScheduled) * 100);
       },
