@@ -850,6 +850,9 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
   const shouldCenterTitle = centerTitle === true;
   const { isMobile } = useResponsive();
 
+  const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
+  const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1644,7 +1647,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           <div
             className={cn(
               "overflow-y-auto pr-1 scrollbar-thin",
-              isMobile ? "space-y-1.5 max-h-[55vh]" : "space-y-2 max-h-[320px]"
+              isMobile ? "space-y-2 max-h-[55vh] px-4" : "space-y-2 max-h-[320px]"
             )}
             onTouchMove={(e) => e.stopPropagation()}
           >
@@ -1664,12 +1667,14 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                   onClick={() => setSelectedHabit(habit)}
                   habitChecks={habitChecks}
                   delay={index * 0.05}
-                  onBadHabitComplete={habit.isBadHabit ? () => {
+                  onBadHabitComplete={() => {
                     setBadHabitName(habit.name);
+                    setIsBadHabit(true);
                     setShowBadHabitModal(true);
-                  } : undefined}
+                  }}
                   onToggleDracoSave={() => toggleDracoSave(habit.id, viewDateStr)}
-                  dracoSaves={settings.dracoSaves || 0}
+                  dracoSaves={settings.dracoSaves}
+                  streakColor={streakColor}
                 />
               );
             })}
