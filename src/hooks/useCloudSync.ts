@@ -51,6 +51,7 @@ interface SettingsRow {
   glass_blur: number;
   glass_opacity: number;
   streak_color: string | null;
+  draco_saves: number | null;
 }
 
 interface GoalRow {
@@ -247,6 +248,7 @@ export const useCloudSync = () => {
           wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
+          dracoSaves: settings.draco_saves ?? 0,
         });
 
         // Only overwrite streakColor if cloud has an actual value
@@ -472,6 +474,7 @@ export const useCloudSync = () => {
           glass_blur: mergedSettings.glassBlur ?? 20,
           glass_opacity: mergedSettings.glassOpacity ?? 65,
           streak_color: mergedSettings.streakColor ?? null,
+          draco_saves: mergedSettings.dracoSaves ?? 0,
         },
         { onConflict: "user_id" },
       );
@@ -624,7 +627,7 @@ export const useCloudSync = () => {
 
   // Save habit check to cloud
   const saveHabitCheck = useCallback(
-    async (habitId: string, date: string, completed: boolean, microGoalsCompleted?: number) => {
+    async (habitId: string, date: string, completed: boolean, microGoalsCompleted?: number, dracoSaveUsed?: boolean) => {
       const userId = userIdRef.current || user?.id;
       if (!userId) {
         console.warn("saveHabitCheck: No user ID available");
@@ -644,6 +647,7 @@ export const useCloudSync = () => {
           date: date,
           completed: completed,
           micro_goals_completed: microGoalsCompleted || 0,
+          draco_save_used: dracoSaveUsed || false,
         },
         {
           onConflict: "habit_id,date",
@@ -922,8 +926,8 @@ export const useCloudSync = () => {
           state.habitChecks.forEach((check) => {
             if (!isValidUUID(check.habitId)) return;
             const prev = previousChecks.find((c) => c.habitId === check.habitId && c.date === check.date);
-            if (!prev || prev.completed !== check.completed || prev.microGoalsCompleted !== check.microGoalsCompleted) {
-              saveHabitCheck(check.habitId, check.date, check.completed, check.microGoalsCompleted);
+            if (!prev || prev.completed !== check.completed || prev.microGoalsCompleted !== check.microGoalsCompleted || prev.dracoSaveUsed !== check.dracoSaveUsed) {
+              saveHabitCheck(check.habitId, check.date, check.completed, check.microGoalsCompleted, check.dracoSaveUsed);
             }
           });
 

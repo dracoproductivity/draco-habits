@@ -1,19 +1,19 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ZoomIn, ZoomOut, Move, Check, X, RotateCcw } from 'lucide-react';
+import { ZoomIn, ZoomOut, Check, X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 interface ImageCropperProps {
   imageSrc: string;
-  aspectRatio?: number; // width/height, e.g., 16/9, 1, 3/4
+  aspectRatio?: number;
   onSave: (croppedDataUrl: string) => void;
   onCancel: () => void;
   outputWidth?: number;
   outputHeight?: number;
   className?: string;
-  circular?: boolean; // For profile photos
+  circular?: boolean;
 }
 
 export const ImageCropper = ({
@@ -27,77 +27,155 @@ export const ImageCropper = ({
   circular = false,
 }: ImageCropperProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1); // 1 = image covers container
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const dragStart = useRef({ x: 0, y: 0 });
+  const positionStart = useRef({ x: 0, y: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+
+  // Pinch-to-zoom state
+  const lastPinchDist = useRef<number | null>(null);
+  const lastPinchZoom = useRef(1);
 
   const finalOutputHeight = outputHeight || Math.round(outputWidth / aspectRatio);
 
-  // Load image dimensions
+  // ── Calculate base scale: image scaled to COVER the container ──
+  const getBaseScale = useCallback(() => {
+    if (!naturalSize.w || !naturalSize.h || !containerSize.w || !containerSize.h) return 1;
+    const scaleX = containerSize.w / naturalSize.w;
+    const scaleY = containerSize.h / naturalSize.h;
+    return Math.max(scaleX, scaleY); // cover (not contain)
+  }, [naturalSize, containerSize]);
+
+  // Displayed image size at current zoom
+  const getDisplaySize = useCallback(() => {
+    const base = getBaseScale();
+    return {
+      w: naturalSize.w * base * zoom,
+      h: naturalSize.h * base * zoom,
+    };
+  }, [naturalSize, zoom, getBaseScale]);
+
+  // ── Clamp position so image always covers the viewport ──
+  const clampPosition = useCallback((pos: { x: number; y: number }, z?: number) => {
+    const currentZoom = z ?? zoom;
+    const base = getBaseScale();
+    const dw = naturalSize.w * base * currentZoom;
+    const dh = naturalSize.h * base * currentZoom;
+
+    // Max pan = half(imageSize - containerSize). Image must always cover container.
+    const maxX = Math.max(0, (dw - containerSize.w) / 2);
+    const maxY = Math.max(0, (dh - containerSize.h) / 2);
+
+    return {
+      x: Math.min(maxX, Math.max(-maxX, pos.x)),
+      y: Math.min(maxY, Math.max(-maxY, pos.y)),
+    };
+  }, [zoom, getBaseScale, naturalSize, containerSize]);
+
+  // ── Load image ──
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      setImageDimensions({ width: img.width, height: img.height });
+      setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
       setImageLoaded(true);
-      // Reset position and zoom when new image loads
       setPosition({ x: 0, y: 0 });
       setZoom(1);
     };
     img.src = imageSrc;
   }, [imageSrc]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  // ── Observe container size ──
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // ── Mouse drag ──
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return; // handled by touch events for pinch
     e.preventDefault();
     setIsDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    positionStart.current = { ...position };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }, [position]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const newX = e.clientX - dragStart.x;
-    const newY = e.clientY - dragStart.y;
-    
-    setPosition({ x: newX, y: newY });
-  }, [isDragging, dragStart]);
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging || e.pointerType === 'touch') return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPosition(clampPosition({
+      x: positionStart.current.x + dx,
+      y: positionStart.current.y + dy,
+    }));
+  }, [isDragging, clampPosition]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
+  // ── Touch: single-finger drag + two-finger pinch-to-zoom ──
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    setIsDragging(true);
-    setDragStart({
-      x: touch.clientX - position.x,
-      y: touch.clientY - position.y,
-    });
-  }, [position]);
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      positionStart.current = { ...position };
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastPinchDist.current = Math.hypot(dx, dy);
+      lastPinchZoom.current = zoom;
+    }
+  }, [position, zoom]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
     e.preventDefault();
-    
-    const touch = e.touches[0];
-    const newX = touch.clientX - dragStart.x;
-    const newY = touch.clientY - dragStart.y;
-    
-    setPosition({ x: newX, y: newY });
-  }, [isDragging, dragStart]);
+    if (e.touches.length === 1 && isDragging) {
+      const dx = e.touches[0].clientX - dragStart.current.x;
+      const dy = e.touches[0].clientY - dragStart.current.y;
+      setPosition(clampPosition({
+        x: positionStart.current.x + dx,
+        y: positionStart.current.y + dy,
+      }));
+    } else if (e.touches.length === 2 && lastPinchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const scale = dist / lastPinchDist.current;
+      const newZoom = Math.min(5, Math.max(1, lastPinchZoom.current * scale));
+      setZoom(newZoom);
+      setPosition(prev => clampPosition(prev, newZoom));
+    }
+  }, [isDragging, clampPosition]);
 
   const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
+    lastPinchDist.current = null;
   }, []);
 
+  // ── Mouse wheel zoom ──
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = -e.deltaY * 0.002;
+    const newZoom = Math.min(5, Math.max(1, zoom + delta));
+    setZoom(newZoom);
+    setPosition(prev => clampPosition(prev, newZoom));
+  }, [zoom, clampPosition]);
+
+  // ── Zoom slider ──
   const handleZoomChange = (value: number[]) => {
-    setZoom(value[0]);
+    const newZoom = value[0];
+    setZoom(newZoom);
+    setPosition(prev => clampPosition(prev, newZoom));
   };
 
   const handleReset = () => {
@@ -105,6 +183,7 @@ export const ImageCropper = ({
     setPosition({ x: 0, y: 0 });
   };
 
+  // ── Save / crop ──
   const handleSave = () => {
     if (!containerRef.current || !imageLoaded) return;
 
@@ -117,60 +196,40 @@ export const ImageCropper = ({
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      const containerRect = containerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+      const cw = containerSize.w;
+      const ch = containerSize.h;
+      if (!cw || !ch) return;
 
-      // Calculate the visible area dimensions
-      const visibleWidth = containerRect.width;
-      const visibleHeight = containerRect.height;
+      const base = getBaseScale();
+      const dw = naturalSize.w * base * zoom;
+      const dh = naturalSize.h * base * zoom;
 
-      // Calculate the scale factor from container to output
-      const scaleX = outputWidth / visibleWidth;
-      const scaleY = finalOutputHeight / visibleHeight;
+      // Image top-left in container coords (center + offset)
+      const imgLeft = (cw - dw) / 2 + position.x;
+      const imgTop = (ch - dh) / 2 + position.y;
 
-      // Calculate the image display dimensions in container
-      const displayWidth = imageDimensions.width * zoom;
-      const displayHeight = imageDimensions.height * zoom;
+      // Scale from container to output canvas
+      const sx = outputWidth / cw;
+      const sy = finalOutputHeight / ch;
 
-      // Calculate the position of the visible area relative to the image
-      const centerX = visibleWidth / 2;
-      const centerY = visibleHeight / 2;
-      
-      // Image center position in container
-      const imgCenterX = centerX + position.x;
-      const imgCenterY = centerY + position.y;
-
-      // Top-left of image in container coordinates
-      const imgLeft = imgCenterX - displayWidth / 2;
-      const imgTop = imgCenterY - displayHeight / 2;
-
-      // Source coordinates (what part of the original image to draw)
-      const sx = Math.max(0, -imgLeft / zoom);
-      const sy = Math.max(0, -imgTop / zoom);
-      
-      // Destination position in canvas
-      const dx = Math.max(0, imgLeft) * scaleX;
-      const dy = Math.max(0, imgTop) * scaleY;
-
-      // Clear canvas with transparent or default background
-      ctx.fillStyle = 'transparent';
+      ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, outputWidth, finalOutputHeight);
 
-      // Draw the image
       ctx.drawImage(
         img,
-        0, 0, imageDimensions.width, imageDimensions.height,
-        (position.x + (visibleWidth - displayWidth) / 2) * scaleX,
-        (position.y + (visibleHeight - displayHeight) / 2) * scaleY,
-        displayWidth * scaleX,
-        displayHeight * scaleY
+        0, 0, naturalSize.w, naturalSize.h,
+        imgLeft * sx,
+        imgTop * sy,
+        dw * sx,
+        dh * sy,
       );
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      onSave(dataUrl);
+      onSave(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = imageSrc;
   };
+
+  const display = getDisplaySize();
 
   return (
     <motion.div
@@ -184,73 +243,55 @@ export const ImageCropper = ({
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border/30">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onCancel}
-          className="text-muted-foreground"
-        >
+        <Button variant="ghost" size="icon" onClick={onCancel} className="text-muted-foreground">
           <X className="w-5 h-5" />
         </Button>
         <h2 className="font-semibold text-foreground">Ajustar imagem</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSave}
-          className="text-primary"
-        >
+        <Button variant="ghost" size="icon" onClick={handleSave} className="text-primary">
           <Check className="w-5 h-5" />
         </Button>
       </div>
 
       {/* Crop Area */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden bg-black/30">
         <div
           ref={containerRef}
           className={cn(
-            "relative overflow-hidden bg-muted/50 border-2 border-primary/50",
-            circular ? "rounded-full" : "rounded-xl"
+            "relative overflow-hidden bg-black",
+            circular ? "rounded-full" : "rounded-xl",
+            "border-2 border-white/20"
           )}
           style={{
             width: circular ? 280 : '100%',
             maxWidth: circular ? 280 : 400,
             aspectRatio: circular ? 1 : aspectRatio,
+            cursor: isDragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
           }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
         >
           {imageLoaded && (
             <img
-              ref={imageRef}
               src={imageSrc}
               alt="Crop preview"
               className="absolute pointer-events-none select-none"
               style={{
-                width: imageDimensions.width * zoom,
-                height: imageDimensions.height * zoom,
+                width: display.w,
+                height: display.h,
                 left: '50%',
                 top: '50%',
                 transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px))`,
-                cursor: isDragging ? 'grabbing' : 'grab',
               }}
               draggable={false}
             />
           )}
-          
-          {/* Drag hint overlay */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="glass-card px-3 py-1.5 rounded-full opacity-50">
-              <div className="flex items-center gap-2 text-xs text-foreground">
-                <Move className="w-3 h-3" />
-                <span>Arraste para ajustar</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -269,8 +310,8 @@ export const ImageCropper = ({
             <ZoomOut className="w-4 h-4 text-muted-foreground" />
             <Slider
               value={[zoom]}
-              min={0.5}
-              max={3}
+              min={1}
+              max={5}
               step={0.01}
               onValueChange={handleZoomChange}
               className="flex-1"
@@ -281,18 +322,11 @@ export const ImageCropper = ({
 
         {/* Action buttons */}
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={handleReset}
-            className="flex-1"
-          >
+          <Button variant="outline" onClick={handleReset} className="flex-1">
             <RotateCcw className="w-4 h-4 mr-2" />
             Resetar
           </Button>
-          <Button
-            onClick={handleSave}
-            className="flex-1 gradient-primary text-primary-foreground"
-          >
+          <Button onClick={handleSave} className="flex-1 gradient-primary text-primary-foreground">
             <Check className="w-4 h-4 mr-2" />
             Aplicar
           </Button>

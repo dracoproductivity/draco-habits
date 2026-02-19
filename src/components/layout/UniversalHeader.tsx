@@ -230,7 +230,7 @@ export const UniversalHeader = () => {
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
+                  className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
                 >
                   {user?.photo ? (
                     <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
@@ -291,7 +291,7 @@ export const UniversalHeader = () => {
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
+                  className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-primary/30"
                 >
                   {user?.photo ? (
                     <img src={user.photo} alt={user.firstName} className="w-full h-full object-cover" />
