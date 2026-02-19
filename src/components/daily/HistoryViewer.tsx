@@ -171,7 +171,7 @@ export const HistoryViewer = ({ displayMode }: HistoryViewerProps) => {
             data.push({ label, progress });
         }
 
-        return data;
+        return data.reverse();
     }, [filter, page, habits, goals, habitChecks, earliestDate, getDailyProgress]);
 
     const hasMorePages = historyData.length === pageSize;
