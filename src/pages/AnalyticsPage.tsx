@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Moon, Smartphone, Plus, Edit3, Target } from 'lucide-react';
+import { Moon, Smartphone, Plus, Edit3, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addWeeks, subWeeks, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   XAxis,
@@ -31,11 +31,13 @@ export const AnalyticsPage = () => {
 
   const [sleepTimeRange, setSleepTimeRange] = useState<TimeRange>('weekly');
   const [phoneTimeRange, setPhoneTimeRange] = useState<TimeRange>('weekly');
-  
+  const [sleepOffset, setSleepOffset] = useState(0);
+  const [phoneOffset, setPhoneOffset] = useState(0);
+
   // Health log modal state
   const [showSleepModal, setShowSleepModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  
+
   // Check if today has logs
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todayLog = dailyLogs.find(l => l.date === todayStr);
@@ -45,23 +47,34 @@ export const AnalyticsPage = () => {
   const minSleepHours = settings.minSleepHours || 7;
   const maxPhoneHours = settings.maxPhoneHours || 2;
 
-  const getDateRange = (range: TimeRange) => {
+  const getDateRange = (range: TimeRange, offset: number) => {
     const today = new Date();
     if (range === 'weekly') {
+      const base = offset === 0 ? today : (offset > 0 ? addWeeks(today, offset) : subWeeks(today, Math.abs(offset)));
       return {
-        start: startOfWeek(today, { weekStartsOn: 1 }),
-        end: endOfWeek(today, { weekStartsOn: 1 }),
+        start: startOfWeek(base, { weekStartsOn: 1 }),
+        end: endOfWeek(base, { weekStartsOn: 1 }),
       };
     } else {
+      const base = offset === 0 ? today : (offset > 0 ? addMonths(today, offset) : subMonths(today, Math.abs(offset)));
       return {
-        start: startOfMonth(today),
-        end: endOfMonth(today),
+        start: startOfMonth(base),
+        end: endOfMonth(base),
       };
     }
   };
 
+  const getPeriodLabel = (range: TimeRange, offset: number) => {
+    const { start, end } = getDateRange(range, offset);
+    if (range === 'weekly') {
+      return `${format(start, 'd MMM', { locale: ptBR })} - ${format(end, 'd MMM', { locale: ptBR })}`;
+    } else {
+      return format(start, 'MMMM yyyy', { locale: ptBR });
+    }
+  };
+
   const getSleepData = useMemo(() => {
-    const { start, end } = getDateRange(sleepTimeRange);
+    const { start, end } = getDateRange(sleepTimeRange, sleepOffset);
     const days = eachDayOfInterval({ start, end });
 
     return days.map((day) => {
@@ -74,10 +87,10 @@ export const AnalyticsPage = () => {
         status: log ? (log.sleepHours < minSleepHours ? 'bad' : log.sleepHours === minSleepHours ? 'warning' : 'good') : null,
       };
     });
-  }, [dailyLogs, sleepTimeRange, minSleepHours]);
+  }, [dailyLogs, sleepTimeRange, sleepOffset, minSleepHours]);
 
   const getPhoneData = useMemo(() => {
-    const { start, end } = getDateRange(phoneTimeRange);
+    const { start, end } = getDateRange(phoneTimeRange, phoneOffset);
     const days = eachDayOfInterval({ start, end });
 
     return days.map((day) => {
@@ -90,7 +103,7 @@ export const AnalyticsPage = () => {
         status: log ? (log.phoneUsageHours > maxPhoneHours ? 'bad' : log.phoneUsageHours === maxPhoneHours ? 'warning' : 'good') : null,
       };
     });
-  }, [dailyLogs, phoneTimeRange, maxPhoneHours]);
+  }, [dailyLogs, phoneTimeRange, phoneOffset, maxPhoneHours]);
 
   const SleepTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -136,26 +149,42 @@ export const AnalyticsPage = () => {
               </div>
               <div className="flex gap-1">
                 <button
-                  onClick={() => setSleepTimeRange('weekly')}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    sleepTimeRange === 'weekly'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  onClick={() => { setSleepTimeRange('weekly'); setSleepOffset(0); }}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${sleepTimeRange === 'weekly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                    }`}
                 >
                   Semana
                 </button>
                 <button
-                  onClick={() => setSleepTimeRange('monthly')}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    sleepTimeRange === 'monthly'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  onClick={() => { setSleepTimeRange('monthly'); setSleepOffset(0); }}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${sleepTimeRange === 'monthly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                    }`}
                 >
                   Mês
                 </button>
               </div>
+            </div>
+
+            {/* Period Navigation */}
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => setSleepOffset(o => o - 1)} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{getPeriodLabel(sleepTimeRange, sleepOffset)}</span>
+                {sleepOffset !== 0 && (
+                  <button onClick={() => setSleepOffset(0)} className="px-2 py-0.5 text-[10px] text-primary bg-primary/10 rounded font-medium">
+                    Atual
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setSleepOffset(o => o + 1)} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Register/Edit Button */}
@@ -254,26 +283,42 @@ export const AnalyticsPage = () => {
               </div>
               <div className="flex gap-1">
                 <button
-                  onClick={() => setPhoneTimeRange('weekly')}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    phoneTimeRange === 'weekly'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  onClick={() => { setPhoneTimeRange('weekly'); setPhoneOffset(0); }}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${phoneTimeRange === 'weekly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                    }`}
                 >
                   Semana
                 </button>
                 <button
-                  onClick={() => setPhoneTimeRange('monthly')}
-                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
-                    phoneTimeRange === 'monthly'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                  }`}
+                  onClick={() => { setPhoneTimeRange('monthly'); setPhoneOffset(0); }}
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${phoneTimeRange === 'monthly'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                    }`}
                 >
                   Mês
                 </button>
               </div>
+            </div>
+
+            {/* Period Navigation */}
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => setPhoneOffset(o => o - 1)} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{getPeriodLabel(phoneTimeRange, phoneOffset)}</span>
+                {phoneOffset !== 0 && (
+                  <button onClick={() => setPhoneOffset(0)} className="px-2 py-0.5 text-[10px] text-primary bg-primary/10 rounded font-medium">
+                    Atual
+                  </button>
+                )}
+              </div>
+              <button onClick={() => setPhoneOffset(o => o + 1)} className="p-1 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/50 transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Register/Edit Button */}
@@ -376,10 +421,10 @@ export const AnalyticsPage = () => {
             <CategoryRadarChart />
           </div>
         </div>
-      </div>
+      </div >
 
       {/* Health Log Modals */}
-      <HealthLogModal
+      < HealthLogModal
         isOpen={showSleepModal}
         onClose={() => setShowSleepModal(false)}
         type="sleep"
@@ -389,6 +434,6 @@ export const AnalyticsPage = () => {
         onClose={() => setShowPhoneModal(false)}
         type="phone"
       />
-    </motion.div>
+    </motion.div >
   );
 };

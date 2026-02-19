@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil, Archive } from 'lucide-react';
+import { Filter, X, Trash2, ChevronDown, Link2, Plus, Calendar, Repeat, Target, Check, Bell, Lightbulb, Pencil, Archive, Palette } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { GoalSquareCard } from '@/components/goals/GoalSquareCard';
 import { HabitSquareCard } from '@/components/goals/HabitSquareCard';
@@ -85,28 +85,28 @@ const generateWeekOptions = (includeNextYear = false) => {
   const currentWeek = Math.ceil(
     (now.getTime() - new Date(currentYear, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
-  
+
   // Current year weeks (from current week onwards)
   const yearStart = startOfYear(new Date(currentYear, 0, 1));
   for (let i = currentWeek; i <= 52; i++) {
     const weekStart = startOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
     const weekEnd = endOfWeek(addWeeks(yearStart, i - 1), { weekStartsOn: 1 });
-    
+
     const startDay = format(weekStart, 'd', { locale: ptBR });
     const endDay = format(weekEnd, 'd', { locale: ptBR });
     const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
     const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
-    
-    const dateRange = startMonth === endMonth 
+
+    const dateRange = startMonth === endMonth
       ? `${startDay}-${endDay} de ${startMonth}`
       : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
-    
-    options.push({ 
-      value: `Semana ${i} - ${currentYear}`, 
-      label: `Semana ${i} - ${dateRange} (${currentYear})` 
+
+    options.push({
+      value: `Semana ${i} - ${currentYear}`,
+      label: `Semana ${i} - ${dateRange} (${currentYear})`
     });
   }
-  
+
   // Next year weeks (all 52)
   if (includeNextYear) {
     const nextYear = currentYear + 1;
@@ -114,23 +114,23 @@ const generateWeekOptions = (includeNextYear = false) => {
     for (let i = 1; i <= 52; i++) {
       const weekStart = startOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
       const weekEnd = endOfWeek(addWeeks(nextYearStart, i - 1), { weekStartsOn: 1 });
-      
+
       const startDay = format(weekStart, 'd', { locale: ptBR });
       const endDay = format(weekEnd, 'd', { locale: ptBR });
       const startMonth = format(weekStart, 'MMMM', { locale: ptBR });
       const endMonth = format(weekEnd, 'MMMM', { locale: ptBR });
-      
-      const dateRange = startMonth === endMonth 
+
+      const dateRange = startMonth === endMonth
         ? `${startDay}-${endDay} de ${startMonth}`
         : `${startDay} de ${startMonth} - ${endDay} de ${endMonth}`;
-      
-      options.push({ 
-        value: `Semana ${i} - ${nextYear}`, 
-        label: `Semana ${i} - ${dateRange} (${nextYear})` 
+
+      options.push({
+        value: `Semana ${i} - ${nextYear}`,
+        label: `Semana ${i} - ${dateRange} (${nextYear})`
       });
     }
   }
-  
+
   return options;
 };
 
@@ -142,14 +142,14 @@ const generateMonthOptions = (includeNextYear = false) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
-  
+
   const options: { value: string; label: string }[] = [];
-  
+
   // Current year months (from current month onwards)
   for (let i = currentMonth; i < 12; i++) {
     options.push({ value: `${months[i]} ${currentYear}`, label: `${months[i]} ${currentYear}` });
   }
-  
+
   // Next year months
   if (includeNextYear) {
     const nextYear = currentYear + 1;
@@ -157,7 +157,7 @@ const generateMonthOptions = (includeNextYear = false) => {
       options.push({ value: `${m} ${nextYear}`, label: `${m} ${nextYear}` });
     });
   }
-  
+
   return options;
 };
 
@@ -165,29 +165,29 @@ const generateQuarterOptions = (includeNextYear = false) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
-  
+
   const options: { value: string; label: string }[] = [];
-  
+
   // Current year quarters (from current quarter onwards)
   const quarterLabels = ['Jan-Mar', 'Abr-Jun', 'Jul-Set', 'Out-Dez'];
   for (let q = currentQuarter; q <= 4; q++) {
-    options.push({ 
-      value: `${q}º Tri - ${currentYear}`, 
-      label: `${q}º Tri - ${currentYear} (${quarterLabels[q - 1]})` 
+    options.push({
+      value: `${q}º Tri - ${currentYear}`,
+      label: `${q}º Tri - ${currentYear} (${quarterLabels[q - 1]})`
     });
   }
-  
+
   // Next year quarters
   if (includeNextYear) {
     const nextYear = currentYear + 1;
     for (let q = 1; q <= 4; q++) {
-      options.push({ 
-        value: `${q}º Tri - ${nextYear}`, 
-        label: `${q}º Tri - ${nextYear} (${quarterLabels[q - 1]})` 
+      options.push({
+        value: `${q}º Tri - ${nextYear}`,
+        label: `${q}º Tri - ${nextYear} (${quarterLabels[q - 1]})`
       });
     }
   }
-  
+
   return options;
 };
 
@@ -195,31 +195,31 @@ const generateSemesterOptions = (includeNextYear = false) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentSemester = now.getMonth() < 6 ? 1 : 2;
-  
+
   const options: { value: string; label: string }[] = [];
-  
+
   // Current year semesters (from current semester onwards)
   for (let s = currentSemester; s <= 2; s++) {
     const label = s === 1 ? 'Jan-Jun' : 'Jul-Dez';
-    options.push({ 
-      value: `${s}º Sem - ${currentYear}`, 
-      label: `${s}º Sem - ${currentYear} (${label})` 
+    options.push({
+      value: `${s}º Sem - ${currentYear}`,
+      label: `${s}º Sem - ${currentYear} (${label})`
     });
   }
-  
+
   // Next year semesters
   if (includeNextYear) {
     const nextYear = currentYear + 1;
-    options.push({ 
-      value: `1º Sem - ${nextYear}`, 
-      label: `1º Sem - ${nextYear} (Jan-Jun)` 
+    options.push({
+      value: `1º Sem - ${nextYear}`,
+      label: `1º Sem - ${nextYear} (Jan-Jun)`
     });
-    options.push({ 
-      value: `2º Sem - ${nextYear}`, 
-      label: `2º Sem - ${nextYear} (Jul-Dez)` 
+    options.push({
+      value: `2º Sem - ${nextYear}`,
+      label: `2º Sem - ${nextYear} (Jul-Dez)`
     });
   }
-  
+
   return options;
 };
 
@@ -243,12 +243,12 @@ const getPeriodOptions = (type: GoalType) => {
 
 export const GoalsPage = () => {
   const { goals, addGoal, updateGoal, removeGoal, settings, updateSettings, habits, habitChecks, customCategories, addCustomCategory, removeHabit, toggleHabitCheck, getHabitCheckForDate, updateHabit } = useAppStore();
-  
+
   // Per-page progress display mode
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
     settings.pageProgressDisplayModes?.goals || settings.progressDisplayMode
   );
-  
+
   const toggleDisplayMode = () => {
     const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
     setLocalDisplayMode(newMode);
@@ -261,7 +261,7 @@ export const GoalsPage = () => {
       }
     });
   };
-  
+
   // Goals list state
   const [filter, setFilter] = useState<FilterType>('all');
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -295,14 +295,14 @@ export const GoalsPage = () => {
   const [newCategoryEmoji, setNewCategoryEmoji] = useState('🎯');
   const [newCategoryXP, setNewCategoryXP] = useState<number>(20);
   const [newCategoryHasEmoji, setNewCategoryHasEmoji] = useState(true);
-  
+
   // Edit category state
   const [editingCategory, setEditingCategory] = useState<CustomCategory | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategoryEmoji, setEditCategoryEmoji] = useState('');
   const [editCategoryHasEmoji, setEditCategoryHasEmoji] = useState(true);
   const [editCategoryXP, setEditCategoryXP] = useState<number>(20);
-  
+
   // Weekly goal creation from parent
   const [showWeeklyGoalPrompt, setShowWeeklyGoalPrompt] = useState(false);
   const [weeklyGoalName, setWeeklyGoalName] = useState('');
@@ -310,7 +310,7 @@ export const GoalsPage = () => {
   const [weeklyGoalRepeat, setWeeklyGoalRepeat] = useState(true);
   const [weeklyGoalPeriod, setWeeklyGoalPeriod] = useState('');
   const [parentGoalForWeekly, setParentGoalForWeekly] = useState<Goal | null>(null);
-  
+
   // Check if user has no goals/habits (first time)
   const isFirstTimeUser = goals.length === 0 && habits.length === 0;
 
@@ -319,9 +319,9 @@ export const GoalsPage = () => {
   const [showMigrateHabitsModal, setShowMigrateHabitsModal] = useState(false);
   const [migrateToGoalId, setMigrateToGoalId] = useState<string | null>(null);
   const [showArchiveGoalConfirmation, setShowArchiveGoalConfirmation] = useState(false);
-  
+
   // Get linked habits for selected goal
-  const linkedHabitsToSelectedGoal = selectedGoal 
+  const linkedHabitsToSelectedGoal = selectedGoal
     ? habits.filter(h => h.goalId === selectedGoal.id && !h.archived)
     : [];
 
@@ -452,7 +452,7 @@ export const GoalsPage = () => {
 
   const handleCreateGoal = () => {
     if (!newGoalName.trim() || !newGoalType || !newGoalPeriod) return;
-    
+
     // Check goal limit per year
     const currentYear = new Date().getFullYear();
     const goalsThisYear = goals.filter(g => !g.archived && g.period?.includes(currentYear.toString())).length;
@@ -464,7 +464,7 @@ export const GoalsPage = () => {
       });
       return;
     }
-    
+
     addGoal({
       name: newGoalName.trim(),
       type: newGoalType,
@@ -514,7 +514,7 @@ export const GoalsPage = () => {
 
     setGoalCreationData(prev => ({
       ...prev,
-      [goalCreationStep]: { 
+      [goalCreationStep]: {
         ...prev[goalCreationStep],
         name: newGoalName.trim()
       }
@@ -537,7 +537,7 @@ export const GoalsPage = () => {
     const yearlyPeriods = goalCreationData.yearly.periods;
     const quarterlyPeriods = goalCreationData.quarterly.periods;
     const monthlyPeriods = goalCreationData.monthly.periods;
-    
+
     switch (type) {
       case 'yearly':
         return getPeriodOptions('yearly');
@@ -568,7 +568,7 @@ export const GoalsPage = () => {
       const newPeriods = currentPeriods.includes(period)
         ? currentPeriods.filter(p => p !== period)
         : [...currentPeriods, period];
-      
+
       return {
         ...prev,
         [type]: { ...prev[type], periods: newPeriods }
@@ -594,7 +594,7 @@ export const GoalsPage = () => {
 
     setGoalCreationData(prev => ({
       ...prev,
-      [goalCreationStep]: { 
+      [goalCreationStep]: {
         ...prev[goalCreationStep],
         name: newGoalName.trim()
       }
@@ -613,14 +613,14 @@ export const GoalsPage = () => {
 
     const finalData = {
       ...goalCreationData,
-      [goalCreationStep]: { 
-        name: newGoalName.trim(), 
-        periods: goalCreationData[goalCreationStep].periods 
+      [goalCreationStep]: {
+        name: newGoalName.trim(),
+        periods: goalCreationData[goalCreationStep].periods
       }
     };
 
     const steps: GoalType[] = ['yearly', 'semestral', 'quarterly', 'monthly'];
-    
+
     steps.forEach((step) => {
       if (finalData[step].name && finalData[step].periods.length > 0) {
         finalData[step].periods.forEach((period) => {
@@ -642,7 +642,7 @@ export const GoalsPage = () => {
 
   const handleCreateWeeklyGoal = () => {
     if (!weeklyGoalName.trim() || !parentGoalForWeekly) return;
-    
+
     let parentId: string | undefined;
     if (parentGoalForWeekly.type === 'monthly') {
       parentId = parentGoalForWeekly.id;
@@ -652,7 +652,7 @@ export const GoalsPage = () => {
         parentId = monthlyGoals[0].id;
       }
     }
-    
+
     addGoal({
       name: weeklyGoalName.trim(),
       type: 'weekly',
@@ -662,7 +662,7 @@ export const GoalsPage = () => {
       weekDays: weeklyGoalDays,
       repeatWeekly: weeklyGoalRepeat,
     });
-    
+
     setShowWeeklyGoalPrompt(false);
     setParentGoalForWeekly(null);
   };
@@ -723,218 +723,899 @@ export const GoalsPage = () => {
           <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
         </header>
 
-      {/* Filters */}
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
-        <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        {filterOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setFilter(option.value)}
-            className={cn(
-              'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
-              filter === option.value
-                ? 'gradient-fire text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:text-foreground'
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Goals Grid */}
-      <div className="mb-6">
-        {filteredGoals.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                <Lightbulb className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-1">
-                  {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Clique no botão abaixo para criar seu primeiro objetivo 
-                  {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-        
-        <div className={cn(
-          "grid gap-3",
-          isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
-        )}>
-          {filteredGoals.map((goal, index) => (
-            <GoalSquareCard
-              key={goal.id}
-              goal={goal}
-              index={index}
-              onClick={() => setSelectedGoal(goal)}
-            />
+        {/* Filters */}
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto hide-scrollbar pb-2">
+          <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          {filterOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setFilter(option.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-all',
+                filter === option.value
+                  ? 'gradient-fire text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {option.label}
+            </button>
           ))}
         </div>
-        
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleAddGoalClick}
-          className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span className="font-medium">
-            Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
-          </span>
-        </motion.button>
-      </div>
 
-      {/* Habits Section - Separated below goals */}
-      <div>
-        <h2 className="text-xl font-bold text-foreground mb-3">Hábitos</h2>
-        
-        {habits.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
-                <Lightbulb className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos. 
-                  Cada hábito pode ser vinculado a objetivos de diferentes períodos.
-                </p>
-                <button
-                  onClick={() => {
-                    const { setActiveTab } = useAppStore.getState();
-                    setActiveTab('home');
-                  }}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Ir para o Diário →
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-          <>
-            <div className={cn(
-              "grid gap-3",
-              isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
-            )}>
-              {habits.map((habit, index) => (
-                <HabitSquareCard
-                  key={habit.id}
-                  habit={habit}
-                  index={index}
-                  onClick={() => setSelectedHabit(habit)}
-                />
-              ))}
-            </div>
-            
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setShowHabitCreationForm(true)}
-              className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="font-medium">Adicionar Hábito</span>
-            </motion.button>
-          </>
-        )}
-      </div>
-
-
-      {/* Type Selector Modal */}
-      <AnimatePresence>
-        {showTypeSelector && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={() => setShowTypeSelector(false)}
-          >
+        {/* Goals Grid */}
+        <div className="mb-6">
+          {filteredGoals.length === 0 && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl mb-3"
             >
-              <h3 className="text-lg font-bold mb-4 text-center">Escolha o tipo de objetivo</h3>
-              <div className="space-y-2">
-                {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => openNewGoalModal(type)}
-                    className={cn(
-                      'w-full p-3 rounded-xl text-left transition-colors flex items-center gap-3',
-                      'hover:bg-muted/50 border border-border/50'
-                    )}
-                  >
-                    <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[type])}>
-                      {typeLabels[type]}
-                    </span>
-                  </button>
-                ))}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">
+                    {filter !== 'all' ? `Nenhum objetivo ${typeLabels[filter as GoalType].toLowerCase()}!` : 'Nenhum objetivo ainda!'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Clique no botão abaixo para criar seu primeiro objetivo
+                    {filter !== 'all' && ` ${typeLabels[filter as GoalType].toLowerCase()}`}.
+                  </p>
+                </div>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* New Goal Modal */}
-      <AnimatePresence>
-        {showNewGoalModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={resetGoalCreation}
+          <div className={cn(
+            "grid gap-3",
+            isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
+          )}>
+            {filteredGoals.map((goal, index) => (
+              <GoalSquareCard
+                key={goal.id}
+                goal={goal}
+                index={index}
+                onClick={() => setSelectedGoal(goal)}
+              />
+            ))}
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleAddGoalClick}
+            className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
           >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">
+              Adicionar Objetivo{filter !== 'all' ? ` ${typeLabels[filter as GoalType]}` : ''}
+            </span>
+          </motion.button>
+        </div>
+
+        {/* Habits Section - Separated below goals */}
+        <div>
+          <h2 className="text-xl font-bold text-foreground mb-3">Hábitos</h2>
+
+          {habits.length === 0 ? (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-primary/10 border border-primary/30 rounded-2xl"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Novo Objetivo</h3>
-                <button onClick={resetGoalCreation} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-fire flex items-center justify-center flex-shrink-0">
+                  <Lightbulb className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-foreground mb-1">Nenhum hábito ainda!</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Vá até a aba <strong>Diário</strong> para criar seus primeiros hábitos.
+                    Cada hábito pode ser vinculado a objetivos de diferentes períodos.
+                  </p>
+                  <button
+                    onClick={() => {
+                      const { setActiveTab } = useAppStore.getState();
+                      setActiveTab('home');
+                    }}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Ir para o Diário →
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              <div className={cn(
+                "grid gap-3",
+                isDesktop ? "grid-cols-5" : isTablet ? "grid-cols-4" : "grid-cols-2"
+              )}>
+                {habits.map((habit, index) => (
+                  <HabitSquareCard
+                    key={habit.id}
+                    habit={habit}
+                    index={index}
+                    onClick={() => setSelectedHabit(habit)}
+                  />
+                ))}
               </div>
 
-              {/* Category Step */}
-              {showCategoryStep ? (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowHabitCreationForm(true)}
+                className="w-full mt-4 py-4 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="font-medium">Adicionar Hábito</span>
+              </motion.button>
+            </>
+          )}
+        </div>
+
+
+        {/* Type Selector Modal */}
+        <AnimatePresence>
+          {showTypeSelector && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={() => setShowTypeSelector(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+              >
+                <h3 className="text-lg font-bold mb-4 text-center">Escolha o tipo de objetivo</h3>
+                <div className="space-y-2">
+                  {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => openNewGoalModal(type)}
+                      className={cn(
+                        'w-full p-3 rounded-xl text-left transition-colors flex items-center gap-3',
+                        'hover:bg-muted/50 border border-border/50'
+                      )}
+                    >
+                      <span className={cn('px-3 py-1 rounded-full text-xs font-semibold', typeColors[type])}>
+                        {typeLabels[type]}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* New Goal Modal */}
+        <AnimatePresence>
+          {showNewGoalModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={resetGoalCreation}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">Novo Objetivo</h3>
+                  <button onClick={resetGoalCreation} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Category Step */}
+                {showCategoryStep ? (
+                  <div className="space-y-4">
+                    <h5 className="text-sm font-medium text-foreground">Categoria e XP</h5>
+
+                    {/* Category selection */}
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-2 block">Categoria (opcional)</label>
+                      <div className="flex flex-wrap gap-2">
+                        {DEFAULT_CATEGORIES.map((cat) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => setNewGoalCategory(cat.id)}
+                            className={cn(
+                              'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                              newGoalCategory === cat.id
+                                ? 'gradient-fire text-primary-foreground'
+                                : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                            )}
+                          >
+                            <span>{cat.emoji}</span>
+                            <span>{cat.name}</span>
+                          </button>
+                        ))}
+                        {customCategories.map((cat) => (
+                          <div key={cat.id} className="relative group">
+                            <button
+                              onClick={() => setNewGoalCategory(cat.name as GoalCategory)}
+                              className={cn(
+                                'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
+                                newGoalCategory === cat.name
+                                  ? 'gradient-fire text-primary-foreground'
+                                  : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
+                              )}
+                            >
+                              {cat.emoji && <span>{cat.emoji}</span>}
+                              <span>{cat.name}</span>
+                            </button>
+                            <button
+                              onClick={() => openEditCategoryModal(cat)}
+                              className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-1 bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => setShowNewCategoryModal(true)}
+                          className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border hover:bg-muted/50 transition-all flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Nova
+                        </button>
+                      </div>
+                    </div>
+
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowCategoryStep(false)}
+                        className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        onClick={creationMode === 'single' ? handleCreateGoal : handleFinalizeHierarchicalCreation}
+                        className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
+                      >
+                        Criar objetivo
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mode selection */}
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={() => setCreationMode('single')}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                          creationMode === 'single'
+                            ? 'gradient-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                      >
+                        Período único
+                      </button>
+                      <button
+                        onClick={() => setCreationMode('hierarchical')}
+                        className={cn(
+                          'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
+                          creationMode === 'hierarchical'
+                            ? 'gradient-primary text-primary-foreground'
+                            : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
+                      >
+                        Hierárquico
+                      </button>
+                    </div>
+
+                    {creationMode === 'single' ? (
+                      <div className="space-y-4">
+                        {/* Emoji and Name */}
+                        <div className="flex gap-2">
+                          <EmojiPickerButton
+                            value={newGoalEmoji}
+                            onChange={setNewGoalEmoji}
+                          />
+                          <input
+                            type="text"
+                            value={newGoalName}
+                            onChange={(e) => setNewGoalName(e.target.value)}
+                            placeholder="Nome do objetivo"
+                            className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Period type selection */}
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-2 block">Tipo de período</label>
+                          <div className="grid grid-cols-4 gap-1">
+                            {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
+                              <button
+                                key={type}
+                                onClick={() => {
+                                  setNewGoalType(type);
+                                  setNewGoalPeriod('');
+                                }}
+                                className={cn(
+                                  'py-2 px-2 rounded-lg text-xs font-medium transition-all',
+                                  newGoalType === type
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                {getStepLabel(type)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Period selection */}
+                        {newGoalType && (
+                          <div>
+                            <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+                            <select
+                              value={newGoalPeriod}
+                              onChange={(e) => setNewGoalPeriod(e.target.value)}
+                              className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                            >
+                              <option value="">Selecione um período</option>
+                              {getPeriodOptions(newGoalType).map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {/* Color picker (optional) */}
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-2 block">Cor (opcional)</label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => setNewGoalColor('')}
+                              className={cn(
+                                'w-7 h-7 rounded-full border-2 flex items-center justify-center',
+                                !newGoalColor ? 'border-primary' : 'border-border/50'
+                              )}
+                            >
+                              <X className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            {['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#f43f5e'].map(c => (
+                              <button
+                                key={c}
+                                onClick={() => setNewGoalColor(c)}
+                                className={cn(
+                                  'w-7 h-7 rounded-full border-2 transition-all',
+                                  newGoalColor === c ? 'border-foreground scale-110' : 'border-transparent'
+                                )}
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                            <input
+                              type="color"
+                              value={newGoalColor || '#3b82f6'}
+                              onChange={(e) => setNewGoalColor(e.target.value)}
+                              className="w-7 h-7 rounded-full cursor-pointer border-0 p-0"
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={handleSingleGoalProceedToCategory}
+                          disabled={!newGoalName.trim() || !newGoalType || !newGoalPeriod}
+                          className="w-full py-3 gradient-primary text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Próximo
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Progress indicator */}
+                        <div className="flex gap-1 mb-2">
+                          {(['yearly', 'semestral', 'quarterly', 'monthly'] as GoalType[]).map((step, i) => (
+                            <div
+                              key={step}
+                              className={cn(
+                                'flex-1 h-1 rounded-full transition-colors',
+                                i <= ['yearly', 'semestral', 'quarterly', 'monthly'].indexOf(goalCreationStep)
+                                  ? 'bg-primary'
+                                  : 'bg-muted'
+                              )}
+                            />
+                          ))}
+                        </div>
+
+                        <h5 className="text-sm font-medium text-foreground">
+                          Objetivo {getStepLabel(goalCreationStep)}
+                        </h5>
+
+                        <div className="flex gap-2">
+                          <EmojiPickerButton
+                            value={newGoalEmoji}
+                            onChange={setNewGoalEmoji}
+                          />
+                          <input
+                            type="text"
+                            placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
+                            value={newGoalName}
+                            onChange={(e) => setNewGoalName(e.target.value)}
+                            className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Period multi-selection */}
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Selecione os períodos (pode selecionar vários):
+                          </label>
+
+                          {/* Select All button */}
+                          <button
+                            onClick={() => {
+                              const allOptions = getFilteredOptions(goalCreationStep).map(o => o.value);
+                              const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
+                              setGoalCreationData(prev => ({
+                                ...prev,
+                                [goalCreationStep]: {
+                                  ...prev[goalCreationStep],
+                                  periods: allSelected ? [] : allOptions
+                                }
+                              }));
+                            }}
+                            className={cn(
+                              'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all mb-2 border-2 border-dashed',
+                              getFilteredOptions(goalCreationStep).every(o => goalCreationData[goalCreationStep].periods.includes(o.value))
+                                ? 'bg-primary/20 border-primary text-primary'
+                                : 'bg-muted/30 border-border/50 text-foreground hover:bg-muted/50'
+                            )}
+                          >
+                            ✓ Selecionar todos
+                          </button>
+
+                          {/* Removed weekly quick select options - weekly goals no longer supported */}
+
+                          <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded-xl bg-muted/20 border border-border/30">
+                            {getFilteredOptions(goalCreationStep).map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => togglePeriodSelection(goalCreationStep, option.value)}
+                                className={cn(
+                                  'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
+                                  goalCreationData[goalCreationStep].periods.includes(option.value)
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                                )}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {goalCreationData[goalCreationStep].periods.length} selecionado(s)
+                          </p>
+                        </div>
+
+                        {/* Navigation buttons */}
+                        <div className="flex gap-2">
+                          {getPrevStep(goalCreationStep) ? (
+                            <button
+                              onClick={() => {
+                                const prev = getPrevStep(goalCreationStep);
+                                if (prev) setGoalCreationStep(prev);
+                              }}
+                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                            >
+                              Voltar
+                            </button>
+                          ) : (
+                            <button
+                              onClick={resetGoalCreation}
+                              className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+
+                          <button
+                            onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleHierarchicalProceedToCategory}
+                            disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
+                            className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
+                          >
+                            Próximo
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Create Category Modal */}
+        <AnimatePresence>
+          {showNewCategoryModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={() => setShowNewCategoryModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">Nova Categoria</h3>
+                  <button onClick={() => setShowNewCategoryModal(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
                 <div className="space-y-4">
-                  <h5 className="text-sm font-medium text-foreground">Categoria e XP</h5>
-                  
-                  {/* Category selection */}
                   <div>
-                    <label className="text-xs text-muted-foreground mb-2 block">Categoria (opcional)</label>
+                    <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="Ex: Finanças"
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-muted-foreground">Emoji</label>
+                      <button
+                        onClick={() => setNewCategoryHasEmoji(!newCategoryHasEmoji)}
+                        className={cn(
+                          'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                          newCategoryHasEmoji
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-muted/30 text-muted-foreground'
+                        )}
+                      >
+                        {newCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
+                      </button>
+                    </div>
+                    {newCategoryHasEmoji && (
+                      <EmojiPickerButton
+                        value={newCategoryEmoji}
+                        onChange={setNewCategoryEmoji}
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+
+                  <button
+                    onClick={handleCreateCustomCategory}
+                    disabled={!newCategoryName.trim()}
+                    className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Criar Categoria
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Category Modal */}
+        <AnimatePresence>
+          {editingCategory && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={() => setEditingCategory(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">Editar Categoria</h3>
+                  <button onClick={() => setEditingCategory(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
+                    <input
+                      type="text"
+                      value={editCategoryName}
+                      onChange={(e) => setEditCategoryName(e.target.value)}
+                      placeholder="Ex: Finanças"
+                      className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm text-muted-foreground">Emoji</label>
+                      <button
+                        onClick={() => setEditCategoryHasEmoji(!editCategoryHasEmoji)}
+                        className={cn(
+                          'px-3 py-1 rounded-lg text-xs font-medium transition-all',
+                          editCategoryHasEmoji
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-muted/30 text-muted-foreground'
+                        )}
+                      >
+                        {editCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
+                      </button>
+                    </div>
+                    {editCategoryHasEmoji && (
+                      <EmojiPickerButton
+                        value={editCategoryEmoji}
+                        onChange={setEditCategoryEmoji}
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const { removeCustomCategory } = useAppStore.getState();
+                        removeCustomCategory(editingCategory.id);
+                        setEditingCategory(null);
+                      }}
+                      className="flex-1 py-3 bg-destructive/10 text-destructive rounded-xl font-semibold hover:bg-destructive/20 transition-colors"
+                    >
+                      Excluir
+                    </button>
+                    <button
+                      onClick={handleUpdateCategory}
+                      disabled={!editCategoryName.trim()}
+                      className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Habit Creation Modal */}
+        <AnimatePresence>
+          {showWeeklyGoalPrompt && parentGoalForWeekly && (
+            <HabitCreationForm
+              parentGoal={parentGoalForWeekly}
+              onClose={() => {
+                setShowWeeklyGoalPrompt(false);
+                setParentGoalForWeekly(null);
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Goal Detail Modal */}
+        <AnimatePresence>
+          {selectedGoal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={() => setSelectedGoal(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+              >
+                {/* Header with editable emoji & name */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2 flex-1">
+                    <EmojiPickerButton
+                      value={selectedGoal.emoji || ''}
+                      onChange={(newEmoji) => {
+                        updateGoal(selectedGoal.id, { emoji: newEmoji || undefined });
+                        setSelectedGoal({ ...selectedGoal, emoji: newEmoji || undefined });
+                      }}
+                      placeholder="🎯"
+                      className="w-10 h-10"
+                    />
+                    <input
+                      type="text"
+                      value={selectedGoal.name}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        updateGoal(selectedGoal.id, { name: newName });
+                        setSelectedGoal({ ...selectedGoal, name: newName });
+                      }}
+                      className="text-lg font-bold bg-transparent border-b border-border/30 focus:border-primary outline-none flex-1"
+                    />
+                  </div>
+                  <button onClick={() => setSelectedGoal(null)} className="text-muted-foreground hover:text-foreground ml-2">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Progress with X/N */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
+                    {(() => {
+                      const { completed, total } = calculateGoalXN(selectedGoal, habits, habitChecks);
+                      const percentage = total > 0 ? (completed / total) * 100 : 0;
+                      return (
+                        <>
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: 'var(--gradient-progress)' }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{ duration: 0.3 }}
+                              />
+                            </div>
+                            <span className="font-bold text-lg">{formatPercentage(percentage)}</span>
+                          </div>
+                          <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/30">
+                            <span className="text-2xl font-bold text-primary">{completed}</span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className="text-2xl font-bold text-foreground">{total}</span>
+                            <span className="text-sm text-muted-foreground ml-2">hábitos concluídos</span>
+                          </div>
+
+                          {/* Completion Status Display */}
+                          {selectedGoal.completionStatus && (
+                            <div className={cn(
+                              'mt-3 p-4 rounded-xl border-2 text-center',
+                              selectedGoal.completionStatus === 'completed'
+                                ? 'bg-success/10 border-success/30'
+                                : 'bg-destructive/10 border-destructive/30'
+                            )}>
+                              <div className={cn(
+                                'w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center',
+                                selectedGoal.completionStatus === 'completed'
+                                  ? 'bg-success/20'
+                                  : 'bg-destructive/20'
+                              )}>
+                                {selectedGoal.completionStatus === 'completed' ? (
+                                  <Check className="w-6 h-6 text-success" />
+                                ) : (
+                                  <X className="w-6 h-6 text-destructive" />
+                                )}
+                              </div>
+                              <p className={cn(
+                                'text-sm font-medium',
+                                selectedGoal.completionStatus === 'completed'
+                                  ? 'text-success'
+                                  : 'text-destructive'
+                              )}>
+                                {selectedGoal.completionStatus === 'completed'
+                                  ? 'Seu esforço foi recompensado, parabéns pela sua dedicação, você conseguiu alcançar seu objetivo!'
+                                  : 'Não foi dessa vez, mas você está evoluindo, e isso é o que importa! Parabéns pelo seu esforço!'}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Type */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
+                    {editingType !== null ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => handleTypeChangeRequest(type)}
+                              className={cn(
+                                'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
+                                selectedGoal.type === type ? typeColors[type] : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                              )}
+                            >
+                              {typeLabels[type]}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setEditingType(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}>
+                          {typeLabels[selectedGoal.type]}
+                        </span>
+                        <button
+                          onClick={() => setEditingType(selectedGoal.type)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                        >
+                          Trocar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Period */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Período</label>
+                    {editingPeriod !== null ? (
+                      <div className="space-y-2">
+                        <select
+                          value={selectedGoal.period}
+                          onChange={(e) => handlePeriodChange(e.target.value)}
+                          className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
+                        >
+                          {getPeriodOptions(selectedGoal.type).map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => setEditingPeriod(null)}
+                          className="text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm">
+                          {selectedGoal.period}
+                        </span>
+                        <button
+                          onClick={() => setEditingPeriod(selectedGoal.period)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
+                        >
+                          Trocar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
                     <div className="flex flex-wrap gap-2">
                       {DEFAULT_CATEGORIES.map((cat) => (
                         <button
                           key={cat.id}
-                          onClick={() => setNewGoalCategory(cat.id)}
+                          onClick={() => handleCategoryChange(cat.id)}
                           className={cn(
                             'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
-                            newGoalCategory === cat.id
+                            selectedGoal.category === cat.id
                               ? 'gradient-fire text-primary-foreground'
                               : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
                           )}
@@ -946,10 +1627,13 @@ export const GoalsPage = () => {
                       {customCategories.map((cat) => (
                         <div key={cat.id} className="relative group">
                           <button
-                            onClick={() => setNewGoalCategory(cat.name as GoalCategory)}
+                            onClick={() => {
+                              updateGoal(selectedGoal.id, { category: 'custom', customCategoryId: cat.id });
+                              setSelectedGoal({ ...selectedGoal, category: 'custom', customCategoryId: cat.id });
+                            }}
                             className={cn(
                               'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
-                              newGoalCategory === cat.name
+                              selectedGoal.category === 'custom' && selectedGoal.customCategoryId === cat.id
                                 ? 'gradient-fire text-primary-foreground'
                                 : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
                             )}
@@ -958,967 +1642,332 @@ export const GoalsPage = () => {
                             <span>{cat.name}</span>
                           </button>
                           <button
-                            onClick={() => openEditCategoryModal(cat)}
-                            className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-1 bg-muted rounded-full text-muted-foreground hover:text-foreground transition-all"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditCategoryModal(cat);
+                            }}
+                            className="absolute -top-1 -right-1 p-1 rounded-full bg-muted/80 border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Pencil className="w-3 h-3" />
+                            <Pencil className="w-2.5 h-2.5 text-muted-foreground" />
                           </button>
                         </div>
                       ))}
                       <button
                         onClick={() => setShowNewCategoryModal(true)}
-                        className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border hover:bg-muted/50 transition-all flex items-center gap-1"
+                        className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Nova
+                        <span>Criar</span>
                       </button>
                     </div>
                   </div>
 
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowCategoryStep(false)}
-                      className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
-                    >
-                      Voltar
-                    </button>
-                    <button
-                      onClick={creationMode === 'single' ? handleCreateGoal : handleFinalizeHierarchicalCreation}
-                      className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm"
-                    >
-                      Criar objetivo
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Mode selection */}
-                  <div className="flex gap-2 mb-4">
-                    <button
-                      onClick={() => setCreationMode('single')}
-                      className={cn(
-                        'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                        creationMode === 'single'
-                          ? 'gradient-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      )}
-                    >
-                      Período único
-                    </button>
-                    <button
-                      onClick={() => setCreationMode('hierarchical')}
-                      className={cn(
-                        'flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all',
-                        creationMode === 'hierarchical'
-                          ? 'gradient-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                      )}
-                    >
-                      Hierárquico
-                    </button>
-                  </div>
-
-              {creationMode === 'single' ? (
-                <div className="space-y-4">
-                  {/* Emoji and Name */}
-                  <div className="flex gap-2">
-                    <EmojiPickerButton
-                      value={newGoalEmoji}
-                      onChange={setNewGoalEmoji}
-                    />
-                    <input
-                      type="text"
-                      value={newGoalName}
-                      onChange={(e) => setNewGoalName(e.target.value)}
-                      placeholder="Nome do objetivo"
-                      className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  {/* Period type selection */}
+                  {/* Color Picker */}
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Tipo de período</label>
-                    <div className="grid grid-cols-4 gap-1">
-                      {(['monthly', 'quarterly', 'semestral', 'yearly'] as GoalType[]).map((type) => (
-                        <button
-                          key={type}
-                          onClick={() => {
-                            setNewGoalType(type);
-                            setNewGoalPeriod('');
-                          }}
-                          className={cn(
-                            'py-2 px-2 rounded-lg text-xs font-medium transition-all',
-                            newGoalType === type
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                          )}
-                        >
-                          {getStepLabel(type)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Period selection */}
-                  {newGoalType && (
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-2 block">Período</label>
-                      <select
-                        value={newGoalPeriod}
-                        onChange={(e) => setNewGoalPeriod(e.target.value)}
-                        className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                      >
-                        <option value="">Selecione um período</option>
-                        {getPeriodOptions(newGoalType).map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Color picker (optional) */}
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Cor (opcional)</label>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => setNewGoalColor('')}
-                        className={cn(
-                          'w-7 h-7 rounded-full border-2 flex items-center justify-center',
-                          !newGoalColor ? 'border-primary' : 'border-border/50'
-                        )}
-                      >
-                        <X className="w-3 h-3 text-muted-foreground" />
-                      </button>
-                      {['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899','#6b7280','#f43f5e'].map(c => (
-                        <button
-                          key={c}
-                          onClick={() => setNewGoalColor(c)}
-                          className={cn(
-                            'w-7 h-7 rounded-full border-2 transition-all',
-                            newGoalColor === c ? 'border-foreground scale-110' : 'border-transparent'
-                          )}
-                          style={{ backgroundColor: c }}
-                        />
-                      ))}
-                      <input
-                        type="color"
-                        value={newGoalColor || '#3b82f6'}
-                        onChange={(e) => setNewGoalColor(e.target.value)}
-                        className="w-7 h-7 rounded-full cursor-pointer border-0 p-0"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSingleGoalProceedToCategory}
-                    disabled={!newGoalName.trim() || !newGoalType || !newGoalPeriod}
-                    className="w-full py-3 gradient-primary text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Próximo
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Progress indicator */}
-                  <div className="flex gap-1 mb-2">
-                    {(['yearly', 'semestral', 'quarterly', 'monthly'] as GoalType[]).map((step, i) => (
-                      <div
-                        key={step}
-                        className={cn(
-                          'flex-1 h-1 rounded-full transition-colors',
-                          i <= ['yearly', 'semestral', 'quarterly', 'monthly'].indexOf(goalCreationStep)
-                            ? 'bg-primary'
-                            : 'bg-muted'
-                        )}
-                      />
-                    ))}
-                  </div>
-
-                  <h5 className="text-sm font-medium text-foreground">
-                    Objetivo {getStepLabel(goalCreationStep)}
-                  </h5>
-
-                  <div className="flex gap-2">
-                    <EmojiPickerButton
-                      value={newGoalEmoji}
-                      onChange={setNewGoalEmoji}
-                    />
-                    <input
-                      type="text"
-                      placeholder={`Nome do objetivo ${getStepLabel(goalCreationStep).toLowerCase()}`}
-                      value={newGoalName}
-                      onChange={(e) => setNewGoalName(e.target.value)}
-                      className="flex-1 p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                    />
-                  </div>
-
-                  {/* Period multi-selection */}
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">
-                      Selecione os períodos (pode selecionar vários):
-                    </label>
-                    
-                    {/* Select All button */}
-                    <button
-                      onClick={() => {
-                        const allOptions = getFilteredOptions(goalCreationStep).map(o => o.value);
-                        const allSelected = allOptions.every(v => goalCreationData[goalCreationStep].periods.includes(v));
-                        setGoalCreationData(prev => ({
-                          ...prev,
-                          [goalCreationStep]: { 
-                            ...prev[goalCreationStep], 
-                            periods: allSelected ? [] : allOptions 
-                          }
-                        }));
-                      }}
-                      className={cn(
-                        'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all mb-2 border-2 border-dashed',
-                        getFilteredOptions(goalCreationStep).every(o => goalCreationData[goalCreationStep].periods.includes(o.value))
-                          ? 'bg-primary/20 border-primary text-primary'
-                          : 'bg-muted/30 border-border/50 text-foreground hover:bg-muted/50'
-                      )}
-                    >
-                      ✓ Selecionar todos
-                    </button>
-
-                    {/* Removed weekly quick select options - weekly goals no longer supported */}
-
-                    <div className="max-h-40 overflow-y-auto space-y-1 p-2 rounded-xl bg-muted/20 border border-border/30">
-                      {getFilteredOptions(goalCreationStep).map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => togglePeriodSelection(goalCreationStep, option.value)}
-                          className={cn(
-                            'w-full text-left px-3 py-2 rounded-lg text-sm transition-all',
-                            goalCreationData[goalCreationStep].periods.includes(option.value)
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted/30 text-foreground hover:bg-muted/50'
-                          )}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {goalCreationData[goalCreationStep].periods.length} selecionado(s)
-                    </p>
-                  </div>
-
-                  {/* Navigation buttons */}
-                  <div className="flex gap-2">
-                    {getPrevStep(goalCreationStep) ? (
+                    <label className="text-sm text-muted-foreground mb-2 block">Cor</label>
+                    <div className="flex flex-wrap gap-2 items-center">
                       <button
                         onClick={() => {
-                          const prev = getPrevStep(goalCreationStep);
-                          if (prev) setGoalCreationStep(prev);
+                          updateGoal(selectedGoal.id, { color: undefined });
+                          setSelectedGoal({ ...selectedGoal, color: undefined });
                         }}
-                        className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                          !selectedGoal.color
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border/50 bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                        )}
                       >
-                        Voltar
+                        Nenhuma
                       </button>
+                      {[
+                        'hsl(0, 80%, 55%)',     // Vermelho
+                        'hsl(25, 90%, 55%)',    // Laranja
+                        'hsl(45, 93%, 47%)',    // Amarelo
+                        'hsl(142, 71%, 45%)',   // Verde
+                        'hsl(173, 80%, 40%)',   // Teal
+                        'hsl(199, 89%, 48%)',   // Azul claro
+                        'hsl(221, 83%, 53%)',   // Azul
+                        'hsl(262, 83%, 58%)',   // Roxo
+                        'hsl(291, 64%, 42%)',   // Violeta
+                        'hsl(330, 81%, 60%)',   // Rosa
+                        'hsl(350, 89%, 60%)',   // Coral
+                        'hsl(210, 10%, 50%)',   // Cinza
+                      ].map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => {
+                            updateGoal(selectedGoal.id, { color });
+                            setSelectedGoal({ ...selectedGoal, color });
+                          }}
+                          className={cn(
+                            'w-7 h-7 rounded-full transition-all border-2',
+                            selectedGoal.color === color
+                              ? 'border-foreground scale-110'
+                              : 'border-transparent hover:scale-110'
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Linked Habits */}
+                  <div>
+                    <label className="text-sm text-muted-foreground mb-2 block">Hábitos vinculados</label>
+                    {getLinkedHabits(selectedGoal.id).length > 0 ? (
+                      <div className="space-y-2">
+                        {getLinkedHabits(selectedGoal.id).map((habit) => (
+                          <div key={habit.id} className="p-2 rounded-xl bg-muted/30 text-sm flex items-center gap-2">
+                            {habit.emoji && <span>{habit.emoji}</span>}
+                            <span>{habit.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <button
-                        onClick={resetGoalCreation}
-                        className="flex-1 px-4 py-2 bg-muted/50 text-foreground rounded-xl font-medium text-sm hover:bg-muted/70 transition-colors"
-                      >
-                        Cancelar
-                      </button>
+                      <p className="text-sm text-muted-foreground">Nenhum hábito vinculado</p>
                     )}
-                    
-                    <button
-                      onClick={getNextStep(goalCreationStep) ? handleHierarchicalStepNext : handleHierarchicalProceedToCategory}
-                      disabled={!newGoalName.trim() || goalCreationData[goalCreationStep].periods.length === 0}
-                      className="flex-1 px-4 py-2 gradient-primary text-primary-foreground rounded-xl font-medium text-sm disabled:opacity-50"
-                    >
-                      Próximo
-                    </button>
                   </div>
-                </div>
-              )}
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Create Category Modal */}
-      <AnimatePresence>
-        {showNewCategoryModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={() => setShowNewCategoryModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Nova Categoria</h3>
-                <button onClick={() => setShowNewCategoryModal(false)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Ex: Finanças"
-                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm text-muted-foreground">Emoji</label>
-                    <button
-                      onClick={() => setNewCategoryHasEmoji(!newCategoryHasEmoji)}
-                      className={cn(
-                        'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                        newCategoryHasEmoji
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-muted/30 text-muted-foreground'
+                  {/* Parent Goal */}
+                  {selectedGoal.type !== 'yearly' && (
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-2 block">Objetivo pai</label>
+                      {editingParent ? (
+                        <div className="space-y-2">
+                          {getParentGoalOptions(selectedGoal.type).map((goal) => (
+                            <button
+                              key={goal.id}
+                              onClick={() => handleParentChange(goal.id)}
+                              className={cn(
+                                'w-full p-2 rounded-xl text-left text-sm transition-colors flex items-center gap-2',
+                                selectedGoal.parentGoalId === goal.id ? 'bg-primary/20 border-primary/30' : 'bg-muted/30 hover:bg-muted/50'
+                              )}
+                            >
+                              {goal.emoji && settings.showEmojis && <span>{goal.emoji}</span>}
+                              <span>{goal.name}</span>
+                            </button>
+                          ))}
+                          <button
+                            onClick={() => handleParentChange(null)}
+                            className="w-full p-2 rounded-xl text-left text-sm bg-muted/30 hover:bg-muted/50 transition-colors text-muted-foreground"
+                          >
+                            Sem objetivo pai
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingParent(true)}
+                          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm hover:bg-muted/50 transition-colors"
+                        >
+                          {selectedGoal.parentGoalId ? (
+                            <>
+                              <Link2 className="w-4 h-4" />
+                              <span>{getParentGoal(selectedGoal.parentGoalId)?.name}</span>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">Vincular a objetivo</span>
+                          )}
+                        </button>
                       )}
-                    >
-                      {newCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
-                    </button>
-                  </div>
-                  {newCategoryHasEmoji && (
-                    <EmojiPickerButton
-                      value={newCategoryEmoji}
-                      onChange={setNewCategoryEmoji}
-                      className="w-full"
-                    />
+                    </div>
                   )}
-                </div>
 
-                <button
-                  onClick={handleCreateCustomCategory}
-                  disabled={!newCategoryName.trim()}
-                  className="w-full py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Criar Categoria
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  {/* Archive */}
+                  <button
+                    onClick={() => setShowArchiveGoalConfirmation(true)}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 rounded-xl transition-colors"
+                  >
+                    <Archive className="w-4 h-4" />
+                    <span>Arquivar objetivo</span>
+                  </button>
 
-      {/* Edit Category Modal */}
-      <AnimatePresence>
-        {editingCategory && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={() => setEditingCategory(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold">Editar Categoria</h3>
-                <button onClick={() => setEditingCategory(null)} className="text-muted-foreground hover:text-foreground">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+                  {/* Delete */}
+                  <button
+                    onClick={() => setShowDeleteGoalConfirmation(true)}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Excluir objetivo</span>
+                  </button>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Nome da categoria</label>
-                  <input
-                    type="text"
-                    value={editCategoryName}
-                    onChange={(e) => setEditCategoryName(e.target.value)}
-                    placeholder="Ex: Finanças"
-                    className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                  />
-                </div>
+                  {/* Delete Goal Confirmation Dialog */}
+                  <AlertDialog open={showDeleteGoalConfirmation} onOpenChange={setShowDeleteGoalConfirmation}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir objetivo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {linkedHabitsToSelectedGoal.length > 0 ? (
+                            <>
+                              Você tem <strong>{linkedHabitsToSelectedGoal.length} hábito{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''}</strong> vinculado{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''} a este objetivo.
+                              Caso apague-o, os hábitos ficarão órfãos (sem objetivo vinculado).
+                            </>
+                          ) : (
+                            <>Tem certeza que deseja excluir o objetivo "{selectedGoal.name}"? Esta ação não pode ser desfeita.</>
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm text-muted-foreground">Emoji</label>
-                    <button
-                      onClick={() => setEditCategoryHasEmoji(!editCategoryHasEmoji)}
-                      className={cn(
-                        'px-3 py-1 rounded-lg text-xs font-medium transition-all',
-                        editCategoryHasEmoji
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-muted/30 text-muted-foreground'
+                      {linkedHabitsToSelectedGoal.length > 0 && (
+                        <div className="space-y-3 py-2">
+                          <p className="text-sm text-muted-foreground">Deseja migrá-los para outro objetivo?</p>
+                          <select
+                            value={migrateToGoalId || ''}
+                            onChange={(e) => setMigrateToGoalId(e.target.value || null)}
+                            className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
+                          >
+                            <option value="">Não migrar (deixar órfãos)</option>
+                            {goals.filter(g => g.id !== selectedGoal.id).map((goal) => (
+                              <option key={goal.id} value={goal.id}>
+                                {goal.emoji && `${goal.emoji} `}{goal.name} ({typeLabels[goal.type]})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       )}
-                    >
-                      {editCategoryHasEmoji ? 'Com emoji' : 'Sem emoji'}
-                    </button>
+
+                      <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setMigrateToGoalId(null)}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            const goalName = selectedGoal.name;
+                            const habitsCount = linkedHabitsToSelectedGoal.length;
+
+                            // Migrate habits if a target goal is selected
+                            if (migrateToGoalId && habitsCount > 0) {
+                              linkedHabitsToSelectedGoal.forEach(habit => {
+                                updateHabit(habit.id, { goalId: migrateToGoalId });
+                              });
+                              const targetGoal = goals.find(g => g.id === migrateToGoalId);
+                              toast({
+                                title: 'Hábitos migrados!',
+                                description: `${habitsCount} hábito${habitsCount > 1 ? 's' : ''} migrado${habitsCount > 1 ? 's' : ''} para "${targetGoal?.name}".`
+                              });
+                            } else if (habitsCount > 0) {
+                              // Remove goal link from habits (make them orphans)
+                              linkedHabitsToSelectedGoal.forEach(habit => {
+                                updateHabit(habit.id, { goalId: undefined });
+                              });
+                            }
+
+                            removeGoal(selectedGoal.id);
+                            setSelectedGoal(null);
+                            setShowDeleteGoalConfirmation(false);
+                            setMigrateToGoalId(null);
+                            toast({ title: 'Objetivo excluído!', description: `"${goalName}" foi removido.` });
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  {/* Archive Goal Confirmation Dialog */}
+                  <AlertDialog open={showArchiveGoalConfirmation} onOpenChange={setShowArchiveGoalConfirmation}>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Arquivar objetivo</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Deseja arquivar o objetivo "{selectedGoal.name}"? Ele será movido para a seção Arquivados na aba Histórico.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => {
+                            updateGoal(selectedGoal.id, { archived: true });
+                            setShowArchiveGoalConfirmation(false);
+                            setSelectedGoal(null);
+                            toast({ title: 'Objetivo arquivado!', description: `"${selectedGoal.name}" foi movido para Arquivados.` });
+                          }}
+                        >
+                          Arquivar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Type Change Warning Modal */}
+        <AnimatePresence>
+          {showTypeChangeWarning && pendingTypeChange && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+              onClick={cancelTypeChange}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-destructive" />
                   </div>
-                  {editCategoryHasEmoji && (
-                    <EmojiPickerButton
-                      value={editCategoryEmoji}
-                      onChange={setEditCategoryEmoji}
-                      className="w-full"
-                    />
-                  )}
+                  <h3 className="text-lg font-bold">Alterar tipo do objetivo</h3>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  <p className="text-sm text-muted-foreground">
+                    Você está alterando de <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[selectedGoal?.type || 'weekly'])}>{typeLabels[selectedGoal?.type || 'weekly']}</span> para <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[pendingTypeChange])}>{typeLabels[pendingTypeChange]}</span>.
+                  </p>
+                  <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                    <p className="text-sm text-destructive font-medium mb-1">⚠️ Atenção</p>
+                    <p className="text-xs text-muted-foreground">
+                      Ao alterar o tipo, você precisará reorganizar os objetivos vinculados na linha do tempo (semanal → mensal → trimestral → anual) para manter a consistência do progresso em porcentagem.
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Os vínculos com objetivos pai serão removidos e você precisará reconfigurar manualmente.
+                  </p>
                 </div>
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      const { removeCustomCategory } = useAppStore.getState();
-                      removeCustomCategory(editingCategory.id);
-                      setEditingCategory(null);
-                    }}
-                    className="flex-1 py-3 bg-destructive/10 text-destructive rounded-xl font-semibold hover:bg-destructive/20 transition-colors"
+                    onClick={cancelTypeChange}
+                    className="flex-1 py-3 bg-muted/50 text-foreground rounded-xl font-semibold hover:bg-muted/70 transition-colors"
                   >
-                    Excluir
+                    Cancelar
                   </button>
                   <button
-                    onClick={handleUpdateCategory}
-                    disabled={!editCategoryName.trim()}
-                    className="flex-1 py-3 gradient-fire text-primary-foreground rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={confirmTypeChange}
+                    className="flex-1 py-3 bg-destructive text-destructive-foreground rounded-xl font-semibold hover:bg-destructive/90 transition-colors"
                   >
-                    Salvar
+                    Confirmar
                   </button>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* Habit Creation Modal */}
-      <AnimatePresence>
-        {showWeeklyGoalPrompt && parentGoalForWeekly && (
-          <HabitCreationForm
-            parentGoal={parentGoalForWeekly}
-            onClose={() => {
-              setShowWeeklyGoalPrompt(false);
-              setParentGoalForWeekly(null);
-            }}
+        {/* Habit Detail Modal */}
+        {selectedHabit && (
+          <HabitDetailModal
+            habit={selectedHabit}
+            isOpen={!!selectedHabit}
+            onClose={() => setSelectedHabit(null)}
           />
         )}
-      </AnimatePresence>
 
-      {/* Goal Detail Modal */}
-      <AnimatePresence>
-        {selectedGoal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={() => setSelectedGoal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-            >
-              {/* Header with editable emoji & name */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2 flex-1">
-                  <EmojiPickerButton
-                    value={selectedGoal.emoji || ''}
-                    onChange={(newEmoji) => {
-                      updateGoal(selectedGoal.id, { emoji: newEmoji || undefined });
-                      setSelectedGoal({ ...selectedGoal, emoji: newEmoji || undefined });
-                    }}
-                    placeholder="🎯"
-                    className="w-10 h-10"
-                  />
-                  <input
-                    type="text"
-                    value={selectedGoal.name}
-                    onChange={(e) => {
-                      const newName = e.target.value;
-                      updateGoal(selectedGoal.id, { name: newName });
-                      setSelectedGoal({ ...selectedGoal, name: newName });
-                    }}
-                    className="text-lg font-bold bg-transparent border-b border-border/30 focus:border-primary outline-none flex-1"
-                  />
-                </div>
-                <button onClick={() => setSelectedGoal(null)} className="text-muted-foreground hover:text-foreground ml-2">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {/* Progress with X/N */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Progresso</label>
-                  {(() => {
-                    const { completed, total } = calculateGoalXN(selectedGoal, habits, habitChecks);
-                    const percentage = total > 0 ? (completed / total) * 100 : 0;
-                    return (
-                      <>
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="flex-1 h-3 rounded-full bg-muted/50 overflow-hidden">
-                            <motion.div
-                              className="h-full rounded-full"
-                              style={{ background: 'var(--gradient-progress)' }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 0.3 }}
-                            />
-                          </div>
-                          <span className="font-bold text-lg">{formatPercentage(percentage)}</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/30 border border-border/30">
-                          <span className="text-2xl font-bold text-primary">{completed}</span>
-                          <span className="text-muted-foreground">/</span>
-                          <span className="text-2xl font-bold text-foreground">{total}</span>
-                          <span className="text-sm text-muted-foreground ml-2">hábitos concluídos</span>
-                        </div>
-                        
-                        {/* Completion Status Display */}
-                        {selectedGoal.completionStatus && (
-                          <div className={cn(
-                            'mt-3 p-4 rounded-xl border-2 text-center',
-                            selectedGoal.completionStatus === 'completed'
-                              ? 'bg-success/10 border-success/30'
-                              : 'bg-destructive/10 border-destructive/30'
-                          )}>
-                            <div className={cn(
-                              'w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center',
-                              selectedGoal.completionStatus === 'completed'
-                                ? 'bg-success/20'
-                                : 'bg-destructive/20'
-                            )}>
-                              {selectedGoal.completionStatus === 'completed' ? (
-                                <Check className="w-6 h-6 text-success" />
-                              ) : (
-                                <X className="w-6 h-6 text-destructive" />
-                              )}
-                            </div>
-                            <p className={cn(
-                              'text-sm font-medium',
-                              selectedGoal.completionStatus === 'completed'
-                                ? 'text-success'
-                                : 'text-destructive'
-                            )}>
-                              {selectedGoal.completionStatus === 'completed'
-                                ? 'Seu esforço foi recompensado, parabéns pela sua dedicação, você conseguiu alcançar seu objetivo!'
-                                : 'Não foi dessa vez, mas você está evoluindo, e isso é o que importa! Parabéns pelo seu esforço!'}
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                {/* Type */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Tipo</label>
-                  {editingType !== null ? (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {(['weekly', 'monthly', 'quarterly', 'yearly'] as GoalType[]).map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleTypeChangeRequest(type)}
-                            className={cn(
-                              'px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
-                              selectedGoal.type === type ? typeColors[type] : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                            )}
-                          >
-                            {typeLabels[type]}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        onClick={() => setEditingType(null)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className={cn('px-3 py-1.5 rounded-full text-xs font-semibold', typeColors[selectedGoal.type])}>
-                        {typeLabels[selectedGoal.type]}
-                      </span>
-                      <button
-                        onClick={() => setEditingType(selectedGoal.type)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
-                      >
-                        Trocar
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Period */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Período</label>
-                  {editingPeriod !== null ? (
-                    <div className="space-y-2">
-                      <select
-                        value={selectedGoal.period}
-                        onChange={(e) => handlePeriodChange(e.target.value)}
-                        className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:outline-none focus:border-primary"
-                      >
-                        {getPeriodOptions(selectedGoal.type).map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => setEditingPeriod(null)}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm">
-                        {selectedGoal.period}
-                      </span>
-                      <button
-                        onClick={() => setEditingPeriod(selectedGoal.period)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
-                      >
-                        Trocar
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Categoria</label>
-                  <div className="flex flex-wrap gap-2">
-                    {DEFAULT_CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategoryChange(cat.id)}
-                        className={cn(
-                          'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
-                          selectedGoal.category === cat.id
-                            ? 'gradient-fire text-primary-foreground'
-                            : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                        )}
-                      >
-                        <span>{cat.emoji}</span>
-                        <span>{cat.name}</span>
-                      </button>
-                    ))}
-                    {customCategories.map((cat) => (
-                      <div key={cat.id} className="relative group">
-                        <button
-                          onClick={() => {
-                            updateGoal(selectedGoal.id, { category: 'custom', customCategoryId: cat.id });
-                            setSelectedGoal({ ...selectedGoal, category: 'custom', customCategoryId: cat.id });
-                          }}
-                          className={cn(
-                            'px-3 py-2 rounded-xl text-xs transition-all flex items-center gap-1',
-                            selectedGoal.category === 'custom' && selectedGoal.customCategoryId === cat.id
-                              ? 'gradient-fire text-primary-foreground'
-                              : 'bg-muted/30 border border-border/50 hover:bg-muted/50'
-                          )}
-                        >
-                          {cat.emoji && <span>{cat.emoji}</span>}
-                          <span>{cat.name}</span>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditCategoryModal(cat);
-                          }}
-                          className="absolute -top-1 -right-1 p-1 rounded-full bg-muted/80 border border-border/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Pencil className="w-2.5 h-2.5 text-muted-foreground" />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => setShowNewCategoryModal(true)}
-                      className="px-3 py-2 rounded-xl text-xs bg-muted/30 border border-dashed border-border/50 hover:bg-muted/50 transition-all flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Criar</span>
-                    </button>
-                  </div>
-                </div>
-
-
-                {/* Linked Habits */}
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Hábitos vinculados</label>
-                  {getLinkedHabits(selectedGoal.id).length > 0 ? (
-                    <div className="space-y-2">
-                      {getLinkedHabits(selectedGoal.id).map((habit) => (
-                        <div key={habit.id} className="p-2 rounded-xl bg-muted/30 text-sm flex items-center gap-2">
-                          {habit.emoji && <span>{habit.emoji}</span>}
-                          <span>{habit.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum hábito vinculado</p>
-                  )}
-                </div>
-
-                {/* Parent Goal */}
-                {selectedGoal.type !== 'yearly' && (
-                  <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Objetivo pai</label>
-                    {editingParent ? (
-                      <div className="space-y-2">
-                        {getParentGoalOptions(selectedGoal.type).map((goal) => (
-                          <button
-                            key={goal.id}
-                            onClick={() => handleParentChange(goal.id)}
-                            className={cn(
-                              'w-full p-2 rounded-xl text-left text-sm transition-colors flex items-center gap-2',
-                              selectedGoal.parentGoalId === goal.id ? 'bg-primary/20 border-primary/30' : 'bg-muted/30 hover:bg-muted/50'
-                            )}
-                          >
-                            {goal.emoji && settings.showEmojis && <span>{goal.emoji}</span>}
-                            <span>{goal.name}</span>
-                          </button>
-                        ))}
-                        <button
-                          onClick={() => handleParentChange(null)}
-                          className="w-full p-2 rounded-xl text-left text-sm bg-muted/30 hover:bg-muted/50 transition-colors text-muted-foreground"
-                        >
-                          Sem objetivo pai
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setEditingParent(true)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 border border-border/50 text-sm hover:bg-muted/50 transition-colors"
-                      >
-                        {selectedGoal.parentGoalId ? (
-                          <>
-                            <Link2 className="w-4 h-4" />
-                            <span>{getParentGoal(selectedGoal.parentGoalId)?.name}</span>
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">Vincular a objetivo</span>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Archive */}
-                <button
-                  onClick={() => setShowArchiveGoalConfirmation(true)}
-                  className="w-full py-3 flex items-center justify-center gap-2 text-muted-foreground hover:bg-muted/30 rounded-xl transition-colors"
-                >
-                  <Archive className="w-4 h-4" />
-                  <span>Arquivar objetivo</span>
-                </button>
-
-                {/* Delete */}
-                <button
-                  onClick={() => setShowDeleteGoalConfirmation(true)}
-                  className="w-full py-3 flex items-center justify-center gap-2 text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Excluir objetivo</span>
-                </button>
-
-                {/* Delete Goal Confirmation Dialog */}
-                <AlertDialog open={showDeleteGoalConfirmation} onOpenChange={setShowDeleteGoalConfirmation}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir objetivo</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {linkedHabitsToSelectedGoal.length > 0 ? (
-                          <>
-                            Você tem <strong>{linkedHabitsToSelectedGoal.length} hábito{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''}</strong> vinculado{linkedHabitsToSelectedGoal.length > 1 ? 's' : ''} a este objetivo. 
-                            Caso apague-o, os hábitos ficarão órfãos (sem objetivo vinculado).
-                          </>
-                        ) : (
-                          <>Tem certeza que deseja excluir o objetivo "{selectedGoal.name}"? Esta ação não pode ser desfeita.</>
-                        )}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    
-                    {linkedHabitsToSelectedGoal.length > 0 && (
-                      <div className="space-y-3 py-2">
-                        <p className="text-sm text-muted-foreground">Deseja migrá-los para outro objetivo?</p>
-                        <select
-                          value={migrateToGoalId || ''}
-                          onChange={(e) => setMigrateToGoalId(e.target.value || null)}
-                          className="w-full bg-muted/50 border border-border/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50"
-                        >
-                          <option value="">Não migrar (deixar órfãos)</option>
-                          {goals.filter(g => g.id !== selectedGoal.id).map((goal) => (
-                            <option key={goal.id} value={goal.id}>
-                              {goal.emoji && `${goal.emoji} `}{goal.name} ({typeLabels[goal.type]})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    
-                    <AlertDialogFooter>
-                      <AlertDialogCancel onClick={() => setMigrateToGoalId(null)}>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          const goalName = selectedGoal.name;
-                          const habitsCount = linkedHabitsToSelectedGoal.length;
-                          
-                          // Migrate habits if a target goal is selected
-                          if (migrateToGoalId && habitsCount > 0) {
-                            linkedHabitsToSelectedGoal.forEach(habit => {
-                              updateHabit(habit.id, { goalId: migrateToGoalId });
-                            });
-                            const targetGoal = goals.find(g => g.id === migrateToGoalId);
-                            toast({ 
-                              title: 'Hábitos migrados!', 
-                              description: `${habitsCount} hábito${habitsCount > 1 ? 's' : ''} migrado${habitsCount > 1 ? 's' : ''} para "${targetGoal?.name}".` 
-                            });
-                          } else if (habitsCount > 0) {
-                            // Remove goal link from habits (make them orphans)
-                            linkedHabitsToSelectedGoal.forEach(habit => {
-                              updateHabit(habit.id, { goalId: undefined });
-                            });
-                          }
-                          
-                          removeGoal(selectedGoal.id);
-                          setSelectedGoal(null);
-                          setShowDeleteGoalConfirmation(false);
-                          setMigrateToGoalId(null);
-                          toast({ title: 'Objetivo excluído!', description: `"${goalName}" foi removido.` });
-                        }}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Excluir
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                {/* Archive Goal Confirmation Dialog */}
-                <AlertDialog open={showArchiveGoalConfirmation} onOpenChange={setShowArchiveGoalConfirmation}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Arquivar objetivo</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Deseja arquivar o objetivo "{selectedGoal.name}"? Ele será movido para a seção Arquivados na aba Histórico.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          updateGoal(selectedGoal.id, { archived: true });
-                          setShowArchiveGoalConfirmation(false);
-                          setSelectedGoal(null);
-                          toast({ title: 'Objetivo arquivado!', description: `"${selectedGoal.name}" foi movido para Arquivados.` });
-                        }}
-                      >
-                        Arquivar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </motion.div>
-          </motion.div>
+        {/* Habit Creation Form Modal */}
+        {showHabitCreationForm && (
+          <HabitCreationForm
+            onClose={() => setShowHabitCreationForm(false)}
+            onCreated={() => setShowHabitCreationForm(false)}
+          />
         )}
-      </AnimatePresence>
-
-      {/* Type Change Warning Modal */}
-      <AnimatePresence>
-        {showTypeChangeWarning && pendingTypeChange && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-            onClick={cancelTypeChange}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-xl"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-destructive" />
-                </div>
-                <h3 className="text-lg font-bold">Alterar tipo do objetivo</h3>
-              </div>
-
-              <div className="space-y-3 mb-6">
-                <p className="text-sm text-muted-foreground">
-                  Você está alterando de <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[selectedGoal?.type || 'weekly'])}>{typeLabels[selectedGoal?.type || 'weekly']}</span> para <span className={cn('font-semibold px-2 py-0.5 rounded-full', typeColors[pendingTypeChange])}>{typeLabels[pendingTypeChange]}</span>.
-                </p>
-                <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                  <p className="text-sm text-destructive font-medium mb-1">⚠️ Atenção</p>
-                  <p className="text-xs text-muted-foreground">
-                    Ao alterar o tipo, você precisará reorganizar os objetivos vinculados na linha do tempo (semanal → mensal → trimestral → anual) para manter a consistência do progresso em porcentagem.
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Os vínculos com objetivos pai serão removidos e você precisará reconfigurar manualmente.
-                </p>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={cancelTypeChange}
-                  className="flex-1 py-3 bg-muted/50 text-foreground rounded-xl font-semibold hover:bg-muted/70 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmTypeChange}
-                  className="flex-1 py-3 bg-destructive text-destructive-foreground rounded-xl font-semibold hover:bg-destructive/90 transition-colors"
-                >
-                  Confirmar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Habit Detail Modal */}
-      {selectedHabit && (
-        <HabitDetailModal
-          habit={selectedHabit}
-          isOpen={!!selectedHabit}
-          onClose={() => setSelectedHabit(null)}
-        />
-      )}
-
-      {/* Habit Creation Form Modal */}
-      {showHabitCreationForm && (
-        <HabitCreationForm
-          onClose={() => setShowHabitCreationForm(false)}
-          onCreated={() => setShowHabitCreationForm(false)}
-        />
-      )}
       </div>
     </motion.div>
   );

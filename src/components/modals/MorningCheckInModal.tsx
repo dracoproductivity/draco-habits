@@ -4,7 +4,6 @@ import { Sun, Moon, Smartphone, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Input } from '@/components/ui/input';
 
 interface MorningCheckInModalProps {
   isOpen: boolean;
@@ -13,17 +12,19 @@ interface MorningCheckInModalProps {
 
 export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProps) => {
   const { user, addDailyLog, updateSettings } = useAppStore();
-  const [sleepHours, setSleepHours] = useState<string>('7');
-  const [phoneHours, setPhoneHours] = useState<string>('2');
+  const [sleepH, setSleepH] = useState<string>('7');
+  const [sleepM, setSleepM] = useState<string>('0');
+  const [phoneH, setPhoneH] = useState<string>('2');
+  const [phoneM, setPhoneM] = useState<string>('0');
 
   const firstName = user?.firstName || 'usuário';
   const today = format(new Date(), 'yyyy-MM-dd');
   const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
   const handleSubmit = () => {
-    const sleep = parseFloat(sleepHours) || 0;
-    const phone = parseFloat(phoneHours) || 0;
-    
+    const sleep = (parseInt(sleepH || '0')) + (parseInt(sleepM || '0')) / 60;
+    const phone = (parseInt(phoneH || '0')) + (parseInt(phoneM || '0')) / 60;
+
     addDailyLog({
       date: yesterday,
       sleepHours: sleep,
@@ -79,18 +80,31 @@ export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProp
                     <p className="text-xs text-muted-foreground">Na noite passada</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="0.5"
-                    value={sleepHours}
-                    onChange={(e) => setSleepHours(e.target.value)}
-                    className="flex-1 text-center text-lg font-semibold"
-                    placeholder="0"
-                  />
-                  <span className="text-sm text-muted-foreground">horas</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="24"
+                      value={sleepH}
+                      onChange={(e) => setSleepH(e.target.value)}
+                      placeholder="0"
+                      className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                    />
+                    <span className="text-muted-foreground font-medium text-sm">h</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={sleepM}
+                      onChange={(e) => setSleepM(e.target.value)}
+                      placeholder="0"
+                      className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                    />
+                    <span className="text-muted-foreground font-medium text-sm">min</span>
+                  </div>
                 </div>
               </div>
 
@@ -104,18 +118,31 @@ export const MorningCheckInModal = ({ isOpen, onClose }: MorningCheckInModalProp
                     <p className="text-xs text-muted-foreground">Excluindo trabalho/estudo</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="24"
-                    step="0.5"
-                    value={phoneHours}
-                    onChange={(e) => setPhoneHours(e.target.value)}
-                    className="flex-1 text-center text-lg font-semibold"
-                    placeholder="0"
-                  />
-                  <span className="text-sm text-muted-foreground">horas</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="24"
+                      value={phoneH}
+                      onChange={(e) => setPhoneH(e.target.value)}
+                      placeholder="0"
+                      className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                    />
+                    <span className="text-muted-foreground font-medium text-sm">h</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={phoneM}
+                      onChange={(e) => setPhoneM(e.target.value)}
+                      placeholder="0"
+                      className="w-16 bg-muted/30 border border-border rounded-xl px-3 py-3 text-foreground text-lg font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 text-center"
+                    />
+                    <span className="text-muted-foreground font-medium text-sm">min</span>
+                  </div>
                 </div>
               </div>
             </div>
