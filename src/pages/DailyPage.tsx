@@ -28,6 +28,7 @@ export const DailyPage = () => {
 
   // Analytics charts toggle - controls ALL charts/sections
   const [showCharts, setShowCharts] = useState(false);
+  const [isDayCardExpanded, setIsDayCardExpanded] = useState(false);
 
   // Goal completion modal state
   const [goalToComplete, setGoalToComplete] = useState<Goal | null>(null);
@@ -139,26 +140,35 @@ export const DailyPage = () => {
           </h1>
 
           {/* Note shortcut + Day Card + Progress */}
-          <div className="flex flex-col items-center">
-            {/* Note - full width, same as percentages */}
-            <div className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4">
-              <span
-                onClick={() => setShowNoteEditor(true)}
-                className="text-sm text-muted-foreground cursor-pointer flex-1"
-              >
-                O que deseja registrar hoje?
-              </span>
-              <div
-                onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
-                className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all cursor-pointer"
-              >
-                <Info className="w-3.5 h-3.5 text-muted-foreground" />
+          <div className="flex flex-col items-center w-full">
+            {/* Constrained Container for Note & DayCard (matches percentages width on desktop) */}
+            <div className={cn(
+              "flex flex-col items-center w-full transition-all duration-500 ease-in-out",
+              !isDayCardExpanded ? "md:max-w-[416px]" : "max-w-full"
+            )}>
+              {/* Note - same width as DayCard */}
+              <div className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4">
+                <span
+                  onClick={() => setShowNoteEditor(true)}
+                  className="text-sm text-muted-foreground cursor-pointer flex-1"
+                >
+                  O que deseja registrar hoje?
+                </span>
+                <div
+                  onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
+                  className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all cursor-pointer"
+                >
+                  <Info className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
               </div>
-            </div>
 
-            {/* Day Card */}
-            <div className="flex justify-center w-full">
-              <DayCard />
+              {/* Day Card */}
+              <div className="flex justify-center w-full">
+                <DayCard
+                  expanded={isDayCardExpanded}
+                  onToggle={() => setIsDayCardExpanded(!isDayCardExpanded)}
+                />
+              </div>
             </div>
 
             {/* Period Progress Indicators */}
