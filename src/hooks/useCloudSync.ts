@@ -382,11 +382,11 @@ export const useCloudSync = () => {
       console.error("Error loading from cloud:", error);
     } finally {
       globalState.syncInProgress = false;
-      // Mark initial load as complete after a delay to prevent subscriber from
-      // firing with stale data during load. 2s gives cloud sync time to finish.
+      // Mark initial load as complete after a short delay to let React
+      // batch-process all the state updates from cloud sync.
       setTimeout(() => {
         globalState.isInitialLoad = false;
-      }, 2000);
+      }, 500);
     }
   }, []);
 
@@ -462,6 +462,13 @@ export const useCloudSync = () => {
       const currentSettings = useAppStore.getState().settings;
       const mergedSettings = { ...currentSettings, ...settingsData };
 
+      console.log("[CloudSync] saveSettings called", {
+        themeColor: mergedSettings.themeColor,
+        dracoSaves: mergedSettings.dracoSaves,
+        progressDisplayMode: mergedSettings.progressDisplayMode,
+        darkMode: mergedSettings.darkMode,
+      });
+
       // Core fields that always exist in the DB
       const corePayload: Record<string, unknown> = {
         user_id: userId,
@@ -469,7 +476,9 @@ export const useCloudSync = () => {
         progress_display_mode: mergedSettings.progressDisplayMode,
         show_emojis: mergedSettings.showEmojis,
         notifications_enabled: mergedSettings.notificationsEnabled,
-        notification_reminders: JSON.stringify(mergedSettings.notificationReminders ?? []),
+        notification_reminders: JSON.stringify(
+          Array.isArray(mergedSettings.notificationReminders) ? mergedSettings.notificationReminders : []
+        ),
         dark_mode: mergedSettings.darkMode,
         min_sleep_hours: mergedSettings.minSleepHours,
         max_phone_hours: mergedSettings.maxPhoneHours,
@@ -498,15 +507,19 @@ export const useCloudSync = () => {
       );
 
       if (error) {
-        console.warn("saveSettings: Extended save failed, retrying with core fields only:", error.message);
+        console.warn("[CloudSync] saveSettings: Extended save FAILED:", error.message);
         // Retry with core fields only (in case new columns don't exist yet)
         const { error: fallbackError } = await supabase.from("user_settings").upsert(
           corePayload,
           { onConflict: "user_id" },
         );
         if (fallbackError) {
-          console.error("Error saving settings (fallback):", fallbackError);
+          console.error("[CloudSync] saveSettings: Fallback also FAILED:", fallbackError);
+        } else {
+          console.log("[CloudSync] saveSettings: Fallback save succeeded (without draco_saves/tab_position)");
         }
+      } else {
+        console.log("[CloudSync] saveSettings: Save succeeded");
       }
     },
     [user?.id],
@@ -1019,6 +1032,10 @@ export const useCloudSync = () => {
       if (state.settings !== prevState.settings) {
         const currentSettingsStr = JSON.stringify(state.settings);
         if (currentSettingsStr !== globalState.lastSyncedData.settings) {
+          console.log("[CloudSync] Subscriber: settings changed, triggering save", {
+            themeColor: state.settings.themeColor,
+            dracoSaves: state.settings.dracoSaves,
+          });
           saveSettings(state.settings);
           globalState.lastSyncedData.settings = currentSettingsStr;
         }
