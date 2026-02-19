@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Habit, Goal, HabitCheck } from '@/types';
 import { calculateHabitStreak } from '@/utils/calculateStreak';
 import { getDifficultyLabel } from '@/types';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface HabitItemProps {
   habit: Habit;
@@ -45,6 +46,7 @@ export const HabitItem = ({
   onToggleDracoSave,
   dracoSaves = 0,
 }: HabitItemProps) => {
+  const { isMobile } = useResponsive();
   const isCompleted = check?.completed ?? false;
   const hasMicroGoals = habit.hasMicroGoals && habit.microGoalsCount && habit.microGoalsCount > 1;
   const microGoalsCount = habit.microGoalsCount || 1;
@@ -114,7 +116,8 @@ export const HabitItem = ({
 
       {/* Content */}
       <div className={cn(
-        'relative flex items-center gap-2 p-2.5 transition-all flex-1 min-w-0',
+        'relative flex items-center transition-all flex-1 min-w-0',
+        isMobile ? 'p-2 gap-2' : 'p-2.5 gap-2',
         !isCompleted && !microGoalsCompleted && 'hover:bg-muted/20'
       )}>
         {/* Checkbox / Micro goals button */}
@@ -123,7 +126,8 @@ export const HabitItem = ({
             onClick={handleCheckClick}
             disabled={habit.vacationMode}
             className={cn(
-              'w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all relative overflow-hidden',
+              'rounded-lg border-2 flex items-center justify-center transition-all relative overflow-hidden',
+              isMobile ? 'w-6 h-6' : 'w-7 h-7',
               isCompleted
                 ? 'bg-primary border-primary'
                 : 'border-muted-foreground/50 hover:border-primary',
@@ -145,12 +149,12 @@ export const HabitItem = ({
             </div>
             {isCompleted ? (
               habit.isBadHabit ? (
-                <X className="w-4 h-4 text-primary-foreground relative z-10" />
+                <X className={cn("text-primary-foreground relative z-10", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               ) : (
-                <Check className="w-4 h-4 text-primary-foreground relative z-10" />
+                <Check className={cn("text-primary-foreground relative z-10", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               )
             ) : (
-              <Plus className="w-4 h-4 text-muted-foreground relative z-10" />
+              <Plus className={cn("text-muted-foreground relative z-10", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
             )}
           </button>
         ) : (
@@ -158,7 +162,8 @@ export const HabitItem = ({
             onClick={handleCheckClick}
             disabled={habit.vacationMode}
             className={cn(
-              'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all',
+              'rounded-lg border-2 flex items-center justify-center transition-all',
+              isMobile ? 'w-5 h-5' : 'w-6 h-6',
               isCompleted
                 ? 'bg-primary border-primary'
                 : 'border-muted-foreground/50 hover:border-primary',
@@ -167,9 +172,9 @@ export const HabitItem = ({
           >
             {isCompleted && (
               habit.isBadHabit ? (
-                <X className="w-4 h-4 text-primary-foreground" />
+                <X className={cn("text-primary-foreground", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               ) : (
-                <Check className="w-4 h-4 text-primary-foreground" />
+                <Check className={cn("text-primary-foreground", isMobile ? "w-3.5 h-3.5" : "w-4 h-4")} />
               )
             )}
           </button>
@@ -182,24 +187,25 @@ export const HabitItem = ({
               <span className="text-base flex-shrink-0">{habit.emoji}</span>
             )}
             <span className={cn(
-              'font-medium transition-all text-sm truncate',
+              'font-medium transition-all truncate',
+              isMobile ? 'text-xs' : 'text-sm',
               isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
             )}>
               {habit.name}
             </span>
             {hasMicroGoals && (
-              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex-shrink-0">
+              <span className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex-shrink-0">
                 {microGoalsCompleted}/{microGoalsCount}
               </span>
             )}
           </div>
           {linkedGoal && (
-            <span className="text-xs text-muted-foreground truncate">
+            <span className="text-[10px] text-muted-foreground truncate">
               {linkedGoal.emoji ? `${linkedGoal.emoji} ` : ''}{linkedGoal.name}
             </span>
           )}
           {habit.weekDays && habit.weekDays.length > 0 && habit.weekDays.length < 7 && (
-            <span className="text-xs text-muted-foreground/70">
+            <span className="text-[10px] text-muted-foreground/70">
               {habit.weekDays.map(d => WEEK_DAYS[d]?.label).join(', ')}
             </span>
           )}
@@ -209,14 +215,14 @@ export const HabitItem = ({
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {streak > 0 && (
             <div className="flex items-center gap-0.5 text-muted-foreground">
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
-              <span className="text-xs">{streak}</span>
+              <Flame className={cn("text-orange-400", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
+              <span className="text-[10px]">{streak}</span>
             </div>
           )}
           {habit.notificationEnabled && (
-            <Bell className="w-3.5 h-3.5 text-primary" />
+            <Bell className={cn("text-primary", isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
           )}
-          <span className="text-xs text-muted-foreground">{getDifficultyLabel(habit.xpReward || 0)}</span>
+          <span className="text-[10px] text-muted-foreground">{getDifficultyLabel(habit.xpReward || 0)}</span>
           {/* Draco Save button */}
           {!habit.vacationMode && !isCompleted && (
             <button
@@ -232,7 +238,7 @@ export const HabitItem = ({
               )}
               title={isDracoSaveUsed ? 'Draco Save ativo (clique para remover)' : dracoSaves >= 20 ? 'Usar Draco Save (-20)' : `Saldo insuficiente (${dracoSaves}/20)`}
             >
-              <Heart className={cn('w-3.5 h-3.5', isDracoSaveUsed && 'fill-current')} />
+              <Heart className={cn(isDracoSaveUsed && 'fill-current', isMobile ? "w-3 h-3" : "w-3.5 h-3.5")} />
             </button>
           )}
         </div>

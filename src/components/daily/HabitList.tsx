@@ -16,6 +16,7 @@ import { isHabitScheduledForDate, calculateHabitProgress, getPeriodBoundaries } 
 import { calculateHabitStreak } from '@/utils/calculateStreak';
 import { XP_LIMITS, MAX_ACTIVE_HABITS, getTotalActiveHabits, getActiveHabitCountsByXP, isXPAvailable, canCreateHabit } from '@/utils/habitLimits';
 import { calculateDayStreak } from '@/utils/calculateDayStreak';
+import { useResponsive } from '@/hooks/useResponsive';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dom' },
@@ -844,6 +845,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
 
   const showProgress = showProgressIndicators !== false;
   const shouldCenterTitle = centerTitle === true;
+  const { isMobile } = useResponsive();
 
   return (
     <motion.div
@@ -866,6 +868,18 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
               </div>
             ) : null;
           })()}
+          {/* Title */}
+          <h3 className={cn(
+            "font-semibold text-foreground text-lg mb-3",
+            shouldCenterTitle && "text-center"
+          )}>Hábitos do dia</h3>
+
+          {/* ... (rest of the component until container) ... */}
+          {/* I cannot easily skip lines in replace_file_content unless I use multiple chunks or make it targeted. */}
+          {/* The file is huge. I should use `multi_replace_file_content` or two separate `replace_file_content` calls. */}
+          {/* Attempting to replace a huge block again might fail. */}
+          {/* I will use `replace_file_content` specifically for the hook call first, then another for the container. */}
+
           {/* Title */}
           <h3 className={cn(
             "font-semibold text-foreground text-lg mb-3",
@@ -1630,7 +1644,10 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           </AnimatePresence>
 
           <div
-            className="space-y-2 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin"
+            className={cn(
+              "overflow-y-auto pr-1 scrollbar-thin",
+              isMobile ? "space-y-1.5 max-h-[55vh]" : "space-y-2 max-h-[320px]"
+            )}
             onTouchMove={(e) => e.stopPropagation()}
           >
             {displayedHabits.map((habit, index) => {
