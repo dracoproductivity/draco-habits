@@ -15,6 +15,7 @@ import { SleepChartMini, PhoneChartMini } from '@/components/daily/HealthChartsM
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
 import { NoteEditorModal } from '@/components/notes/NoteEditorModal';
+import { HistoryViewer } from '@/components/daily/HistoryViewer';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useAppStore } from '@/store/useAppStore';
 import { useGoalCompletionCheck } from '@/hooks/useGoalCompletionCheck';
@@ -28,6 +29,7 @@ export const DailyPage = () => {
 
   // Analytics charts toggle - controls ALL charts/sections
   const [showCharts, setShowCharts] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [isDayCardExpanded, setIsDayCardExpanded] = useState(false);
 
   // Goal completion modal state
@@ -179,6 +181,20 @@ export const DailyPage = () => {
               <PeriodProgressIndicators displayMode={localDisplayMode} />
             </div>
 
+            {/* History Viewer */}
+            <AnimatePresence>
+              {showHistory && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="w-full overflow-hidden"
+                >
+                  <HistoryViewer />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Charts below percentages - only when toggled */}
             <AnimatePresence>
               {showCharts && (
@@ -204,20 +220,38 @@ export const DailyPage = () => {
               )}
             </AnimatePresence>
 
-            {/* Analytics Toggle Button */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowCharts(prev => !prev)}
-              className={cn(
-                "mt-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                showCharts
-                  ? "gradient-primary text-primary-foreground"
-                  : "glass-card hover:border-primary/40"
-              )}
-            >
-              <BarChart3 className="w-5 h-5" />
-            </motion.button>
+            {/* Buttons Row */}
+            <div className="flex items-center gap-3 mt-5">
+              {/* History Toggle Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowHistory(prev => !prev)}
+                className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                  showHistory
+                    ? "bg-primary/20 text-primary border border-primary/30"
+                    : "glass-card hover:border-primary/40"
+                )}
+              >
+                <span className="text-lg">📜</span>
+              </motion.button>
+
+              {/* Analytics Toggle Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setShowCharts(prev => !prev)}
+                className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                  showCharts
+                    ? "gradient-primary text-primary-foreground"
+                    : "glass-card hover:border-primary/40"
+                )}
+              >
+                <BarChart3 className="w-5 h-5" />
+              </motion.button>
+            </div>
           </div>
         </div>
 
