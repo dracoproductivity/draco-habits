@@ -654,41 +654,71 @@ export const SettingsPage = () => {
 
                 {/* Preview */}
                 <div className="flex items-center justify-center gap-2 mb-3 p-3 rounded-xl bg-muted/30 border border-border/30">
-                  <Flame className="w-5 h-5" style={{ color: settings.streakColor || '#fb923c' }} />
-                  <span className="text-sm font-semibold" style={{ color: settings.streakColor || '#fb923c' }}>5 dias de streak</span>
+                  <Flame className="w-5 h-5" style={{ color: settings.streakColor || 'hsl(25 95% 55%)' }} />
+                  <span className="text-sm font-semibold" style={{ color: settings.streakColor || 'hsl(25 95% 55%)' }}>5 dias de streak</span>
                 </div>
 
-                {/* Color Options */}
+                {/* Color Options - same as theme colors */}
                 <div className="flex flex-wrap justify-center gap-2">
-                  {[
-                    { id: 'orange', color: '#fb923c', name: 'Laranja' },
-                    { id: 'red', color: '#ef4444', name: 'Vermelho' },
-                    { id: 'yellow', color: '#eab308', name: 'Amarelo' },
-                    { id: 'green', color: '#22c55e', name: 'Verde' },
-                    { id: 'blue', color: '#3b82f6', name: 'Azul' },
-                    { id: 'purple', color: '#a855f7', name: 'Roxo' },
-                    { id: 'pink', color: '#ec4899', name: 'Rosa' },
-                    { id: 'cyan', color: '#06b6d4', name: 'Ciano' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.id}
-                      onClick={() => updateSettings({ streakColor: opt.color })}
-                      className={cn(
-                        'relative w-8 h-8 rounded-full border-2 transition-all',
-                        (settings.streakColor || '#fb923c') === opt.color
-                          ? 'border-foreground ring-2 ring-foreground/30 scale-110'
-                          : 'border-border/50 hover:border-foreground/50 hover:scale-105'
-                      )}
-                      title={opt.name}
-                      style={{ backgroundColor: opt.color }}
-                    >
-                      {(settings.streakColor || '#fb923c') === opt.color && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white drop-shadow-md" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                  {THEME_OPTIONS.map((theme) => {
+                    const hslColor = `hsl(${theme.color})`;
+                    const isSelected = (settings.streakColor || 'hsl(25 95% 55%)') === hslColor;
+                    return (
+                      <button
+                        key={theme.id}
+                        onClick={() => updateSettings({ streakColor: hslColor })}
+                        className={cn(
+                          'relative w-8 h-8 rounded-full border-2 transition-all',
+                          isSelected
+                            ? 'border-foreground ring-2 ring-foreground/30 scale-110'
+                            : 'border-border/50 hover:border-foreground/50 hover:scale-105'
+                        )}
+                        title={theme.name}
+                        style={{ backgroundColor: hslColor }}
+                      >
+                        {isSelected && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white drop-shadow-md" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Custom streak color button */}
+                  <button
+                    onClick={() => {
+                      const streakCustom = settings.streakColor || 'hsl(25 95% 55%)';
+                      updateSettings({ streakColor: `custom:${customColor}` });
+                    }}
+                    className={cn(
+                      'relative w-8 h-8 rounded-full border-2 transition-all overflow-hidden',
+                      settings.streakColor?.startsWith('custom:')
+                        ? 'border-foreground ring-2 ring-foreground/30 scale-110'
+                        : 'border-border/50 hover:border-foreground/50 hover:scale-105'
+                    )}
+                    title="Cor personalizada"
+                    style={{
+                      background: settings.streakColor?.startsWith('custom:')
+                        ? settings.streakColor.replace('custom:', '')
+                        : `conic-gradient(
+                        from 0deg,
+                        hsl(0, 80%, 50%),
+                        hsl(60, 80%, 50%),
+                        hsl(120, 80%, 50%),
+                        hsl(180, 80%, 50%),
+                        hsl(240, 80%, 50%),
+                        hsl(300, 80%, 50%),
+                        hsl(360, 80%, 50%)
+                      )`,
+                    }}
+                  >
+                    {settings.streakColor?.startsWith('custom:') && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <Check className="w-4 h-4 text-white drop-shadow-md" />
+                      </div>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>

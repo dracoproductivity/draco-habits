@@ -857,7 +857,8 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           {/* Day Streak */}
           {(() => {
             const dayStreak = calculateDayStreak(habits, habitChecks, goals);
-            const streakColor = settings.streakColor || '#fb923c';
+            const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
+            const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
             return dayStreak > 0 ? (
               <div className={cn("flex items-center gap-1.5 mb-2", shouldCenterTitle && "justify-center")}>
                 <Flame className="w-4 h-4" style={{ color: streakColor }} />

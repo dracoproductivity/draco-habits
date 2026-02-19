@@ -90,12 +90,16 @@ export const DayCard = ({ className }: DayCardProps) => {
           </span>
 
           {/* Day streak */}
-          {dayStreak > 0 && (
-            <div className="flex items-center gap-1 mt-2">
-              <Flame className="w-4 h-4" style={{ color: settings.streakColor || '#fb923c' }} />
-              <span className="text-sm font-semibold" style={{ color: settings.streakColor || '#fb923c' }}>{dayStreak}</span>
-            </div>
-          )}
+          {dayStreak > 0 && (() => {
+            const rawColor = settings.streakColor || 'hsl(25 95% 55%)';
+            const streakColor = rawColor.startsWith('custom:') ? rawColor.replace('custom:', '') : rawColor;
+            return (
+              <div className="flex items-center gap-1 mt-2">
+                <Flame className="w-4 h-4" style={{ color: streakColor }} />
+                <span className="text-sm font-semibold" style={{ color: streakColor }}>{dayStreak}</span>
+              </div>
+            );
+          })()}
 
           {/* Remaining habits or congratulations */}
           <div className="mt-4">

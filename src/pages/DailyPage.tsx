@@ -138,76 +138,95 @@ export const DailyPage = () => {
             Olá, {useAppStore.getState().user?.firstName || 'Usuário'}
           </h1>
 
-          {/* Note shortcut button - same width container as day card */}
-          <div className="flex flex-col items-center">
-            <div className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4">
-              <span
-                onClick={() => setShowNoteEditor(true)}
-                className="text-sm text-muted-foreground cursor-pointer flex-1"
-              >
-                O que deseja registrar hoje?
-              </span>
-              <div
-                onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
-                className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all cursor-pointer"
-              >
-                <Info className="w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-            </div>
+          {/* Note shortcut + Day Card + Progress - synced width */}
+          {(() => {
+            // Read DayCard expanded state from localStorage to sync widths
+            const isDayCardExpanded = (() => {
+              try {
+                return localStorage.getItem('draco-daycard-expanded') === 'true';
+              } catch {
+                return false;
+              }
+            })();
 
-            {/* Day Card - centered */}
-            <div className="flex justify-center w-full">
-              <DayCard />
-            </div>
-
-            {/* Period Progress Indicators */}
-            <div className="w-full mt-6">
-              <div className="flex items-center justify-end mb-2">
-                <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
-              </div>
-              <PeriodProgressIndicators displayMode={localDisplayMode} />
-            </div>
-
-            {/* Charts below percentages - only when toggled */}
-            <AnimatePresence>
-              {showCharts && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="w-full mt-4 overflow-hidden"
-                >
-                  <div className={cn(
-                    "grid gap-4",
-                    isDesktop ? "grid-cols-2" : "grid-cols-1"
-                  )}>
-                    <div className="glass-card rounded-2xl p-4">
-                      <EvolutionChart compact />
-                    </div>
-                    <div className="glass-card rounded-2xl p-4">
-                      <ProgressCharts compact hideEmoji />
+            return (
+              <div className="flex flex-col items-center">
+                {/* Note + DayCard container - synced width */}
+                <div className={cn(
+                  "flex flex-col items-center w-full transition-all duration-300",
+                  !isDayCardExpanded && "max-w-[280px]"
+                )}>
+                  <div className="glass-card rounded-xl px-4 py-3 w-full flex items-center justify-between mb-4">
+                    <span
+                      onClick={() => setShowNoteEditor(true)}
+                      className="text-sm text-muted-foreground cursor-pointer flex-1"
+                    >
+                      O que deseja registrar hoje?
+                    </span>
+                    <div
+                      onClick={(e) => { e.stopPropagation(); setShowInfoModal(true); }}
+                      className="w-7 h-7 rounded-full glass-card flex items-center justify-center hover:border-primary/40 transition-all cursor-pointer"
+                    >
+                      <Info className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
-            {/* Analytics Toggle Button - emoji only with glass style */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setShowCharts(prev => !prev)}
-              className={cn(
-                "mt-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
-                showCharts
-                  ? "gradient-primary text-primary-foreground"
-                  : "glass-card hover:border-primary/40"
-              )}
-            >
-              <BarChart3 className="w-5 h-5" />
-            </motion.button>
-          </div>
+                  {/* Day Card */}
+                  <div className="flex justify-center w-full">
+                    <DayCard />
+                  </div>
+                </div>
+
+                {/* Period Progress Indicators */}
+                <div className="w-full mt-6">
+                  <div className="flex items-center justify-end mb-2">
+                    <ProgressDisplayToggle mode={localDisplayMode} onToggle={toggleDisplayMode} />
+                  </div>
+                  <PeriodProgressIndicators displayMode={localDisplayMode} />
+                </div>
+
+                {/* Charts below percentages - only when toggled */}
+                <AnimatePresence>
+                  {showCharts && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                      className="w-full mt-4 overflow-hidden"
+                    >
+                      <div className={cn(
+                        "grid gap-4",
+                        isDesktop ? "grid-cols-2" : "grid-cols-1"
+                      )}>
+                        <div className="glass-card rounded-2xl p-4">
+                          <EvolutionChart compact />
+                        </div>
+                        <div className="glass-card rounded-2xl p-4">
+                          <ProgressCharts compact hideEmoji />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Analytics Toggle Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setShowCharts(prev => !prev)}
+                  className={cn(
+                    "mt-5 w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                    showCharts
+                      ? "gradient-primary text-primary-foreground"
+                      : "glass-card hover:border-primary/40"
+                  )}
+                >
+                  <BarChart3 className="w-5 h-5" />
+                </motion.button>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ===== BELOW SECTIONS - Only visible when charts toggled ===== */}
@@ -248,17 +267,19 @@ export const DailyPage = () => {
       </div>
 
       {/* Goal Completion Modal */}
-      {goalToComplete && (
-        <GoalCompletionModal
-          isOpen={!!goalToComplete}
-          goal={goalToComplete}
-          onComplete={handleGoalCompletion}
-          onClose={() => {
-            setProcessedGoalIds(prev => new Set(prev).add(goalToComplete.id));
-            setGoalToComplete(null);
-          }}
-        />
-      )}
+      {
+        goalToComplete && (
+          <GoalCompletionModal
+            isOpen={!!goalToComplete}
+            goal={goalToComplete}
+            onComplete={handleGoalCompletion}
+            onClose={() => {
+              setProcessedGoalIds(prev => new Set(prev).add(goalToComplete.id));
+              setGoalToComplete(null);
+            }}
+          />
+        )
+      }
 
       {/* Fire Celebration for 100% daily completion */}
       <FireCelebration
@@ -278,33 +299,35 @@ export const DailyPage = () => {
       </AnimatePresence>
 
       {/* Info Modal */}
-      {showInfoModal && createPortal(
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setShowInfoModal(false)}
-        >
+      {
+        showInfoModal && createPortal(
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-md bg-card border border-border/50 rounded-2xl shadow-2xl p-6"
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowInfoModal(false)}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">📝 Por que anotar?</h3>
-              <button onClick={() => setShowInfoModal(false)} className="p-1 rounded-lg hover:bg-muted/50">
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Cada dia contém algo de diferente, algo especial. A vida passa rápido, por isso, nós da Draco aconselhamos você a criar uma anotação por dia, que registre o que você fez, o que concluiu, o que deseja melhorar, o que teve de diferente no dia atual, etc. Assim, você faz o dia atual não passar despercebido. Faça cada dia contar, escreva sua história, porque ao chegar no topo da montanha você verá que cada dia valeu a pena. Lembre-se, ao chegar lá, tenha certeza de que foi com boas companhias, amor e paz no coração, não para olhar o mundo de cima, e sim para apreciar tudo que ele tem a mostrar, que lá de baixo, não conseguimos ver.
-            </p>
-          </motion.div>
-        </motion.div>,
-        document.body
-      )}
-    </motion.div>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="w-full max-w-md bg-card border border-border/50 rounded-2xl shadow-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">📝 Por que anotar?</h3>
+                <button onClick={() => setShowInfoModal(false)} className="p-1 rounded-lg hover:bg-muted/50">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Cada dia contém algo de diferente, algo especial. A vida passa rápido, por isso, nós da Draco aconselhamos você a criar uma anotação por dia, que registre o que você fez, o que concluiu, o que deseja melhorar, o que teve de diferente no dia atual, etc. Assim, você faz o dia atual não passar despercebido. Faça cada dia contar, escreva sua história, porque ao chegar no topo da montanha você verá que cada dia valeu a pena. Lembre-se, ao chegar lá, tenha certeza de que foi com boas companhias, amor e paz no coração, não para olhar o mundo de cima, e sim para apreciar tudo que ele tem a mostrar, que lá de baixo, não conseguimos ver.
+              </p>
+            </motion.div>
+          </motion.div>,
+          document.body
+        )
+      }
+    </motion.div >
   );
 };

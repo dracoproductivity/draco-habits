@@ -86,7 +86,7 @@ const LinearProgress = ({ value, label, delay = 0 }: { value: number; label: str
 
 export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgressIndicatorsProps) => {
   const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
-  const { isDesktop } = useResponsive();
+  const { isMobile } = useResponsive();
 
   // Use passed displayMode prop if available, otherwise fall back to settings
   const isCircular = displayMode
@@ -171,8 +171,8 @@ export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgr
     <div className={cn(
       'flex justify-center',
       isCircular
-        ? (isDesktop ? 'gap-4' : 'gap-2')
-        : (isDesktop ? 'gap-3' : 'gap-1.5'),
+        ? (isMobile ? 'gap-2' : 'gap-4')
+        : (isMobile ? 'gap-1.5' : 'gap-3'),
       className
     )}>
       {periods.map((period) => (
@@ -182,7 +182,7 @@ export const PeriodProgressIndicators = ({ className, displayMode }: PeriodProgr
             value={period.value}
             label={period.label}
             delay={period.delay}
-            small={!isDesktop}
+            small={isMobile}
           />
         ) : (
           <LinearProgress
