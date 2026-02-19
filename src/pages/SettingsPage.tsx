@@ -504,7 +504,42 @@ export const SettingsPage = () => {
           {/* Wallpaper Section */}
           <WallpaperSection />
 
-          {/* Theme */}
+          {/* Tab Position - Desktop Only */}
+          {isDesktop && (
+            <section className="glass-card rounded-2xl p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                  <span className="text-lg">📐</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Posição das Abas</h3>
+                  <p className="text-xs text-muted-foreground">Escolha onde as abas ficam (desktop)</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { value: 'bottom' as const, label: 'Embaixo', icon: '⬇️' },
+                  { value: 'left' as const, label: 'Esquerda', icon: '⬅️' },
+                  { value: 'right' as const, label: 'Direita', icon: '➡️' },
+                ]).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => updateSettings({ tabPosition: opt.value })}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all",
+                      (settings.tabPosition || 'bottom') === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border/30 text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    <span className="text-xl">{opt.icon}</span>
+                    <span className="text-xs font-medium">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="glass-card rounded-2xl p-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">

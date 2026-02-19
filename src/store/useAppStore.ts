@@ -131,6 +131,7 @@ const defaultSettings: AppSettings = {
   glassOpacity: 65,
   dracoSaves: 0,
   dracoSavesDelta: null,
+  tabPosition: 'bottom',
 };
 
 // Empty defaults for first-time users

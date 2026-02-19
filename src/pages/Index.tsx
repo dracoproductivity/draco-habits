@@ -11,6 +11,7 @@ import { DataPage } from './DataPage';
 import { SettingsPage } from './SettingsPage';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { DesktopBottomNav } from '@/components/layout/DesktopBottomNav';
+import { DesktopSidebar } from '@/components/layout/DesktopSidebar';
 import { AppBackground } from '@/components/layout/AppBackground';
 import { WelcomeModal } from '@/components/modals/WelcomeModal';
 import { MorningCheckInModal } from '@/components/modals/MorningCheckInModal';
@@ -28,7 +29,7 @@ const Index = () => {
   const [showMorningCheckIn, setShowMorningCheckIn] = useState(false);
   const [showDailyLogReminder, setShowDailyLogReminder] = useState(false);
   const prevUserIdRef = useRef<string | null>(null);
-  
+
   // Initialize cloud sync - this handles loading data from cloud
   useCloudSync();
 
@@ -46,7 +47,7 @@ const Index = () => {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.themeColor);
     document.documentElement.classList.toggle('dark', settings.darkMode);
-    
+
     // Apply custom color if theme is custom
     if (settings.themeColor === 'custom' && settings.customColor) {
       const { h, s, l } = settings.customColor;
@@ -54,7 +55,7 @@ const Index = () => {
       document.documentElement.style.setProperty('--custom-s', `${s}%`);
       document.documentElement.style.setProperty('--custom-l', `${l}%`);
     }
-    
+
     // Apply glass blur and opacity settings
     const blur = settings.glassBlur ?? 20;
     const opacity = settings.glassOpacity ?? 65;
@@ -65,19 +66,19 @@ const Index = () => {
   // Check if morning check-in should be shown - only once per session after 5am
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     const currentHour = new Date().getHours();
     const today = format(new Date(), 'yyyy-MM-dd');
     const accountCreatedAt = settings.accountCreatedAt;
-    
+
     // Don't show on the same day the account was created
     if (accountCreatedAt === today) {
       return;
     }
-    
+
     // Check if user already dismissed the modal today (stored in sessionStorage)
     const dismissedToday = sessionStorage.getItem('morningCheckInDismissed') === today;
-    
+
     // Only show after 5am and if not already filled today and not dismissed this session
     if (currentHour >= 5 && settings.lastDailyLogDate !== today && !dismissedToday) {
       setShowMorningCheckIn(true);
@@ -144,18 +145,27 @@ const Index = () => {
       {/* Main Content */}
       <main className={cn(
         'transition-all duration-300 pt-4',
-        isDesktop ? 'max-w-7xl mx-auto px-8 pb-24' : isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
+        isDesktop && settings.tabPosition === 'left' ? 'lg:ml-64 max-w-7xl px-8 pb-8' :
+          isDesktop && settings.tabPosition === 'right' ? 'lg:mr-64 max-w-7xl px-8 pb-8' :
+            isDesktop ? 'max-w-7xl mx-auto px-8 pb-24' :
+              isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
       )}>
         {renderPage()}
       </main>
-      
-      {/* Bottom Nav - Desktop uses glass style, mobile/tablet uses regular */}
-      {isDesktop ? <DesktopBottomNav /> : <BottomNav />}
-      
+
+      {/* Navigation */}
+      {isDesktop ? (
+        settings.tabPosition === 'left' ? <DesktopSidebar side="left" /> :
+          settings.tabPosition === 'right' ? <DesktopSidebar side="right" /> :
+            <DesktopBottomNav />
+      ) : (
+        <BottomNav />
+      )}
+
       <WelcomeModal />
-      <MorningCheckInModal 
-        isOpen={showMorningCheckIn} 
-        onClose={handleMorningCheckInClose} 
+      <MorningCheckInModal
+        isOpen={showMorningCheckIn}
+        onClose={handleMorningCheckInClose}
       />
       <AnimatePresence>
         {showDailyLogReminder && activeTab === 'home' && (

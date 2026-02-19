@@ -52,6 +52,7 @@ interface SettingsRow {
   glass_opacity: number;
   streak_color: string | null;
   draco_saves: number | null;
+  tab_position: string | null;
 }
 
 interface GoalRow {
@@ -249,6 +250,7 @@ export const useCloudSync = () => {
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
           dracoSaves: settings.draco_saves ?? 0,
+          tabPosition: (settings.tab_position as any) || 'bottom',
         });
 
         // Only overwrite streakColor if cloud has an actual value
@@ -475,6 +477,7 @@ export const useCloudSync = () => {
           glass_opacity: mergedSettings.glassOpacity ?? 65,
           streak_color: mergedSettings.streakColor ?? null,
           draco_saves: mergedSettings.dracoSaves ?? 0,
+          tab_position: mergedSettings.tabPosition ?? 'bottom',
         },
         { onConflict: "user_id" },
       );

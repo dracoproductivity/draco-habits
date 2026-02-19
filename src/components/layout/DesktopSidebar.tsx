@@ -14,11 +14,14 @@ const tabs: { id: TabType; label: string; icon: typeof CalendarDays }[] = [
   { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
-export const DesktopSidebar = () => {
+export const DesktopSidebar = ({ side = 'left' }: { side?: 'left' | 'right' }) => {
   const { activeTab, setActiveTab, draco, user } = useAppStore();
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-card/50 backdrop-blur-xl border-r border-border/50 z-40">
+    <aside className={cn(
+      "hidden lg:flex flex-col w-64 h-screen fixed top-0 bg-card/50 backdrop-blur-xl z-40",
+      side === 'left' ? "left-0 border-r border-border/50" : "right-0 border-l border-border/50",
+    )}>
       {/* Logo/Brand */}
       <div className="p-6 border-b border-border/30">
         <div className="flex items-center gap-3">
@@ -40,7 +43,7 @@ export const DesktopSidebar = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">
-              {user?.firstName || 'Usuário'} 
+              {user?.firstName || 'Usuário'}
             </p>
             <p className="text-xs text-muted-foreground">
               Nível {draco.level} • {draco.totalXP} XP
@@ -61,8 +64,8 @@ export const DesktopSidebar = () => {
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'relative w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
-                isActive 
-                  ? 'gradient-fire text-primary-foreground shadow-lg' 
+                isActive
+                  ? 'gradient-fire text-primary-foreground shadow-lg'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
               )}
             >
