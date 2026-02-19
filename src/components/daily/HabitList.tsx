@@ -916,7 +916,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mb-4 space-y-3"
+                className="mb-4 space-y-3 overflow-hidden"
               >
                 {!showGoalCreation ? (
                   <>
@@ -936,7 +936,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                       />
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Target className="w-4 h-4 text-muted-foreground" />
                       <select
                         value={selectedGoalId || ''}
@@ -1123,7 +1123,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
                           </p>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Quantidade:</span>
-                            <div className="flex gap-1">
+                            <div className="flex flex-wrap gap-1">
                               {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) => (
                                 <button
                                   key={count}
