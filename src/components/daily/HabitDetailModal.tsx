@@ -748,7 +748,11 @@ export const HabitDetailModal = ({ habit, isOpen, onClose }: HabitDetailModalPro
                   </div>
                 </div>
                 <button
-                  onClick={() => setIsBadHabit(!isBadHabit)}
+                  onClick={() => {
+                    const newValue = !isBadHabit;
+                    setIsBadHabit(newValue);
+                    updateHabit(habit.id, { isBadHabit: newValue });
+                  }}
                   className={cn(
                     'w-10 h-5 rounded-full transition-all relative flex-shrink-0',
                     isBadHabit ? 'bg-destructive' : 'bg-muted'
