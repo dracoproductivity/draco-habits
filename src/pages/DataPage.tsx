@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { AnnualProgressView } from '@/components/analytics/AnnualProgressView';
 import { HabitCalendar } from '@/components/daily/HabitCalendar';
+import { HistoryViewer } from '@/components/daily/HistoryViewer';
 import { ProgressDisplayToggle } from '@/components/ui/ProgressDisplayToggle';
 import { HabitDetailModal } from '@/components/daily/HabitDetailModal';
 import { useAppStore } from '@/store/useAppStore';
@@ -17,14 +18,14 @@ import { toast } from '@/hooks/use-toast';
 export const DataPage = () => {
   const { settings, updateSettings, goals, habits, updateGoal, updateHabit } = useAppStore();
   const { isDesktop } = useResponsive();
-  
+
   const [localDisplayMode, setLocalDisplayMode] = useState<ProgressDisplayMode>(
     settings.pageProgressDisplayModes?.analytics || settings.progressDisplayMode
   );
   const [showArchived, setShowArchived] = useState(false);
   const [selectedArchivedHabit, setSelectedArchivedHabit] = useState<Habit | null>(null);
   const [selectedArchivedGoal, setSelectedArchivedGoal] = useState<Goal | null>(null);
-  
+
   const toggleDisplayMode = () => {
     const newMode = localDisplayMode === 'linear' ? 'circular' : 'linear';
     setLocalDisplayMode(newMode);
@@ -68,6 +69,12 @@ export const DataPage = () => {
 
         {/* Annual Progress View */}
         <AnnualProgressView displayMode={localDisplayMode} />
+
+        {/* History Viewer */}
+        <div className="glass-card rounded-2xl p-4 mt-6">
+          <h3 className="font-semibold text-foreground mb-2 text-center">Histórico de Períodos</h3>
+          <HistoryViewer displayMode={localDisplayMode} />
+        </div>
 
         {/* Calendar */}
         <div className="glass-card rounded-2xl p-4 mt-6">

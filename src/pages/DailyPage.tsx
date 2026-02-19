@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, Info, X } from 'lucide-react';
+import { BarChart3, Info, X, CalendarDays } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { UniversalHeader } from '@/components/layout/UniversalHeader';
 import { DayCard } from '@/components/daily/DayCard';
@@ -190,7 +190,7 @@ export const DailyPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="w-full overflow-hidden"
                 >
-                  <HistoryViewer />
+                  <HistoryViewer displayMode={localDisplayMode} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -234,7 +234,7 @@ export const DailyPage = () => {
                     : "glass-card hover:border-primary/40"
                 )}
               >
-                <span className="text-lg">📜</span>
+                <CalendarDays className="w-5 h-5" />
               </motion.button>
 
               {/* Analytics Toggle Button */}
