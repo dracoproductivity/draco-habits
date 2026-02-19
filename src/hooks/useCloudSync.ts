@@ -456,34 +456,51 @@ export const useCloudSync = () => {
       const currentSettings = useAppStore.getState().settings;
       const mergedSettings = { ...currentSettings, ...settingsData };
 
+      // Core fields that always exist in the DB
+      const corePayload: Record<string, unknown> = {
+        user_id: userId,
+        theme_color: mergedSettings.themeColor,
+        progress_display_mode: mergedSettings.progressDisplayMode,
+        show_emojis: mergedSettings.showEmojis,
+        notifications_enabled: mergedSettings.notificationsEnabled,
+        notification_reminders: JSON.stringify(mergedSettings.notificationReminders ?? []),
+        dark_mode: mergedSettings.darkMode,
+        min_sleep_hours: mergedSettings.minSleepHours,
+        max_phone_hours: mergedSettings.maxPhoneHours,
+        account_created_at: mergedSettings.accountCreatedAt,
+        last_daily_log_date: mergedSettings.lastDailyLogDate,
+        wallpaper_light: mergedSettings.wallpaperLight ?? null,
+        wallpaper_dark: mergedSettings.wallpaperDark ?? null,
+        wallpaper_mobile_light: mergedSettings.wallpaperMobileLight ?? null,
+        wallpaper_mobile_dark: mergedSettings.wallpaperMobileDark ?? null,
+        glass_blur: mergedSettings.glassBlur ?? 20,
+        glass_opacity: mergedSettings.glassOpacity ?? 65,
+        streak_color: mergedSettings.streakColor ?? null,
+      };
+
+      // Extended fields (may not exist in DB yet)
+      const extendedPayload = {
+        ...corePayload,
+        draco_saves: mergedSettings.dracoSaves ?? 0,
+        tab_position: mergedSettings.tabPosition ?? 'bottom',
+      };
+
+      // Try with all fields first
       const { error } = await supabase.from("user_settings").upsert(
-        {
-          user_id: userId,
-          theme_color: mergedSettings.themeColor,
-          progress_display_mode: mergedSettings.progressDisplayMode,
-          show_emojis: mergedSettings.showEmojis,
-          notifications_enabled: mergedSettings.notificationsEnabled,
-          notification_reminders: JSON.stringify(mergedSettings.notificationReminders ?? []),
-          dark_mode: mergedSettings.darkMode,
-          min_sleep_hours: mergedSettings.minSleepHours,
-          max_phone_hours: mergedSettings.maxPhoneHours,
-          account_created_at: mergedSettings.accountCreatedAt,
-          last_daily_log_date: mergedSettings.lastDailyLogDate,
-          wallpaper_light: mergedSettings.wallpaperLight ?? null,
-          wallpaper_dark: mergedSettings.wallpaperDark ?? null,
-          wallpaper_mobile_light: mergedSettings.wallpaperMobileLight ?? null,
-          wallpaper_mobile_dark: mergedSettings.wallpaperMobileDark ?? null,
-          glass_blur: mergedSettings.glassBlur ?? 20,
-          glass_opacity: mergedSettings.glassOpacity ?? 65,
-          streak_color: mergedSettings.streakColor ?? null,
-          draco_saves: mergedSettings.dracoSaves ?? 0,
-          tab_position: mergedSettings.tabPosition ?? 'bottom',
-        },
+        extendedPayload,
         { onConflict: "user_id" },
       );
 
       if (error) {
-        console.error("Error saving settings:", error);
+        console.warn("saveSettings: Extended save failed, retrying with core fields only:", error.message);
+        // Retry with core fields only (in case new columns don't exist yet)
+        const { error: fallbackError } = await supabase.from("user_settings").upsert(
+          corePayload,
+          { onConflict: "user_id" },
+        );
+        if (fallbackError) {
+          console.error("Error saving settings (fallback):", fallbackError);
+        }
       }
     },
     [user?.id],

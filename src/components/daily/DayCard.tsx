@@ -15,18 +15,18 @@ interface DayCardProps {
 }
 
 export const DayCard = ({ className, expanded = false, onToggle }: DayCardProps) => {
-  const { habits, goals, dailyLogs, settings, getDailyProgress } = useAppStore();
+  const { habits, goals, habitChecks, settings, getDailyProgress } = useAppStore();
 
   // Calculate display data
   const dayNumber = format(new Date(), 'dd');
   const monthName = format(new Date(), 'MMMM', { locale: ptBR });
   const year = format(new Date(), 'yyyy');
+  const dateStr = format(new Date(), 'yyyy-MM-dd');
 
   const scheduledHabits = getHabitsForDate(new Date(), habits, goals);
   const completedCount = scheduledHabits.filter(h => {
-    const dateStr = format(new Date(), 'yyyy-MM-dd');
-    const log = dailyLogs.find(l => l.date === dateStr && l.habitId === h.id);
-    return log?.completed;
+    const check = habitChecks.find(c => c.habitId === h.id && c.date === dateStr);
+    return check?.completed;
   }).length;
 
   const allCompleted = scheduledHabits.length > 0 && completedCount === scheduledHabits.length;
