@@ -877,16 +877,22 @@ export const useCloudSync = () => {
   // Initial load when authenticated
   useEffect(() => {
     if (isAuthenticated && user?.id) {
-      // Only load if user changed
+      // Only load if user changed (new login, NOT token refresh)
       if (globalState.lastLoadedUserId !== user.id) {
         globalState.lastLoadedUserId = user.id;
         globalState.syncInProgress = false;
         globalState.isInitialLoad = true;
         loadFromCloud(user.id);
       }
-    } else if (!isAuthenticated) {
-      globalState.lastLoadedUserId = null;
-      globalState.isInitialLoad = true;
+    } else if (!isAuthenticated && !user?.id) {
+      // Only reset on genuine sign-out (both isAuthenticated = false AND user = null)
+      // Do NOT reset on brief auth flickers (token refresh) where user?.id
+      // might temporarily be null. This prevents re-loading and overwriting
+      // fresh local data with stale cloud data.
+      if (globalState.lastLoadedUserId) {
+        globalState.lastLoadedUserId = null;
+        globalState.isInitialLoad = true;
+      }
     }
   }, [isAuthenticated, user?.id, loadFromCloud]);
 
