@@ -749,12 +749,13 @@ export const useAppStore = create<AppStore>()(
 
       getDailyProgress: (date) => {
         const { habits, habitChecks, goals } = get();
+        if (!habits || !Array.isArray(habits) || !habitChecks || !Array.isArray(habitChecks)) return 0;
         // Parse date string as local timezone (not UTC) to avoid one-day shift
         const [year, month, day] = date.split('-').map(Number);
         const dateObj = new Date(year, month - 1, day);
 
         // Get habits that should appear on this date, exclude vacation mode
-        const habitsForDate = getHabitsForDate(dateObj, habits, goals)
+        const habitsForDate = getHabitsForDate(dateObj, habits, goals || [])
           .filter(h => !h.vacationMode);
 
         if (habitsForDate.length === 0) return 0;

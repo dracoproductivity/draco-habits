@@ -429,6 +429,7 @@ export const getHabitsForDate = (
   habits: Habit[],
   goals: Goal[]
 ): Habit[] => {
+  if (!habits || !Array.isArray(habits)) return [];
   return habits.filter(habit => {
     if (habit.archived) return false;
     const linkedGoal = habit.goalId && Array.isArray(goals) ? goals.find(g => g.id === habit.goalId) : null;
@@ -534,6 +535,9 @@ export const calculateHierarchicalPeriodProgress = (
   goals: Goal[],
   habitChecks: HabitCheck[]
 ): { progress: number; completed: number; total: number } => {
+  if (!habits || !Array.isArray(habits) || !habitChecks || !Array.isArray(habitChecks)) {
+    return { progress: 0, completed: 0, total: 0 };
+  }
   const xn = calculatePeriodXN(type, period, habits, goals, habitChecks);
   const progress = xn.total > 0 ? Math.round((xn.completed / xn.total) * 100) : 0;
 

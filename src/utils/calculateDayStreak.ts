@@ -15,6 +15,7 @@ export const calculateDayStreak = (
     habitChecks: HabitCheck[],
     goals: Goal[]
 ): number => {
+    if (!habits || !Array.isArray(habits) || !habitChecks || !Array.isArray(habitChecks)) return 0;
     const today = new Date();
     let streak = 0;
 
