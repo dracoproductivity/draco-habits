@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: draco-habits
-        image: felipebg1/draco-habits:d65b48dc26d3deb4794ee095f4693738b0989909
+        image: felipebg1/draco-habits:88c4b8f2ecbab9a7b9290de59346675bcabfe33d
         ports:
 
         - containerPort: 80
