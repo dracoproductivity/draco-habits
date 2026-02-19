@@ -1647,7 +1647,7 @@ export const HabitList = ({ showProgressIndicators = true, centerTitle = false, 
           <div
             className={cn(
               "overflow-y-auto pr-1 scrollbar-thin",
-              isMobile ? "space-y-2 max-h-[55vh] px-4" : "space-y-2 max-h-[320px]"
+              isMobile ? "space-y-1.5 max-h-[42vh] px-2" : "space-y-2 max-h-[320px]"
             )}
             onTouchMove={(e) => e.stopPropagation()}
           >

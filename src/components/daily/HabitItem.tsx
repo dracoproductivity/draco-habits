@@ -119,7 +119,7 @@ export const HabitItem = ({
       {/* Content */}
       <div className={cn(
         'relative flex items-center transition-all flex-1 min-w-0',
-        isMobile ? 'p-2.5 gap-2' : 'p-3 gap-2.5',
+        isMobile ? 'p-2 gap-1.5' : 'p-3 gap-2.5',
         !isCompleted && !microGoalsCompleted && 'hover:bg-muted/20'
       )}>
         {/* Checkbox / Micro goals button */}
