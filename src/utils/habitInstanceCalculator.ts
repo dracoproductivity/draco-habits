@@ -1,11 +1,11 @@
-import { 
-  startOfWeek, 
-  endOfWeek, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfQuarter, 
-  endOfQuarter, 
-  startOfYear, 
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
   endOfYear,
   eachDayOfInterval,
   getWeek,
@@ -35,7 +35,7 @@ export interface HabitProgress {
 // Get the period boundaries for a goal
 export const getPeriodBoundaries = (type: GoalType, period: string): { start: Date; end: Date } | null => {
   const now = new Date();
-  
+
   switch (type) {
     case 'yearly': {
       const year = parseInt(period);
@@ -51,7 +51,7 @@ export const getPeriodBoundaries = (type: GoalType, period: string): { start: Da
       if (!match) return null;
       const semester = parseInt(match[1]);
       const year = parseInt(match[2]);
-      const semesterStart = semester === 1 
+      const semesterStart = semester === 1
         ? new Date(year, 0, 1) // January 1st
         : new Date(year, 6, 1); // July 1st
       const semesterEnd = semester === 1
@@ -77,7 +77,7 @@ export const getPeriodBoundaries = (type: GoalType, period: string): { start: Da
     case 'monthly': {
       // Format: "Janeiro 2025"
       const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
       const parts = period.split(' ');
       const monthIndex = months.indexOf(parts[0]);
       const year = parseInt(parts[1]);
@@ -109,28 +109,28 @@ export const getPeriodBoundaries = (type: GoalType, period: string): { start: Da
 export const getWeekOfMonth = (date: Date): number => {
   const firstDayOfMonth = startOfMonth(date);
   const firstWeekStart = startOfWeek(firstDayOfMonth, { weekStartsOn: 1 });
-  
+
   // If first day of month is before the week start, adjust
   const dayOfFirst = getDay(firstDayOfMonth);
   const offset = dayOfFirst === 0 ? 6 : dayOfFirst - 1; // Monday = 0
-  
+
   const dayOfMonth = date.getDate();
   return Math.ceil((dayOfMonth + offset) / 7);
 };
 
 // Check if a date should have the habit based on week frequency
 export const isDateInWeekFrequency = (
-  date: Date, 
-  habitCreatedAt: Date, 
+  date: Date,
+  habitCreatedAt: Date,
   repeatFrequency: number
 ): boolean => {
   if (repeatFrequency === 1) return true;
-  
+
   const weeksSinceCreation = differenceInWeeks(
-    startOfWeek(date, { weekStartsOn: 1 }), 
+    startOfWeek(date, { weekStartsOn: 1 }),
     startOfWeek(habitCreatedAt, { weekStartsOn: 1 })
   );
-  
+
   return weeksSinceCreation % repeatFrequency === 0;
 };
 
@@ -142,11 +142,11 @@ export const calculateHabitInstances = (
 ): HabitInstance[] => {
   const instances: HabitInstance[] = [];
   const habitCreatedAt = parseISO(habit.createdAt);
-  
+
   // Determine period boundaries
   let periodStart: Date;
   let periodEnd: Date;
-  
+
   if (linkedGoal) {
     const boundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
     if (!boundaries) return instances;
@@ -158,7 +158,7 @@ export const calculateHabitInstances = (
     periodStart = startOfYear(now);
     periodEnd = endOfYear(now);
   }
-  
+
   // Apply habit's own start/end date constraints if defined
   if (habit.startDate) {
     const habitStart = parseISO(habit.startDate);
@@ -166,48 +166,48 @@ export const calculateHabitInstances = (
       periodStart = habitStart;
     }
   }
-  
+
   if (habit.endDate) {
     const habitEnd = parseISO(habit.endDate);
     if (habitEnd < periodEnd) {
       periodEnd = habitEnd;
     }
   }
-  
+
   // Start from habit creation date or period start, whichever is later
-  const effectiveStart = fromDate 
+  const effectiveStart = fromDate
     ? (fromDate > habitCreatedAt ? fromDate : habitCreatedAt)
     : (habitCreatedAt > periodStart ? habitCreatedAt : periodStart);
-  
+
   if (effectiveStart > periodEnd) return instances;
-  
+
   // Handle one-time habits
   if (habit.isOneTime) {
     const dateStr = format(effectiveStart, 'yyyy-MM-dd');
     instances.push({ date: dateStr, habitId: habit.id, isScheduled: true });
     return instances;
   }
-  
+
   // Get all days in the period
   const allDays = eachDayOfInterval({ start: effectiveStart, end: periodEnd });
-  
+
   for (const day of allDays) {
     let isScheduled = true;
-    
+
     // Determine which schedule to use based on scheduleUpdatedAt
     let weekDays = habit.weekDays;
     let repeatFrequency = habit.repeatFrequency;
     let monthWeeks = habit.monthWeeks;
-    
+
     if (habit.scheduleUpdatedAt) {
       const scheduleUpdatedAt = parseISO(habit.scheduleUpdatedAt);
       const scheduleUpdatedDateOnly = new Date(
-        scheduleUpdatedAt.getFullYear(), 
-        scheduleUpdatedAt.getMonth(), 
+        scheduleUpdatedAt.getFullYear(),
+        scheduleUpdatedAt.getMonth(),
         scheduleUpdatedAt.getDate()
       );
       const dayDateOnly = new Date(day.getFullYear(), day.getMonth(), day.getDate());
-      
+
       // If the date is before the schedule was updated, use previous schedule
       // Only use previous values if they actually exist (not undefined)
       if (dayDateOnly < scheduleUpdatedDateOnly) {
@@ -222,7 +222,7 @@ export const calculateHabitInstances = (
         }
       }
     }
-    
+
     // Check weekdays
     if (weekDays && weekDays.length > 0) {
       const dayOfWeek = getDay(day);
@@ -230,14 +230,14 @@ export const calculateHabitInstances = (
         isScheduled = false;
       }
     }
-    
+
     // Check week frequency (every X weeks)
     if (isScheduled && repeatFrequency && repeatFrequency > 1) {
       if (!isDateInWeekFrequency(day, habitCreatedAt, repeatFrequency)) {
         isScheduled = false;
       }
     }
-    
+
     // Check specific weeks of month
     if (isScheduled && monthWeeks && monthWeeks.length > 0) {
       const weekOfMonth = getWeekOfMonth(day);
@@ -245,7 +245,7 @@ export const calculateHabitInstances = (
         isScheduled = false;
       }
     }
-    
+
     if (isScheduled) {
       instances.push({
         date: format(day, 'yyyy-MM-dd'),
@@ -254,7 +254,7 @@ export const calculateHabitInstances = (
       });
     }
   }
-  
+
   return instances;
 };
 
@@ -274,13 +274,13 @@ export const isHabitScheduledForDate = (
   linkedGoal: Goal | null
 ): boolean => {
   const habitCreatedAt = parseISO(habit.createdAt);
-  
+
   // If date is before habit creation, it's not scheduled
   // Use date-only comparison to avoid timezone issues
   const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const createdDateOnly = new Date(habitCreatedAt.getFullYear(), habitCreatedAt.getMonth(), habitCreatedAt.getDate());
   if (dateOnly < createdDateOnly) return false;
-  
+
   // Check habit's own start/end date constraints
   if (habit.startDate) {
     const startDateOnly = parseISO(habit.startDate);
@@ -288,14 +288,14 @@ export const isHabitScheduledForDate = (
       return false;
     }
   }
-  
+
   if (habit.endDate) {
     const endDateOnly = parseISO(habit.endDate);
     if (dateOnly > new Date(endDateOnly.getFullYear(), endDateOnly.getMonth(), endDateOnly.getDate())) {
       return false;
     }
   }
-  
+
   // Check if date is within the goal's period (only if goal exists)
   if (linkedGoal) {
     const boundaries = getPeriodBoundaries(linkedGoal.type, linkedGoal.period);
@@ -306,26 +306,26 @@ export const isHabitScheduledForDate = (
     }
   }
   // If no linked goal, the habit is valid for all dates after creation
-  
+
   // Handle one-time habits
   if (habit.isOneTime) {
     return format(dateOnly, 'yyyy-MM-dd') === format(createdDateOnly, 'yyyy-MM-dd');
   }
-  
+
   // Determine which schedule to use based on scheduleUpdatedAt
   // If the date is before the schedule was updated, use the previous schedule
   let weekDays = habit.weekDays;
   let repeatFrequency = habit.repeatFrequency;
   let monthWeeks = habit.monthWeeks;
-  
+
   if (habit.scheduleUpdatedAt) {
     const scheduleUpdatedAt = parseISO(habit.scheduleUpdatedAt);
     const scheduleUpdatedDateOnly = new Date(
-      scheduleUpdatedAt.getFullYear(), 
-      scheduleUpdatedAt.getMonth(), 
+      scheduleUpdatedAt.getFullYear(),
+      scheduleUpdatedAt.getMonth(),
       scheduleUpdatedAt.getDate()
     );
-    
+
     // If the date is before the schedule was updated, use previous schedule
     // Only use previous values if they actually exist (not undefined)
     if (dateOnly < scheduleUpdatedDateOnly) {
@@ -340,26 +340,26 @@ export const isHabitScheduledForDate = (
       }
     }
   }
-  
+
   // Check weekdays
   if (weekDays && weekDays.length > 0) {
     const dayOfWeek = getDay(dateOnly);
     if (!weekDays.includes(dayOfWeek)) return false;
   }
-  
+
   // Check week frequency
   if (repeatFrequency && repeatFrequency > 1) {
     if (!isDateInWeekFrequency(dateOnly, habitCreatedAt, repeatFrequency)) {
       return false;
     }
   }
-  
+
   // Check specific weeks of month
   if (monthWeeks && monthWeeks.length > 0) {
     const weekOfMonth = getWeekOfMonth(dateOnly);
     if (!monthWeeks.includes(weekOfMonth)) return false;
   }
-  
+
   return true;
 };
 
@@ -371,20 +371,20 @@ export const calculateHabitProgress = (
 ): HabitProgress => {
   const instances = calculateHabitInstances(habit, linkedGoal);
   const total = instances.length;
-  
+
   if (total === 0) {
     return { completed: 0, total: 0, percentage: 0 };
   }
-  
+
   const completedDates = new Set(
     habitChecks
       .filter(hc => hc.habitId === habit.id && hc.completed)
       .map(hc => hc.date)
   );
-  
+
   const completed = instances.filter(inst => completedDates.has(inst.date)).length;
   const percentage = Math.round((completed / total) * 100);
-  
+
   return { completed, total, percentage };
 };
 
@@ -395,9 +395,9 @@ export const calculateGoalProgress = (
   habitChecks: HabitCheck[]
 ): number => {
   const { completed, total } = calculateGoalXN(goal, habits, habitChecks);
-  
+
   if (total === 0) return 0;
-  
+
   return Math.round((completed / total) * 100);
 };
 
@@ -408,18 +408,18 @@ export const calculateGoalXN = (
   habitChecks: HabitCheck[]
 ): { completed: number; total: number } => {
   const linkedHabits = habits.filter(h => h.goalId === goal.id);
-  
+
   if (linkedHabits.length === 0) return { completed: 0, total: 0 };
-  
+
   let totalCompleted = 0;
   let totalOccurrences = 0;
-  
+
   for (const habit of linkedHabits) {
     const progress = calculateHabitProgress(habit, goal, habitChecks);
     totalCompleted += progress.completed;
     totalOccurrences += progress.total;
   }
-  
+
   return { completed: totalCompleted, total: totalOccurrences };
 };
 
@@ -431,7 +431,7 @@ export const getHabitsForDate = (
 ): Habit[] => {
   return habits.filter(habit => {
     if (habit.archived) return false;
-    const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
+    const linkedGoal = habit.goalId && Array.isArray(goals) ? goals.find(g => g.id === habit.goalId) : null;
     return isHabitScheduledForDate(habit, date, linkedGoal);
   });
 };
@@ -450,8 +450,8 @@ export interface PeriodProgress {
 // Get the period identifier for a date
 export const getPeriodIdentifier = (date: Date, type: GoalType): string => {
   const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
   switch (type) {
     case 'yearly':
       return date.getFullYear().toString();
@@ -496,21 +496,21 @@ export const calculatePeriodXN = (
   // Iterate through ALL habits and count instances within this period
   for (const habit of habits) {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
-    
+
     // Get all instances for this habit
     const instances = calculateHabitInstances(habit, linkedGoal);
-    
+
     for (const instance of instances) {
       const instDate = parseISO(instance.date);
-      
+
       // Check if this instance falls within the period boundaries
       if (isWithinInterval(instDate, { start: boundaries.start, end: boundaries.end })) {
         totalScheduled++;
-        
+
         const isCompleted = habitChecks.some(
           hc => hc.habitId === habit.id && hc.date === instance.date && hc.completed
         );
-        
+
         if (isCompleted) {
           totalCompleted++;
         }
@@ -536,7 +536,7 @@ export const calculateHierarchicalPeriodProgress = (
 ): { progress: number; completed: number; total: number } => {
   const xn = calculatePeriodXN(type, period, habits, goals, habitChecks);
   const progress = xn.total > 0 ? Math.round((xn.completed / xn.total) * 100) : 0;
-  
+
   return {
     progress,
     completed: xn.completed,
@@ -552,7 +552,7 @@ export const calculateAllPeriodProgress = (
 ): Map<string, PeriodProgress> => {
   const periodProgressMap = new Map<string, PeriodProgress>();
   const now = new Date();
-  
+
   // First, process all explicit goals using X/N method
   for (const goal of goals) {
     const { progress, completed, total } = calculateHierarchicalPeriodProgress(
@@ -562,10 +562,10 @@ export const calculateAllPeriodProgress = (
       [goal],
       habitChecks
     );
-    
+
     const boundaries = getPeriodBoundaries(goal.type, goal.period);
     const hasStarted = boundaries ? now >= boundaries.start : false;
-    
+
     periodProgressMap.set(`${goal.type}-${goal.period}`, {
       type: goal.type,
       period: goal.period,
@@ -576,15 +576,15 @@ export const calculateAllPeriodProgress = (
       total
     });
   }
-  
+
   // Calculate phantom progress for periods without explicit goals
   // This uses X/N across ALL habits that fall within the period
   const allInstances: { date: Date; habitId: string; instanceDate: string }[] = [];
-  
+
   for (const habit of habits) {
     const linkedGoal = habit.goalId ? goals.find(g => g.id === habit.goalId) : null;
     const instances = calculateHabitInstances(habit, linkedGoal);
-    
+
     for (const instance of instances) {
       allInstances.push({
         date: parseISO(instance.date),
@@ -593,24 +593,24 @@ export const calculateAllPeriodProgress = (
       });
     }
   }
-  
+
   // Group instances by period and calculate X/N for each
   const periodTypes: GoalType[] = ['weekly', 'monthly', 'quarterly', 'semestral', 'yearly'];
-  
+
   for (const instance of allInstances) {
     for (const pType of periodTypes) {
       const periodId = getPeriodIdentifier(instance.date, pType);
       const key = `${pType}-${periodId}`;
-      
+
       // Only create phantom periods (explicit goals are already handled)
       if (!periodProgressMap.has(key)) {
         const boundaries = getPeriodBoundaries(pType, periodId);
         const hasStarted = boundaries ? now >= boundaries.start : false;
-        
+
         // Calculate X/N for this phantom period
         const xn = calculatePeriodXN(pType, periodId, habits, goals, habitChecks);
         const progress = xn.total > 0 ? Math.round((xn.completed / xn.total) * 100) : 0;
-        
+
         periodProgressMap.set(key, {
           type: pType,
           period: periodId,
@@ -623,7 +623,7 @@ export const calculateAllPeriodProgress = (
       }
     }
   }
-  
+
   return periodProgressMap;
 };
 
