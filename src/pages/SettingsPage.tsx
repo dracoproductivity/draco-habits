@@ -516,26 +516,47 @@ export const SettingsPage = () => {
                   <p className="text-xs text-muted-foreground">Escolha onde as abas ficam (desktop)</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 {([
-                  { value: 'bottom' as const, label: 'Embaixo', icon: '⬇️' },
-                  { value: 'left' as const, label: 'Esquerda', icon: '⬅️' },
-                  { value: 'right' as const, label: 'Direita', icon: '➡️' },
-                ]).map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => updateSettings({ tabPosition: opt.value })}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all",
-                      (settings.tabPosition || 'bottom') === opt.value
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/30 text-muted-foreground hover:border-primary/40"
-                    )}
-                  >
-                    <span className="text-xl">{opt.icon}</span>
-                    <span className="text-xs font-medium">{opt.label}</span>
-                  </button>
-                ))}
+                  { value: 'bottom' as const, label: 'Embaixo' },
+                  { value: 'left' as const, label: 'Esquerda' },
+                  { value: 'right' as const, label: 'Direita' },
+                ]).map(opt => {
+                  const isSelected = (settings.tabPosition || 'bottom') === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => updateSettings({ tabPosition: opt.value })}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-3 rounded-xl border transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border/30 text-muted-foreground hover:border-primary/40"
+                      )}
+                    >
+                      {/* Preview diagram */}
+                      <div className="w-full aspect-[4/3] rounded-lg bg-muted/30 relative overflow-hidden border border-border/20">
+                        {/* Content area placeholder */}
+                        <div className="absolute inset-1 flex flex-col gap-0.5">
+                          <div className="h-1 w-3/4 rounded-full bg-muted/50" />
+                          <div className="h-1 w-1/2 rounded-full bg-muted/40" />
+                          <div className="h-1 w-2/3 rounded-full bg-muted/30" />
+                        </div>
+                        {/* Nav bar indicator */}
+                        {opt.value === 'bottom' && (
+                          <div className={cn("absolute bottom-0.5 left-1 right-1 h-2 rounded-full", isSelected ? "bg-primary/60" : "bg-muted-foreground/30")} />
+                        )}
+                        {opt.value === 'left' && (
+                          <div className={cn("absolute top-0.5 bottom-0.5 left-0.5 w-2 rounded-full", isSelected ? "bg-primary/60" : "bg-muted-foreground/30")} />
+                        )}
+                        {opt.value === 'right' && (
+                          <div className={cn("absolute top-0.5 bottom-0.5 right-0.5 w-2 rounded-full", isSelected ? "bg-primary/60" : "bg-muted-foreground/30")} />
+                        )}
+                      </div>
+                      <span className="text-xs font-medium">{opt.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </section>
           )}

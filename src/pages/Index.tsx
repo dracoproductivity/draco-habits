@@ -145,8 +145,8 @@ const Index = () => {
       {/* Main Content */}
       <main className={cn(
         'transition-all duration-300 pt-4',
-        isDesktop && settings.tabPosition === 'left' ? 'lg:ml-64 max-w-7xl px-8 pb-8' :
-          isDesktop && settings.tabPosition === 'right' ? 'lg:mr-64 max-w-7xl px-8 pb-8' :
+        isDesktop && settings.tabPosition === 'left' ? 'lg:pl-20 max-w-7xl mx-auto px-8 pb-8' :
+          isDesktop && settings.tabPosition === 'right' ? 'lg:pr-20 max-w-7xl mx-auto px-8 pb-8' :
             isDesktop ? 'max-w-7xl mx-auto px-8 pb-24' :
               isTablet ? 'max-w-2xl mx-auto px-6' : 'max-w-lg mx-auto'
       )}>

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LevelUpModal } from "@/components/modals/LevelUpModal";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -26,7 +27,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-      
+
       {/* Level Up Modal */}
       <LevelUpModal
         isOpen={!!levelUpInfo}
@@ -42,7 +43,9 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );

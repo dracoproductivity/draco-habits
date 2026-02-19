@@ -10,29 +10,29 @@ interface AppBackgroundProps {
 export const AppBackground = ({ children, className }: AppBackgroundProps) => {
   const { settings } = useAppStore();
   const isMobile = useIsMobile();
-  
+
   // Choose wallpaper based on device type and theme
   const getWallpaper = () => {
     if (isMobile) {
       // Mobile: use mobile wallpapers if available, fallback to desktop
-      return settings.darkMode 
+      return settings.darkMode
         ? (settings.wallpaperMobileDark || settings.wallpaperDark)
         : (settings.wallpaperMobileLight || settings.wallpaperLight);
     }
     // Desktop: use desktop wallpapers
     return settings.darkMode ? settings.wallpaperDark : settings.wallpaperLight;
   };
-  
+
   const wallpaper = getWallpaper();
   const hasWallpaper = !!wallpaper;
 
   const getBackgroundStyle = () => {
     if (!wallpaper) return {};
-    
+
     if (wallpaper.startsWith('linear-gradient')) {
       return { background: wallpaper };
     }
-    
+
     if (wallpaper.startsWith('data:') || wallpaper.startsWith('http')) {
       return {
         backgroundImage: `url(${wallpaper})`,
@@ -41,18 +41,22 @@ export const AppBackground = ({ children, className }: AppBackgroundProps) => {
         backgroundAttachment: 'fixed',
       };
     }
-    
+
     return {};
   };
 
   return (
-    <div 
+    <div
       className={cn(
         'min-h-screen transition-all duration-500',
         !hasWallpaper && 'bg-background',
         className
       )}
-      style={getBackgroundStyle()}
+      style={{
+        ...getBackgroundStyle(),
+        // Inline fallback: if CSS variables fail, ensure a visible background
+        backgroundColor: hasWallpaper ? undefined : (settings.darkMode ? '#0f0f23' : '#f8fafc'),
+      }}
       data-has-wallpaper={hasWallpaper}
     >
       {children}

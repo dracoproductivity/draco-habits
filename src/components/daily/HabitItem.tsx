@@ -186,15 +186,33 @@ export const HabitItem = ({
             {showEmojis && habit.emoji && (
               <span className="text-lg">{habit.emoji}</span>
             )}
-            <span className={cn(
-              'font-medium transition-all truncate',
-              isMobile ? 'text-sm' : 'text-base',
-              isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
-            )}>
-              {habit.name}
-            </span>
+            {/* Show current task name if micro-goals have names */}
+            {hasMicroGoals && habit.microGoalsNames && habit.microGoalsNames.some(n => n?.trim()) ? (
+              <div className="flex flex-col min-w-0">
+                <span className={cn(
+                  'font-medium transition-all truncate',
+                  isMobile ? 'text-sm' : 'text-base',
+                  isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                )}>
+                  {isCompleted
+                    ? (habit.microGoalsNames[microGoalsCount - 1] || habit.name)
+                    : (habit.microGoalsNames[microGoalsCompleted] || habit.name)}
+                </span>
+                <span className="text-xs text-muted-foreground/60 truncate">
+                  {habit.name}
+                </span>
+              </div>
+            ) : (
+              <span className={cn(
+                'font-medium transition-all truncate',
+                isMobile ? 'text-sm' : 'text-base',
+                isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+              )}>
+                {habit.name}
+              </span>
+            )}
             {hasMicroGoals && (
-              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+              <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded flex-shrink-0">
                 {microGoalsCompleted}/{microGoalsCount}
               </span>
             )}

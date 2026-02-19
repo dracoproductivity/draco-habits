@@ -1,59 +1,29 @@
 import { motion } from 'framer-motion';
-import { Home, Target, Settings, CalendarDays, BarChart3 } from 'lucide-react';
+import { Home, Target, Settings, CalendarDays, BarChart3, StickyNote } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { TabType } from '@/types';
 import { cn } from '@/lib/utils';
-import { DracoIcon } from '@/components/icons/DracoIcon';
-import dracoLogo from '@/assets/draco-logo-new.png';
 
 const tabs: { id: TabType; label: string; icon: typeof CalendarDays }[] = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'goals', label: 'Objetivos', icon: Target },
+  { id: 'notes', label: 'Notas', icon: StickyNote },
   { id: 'analytics', label: 'Análises', icon: BarChart3 },
   { id: 'history', label: 'Histórico', icon: CalendarDays },
-  { id: 'settings', label: 'Configurações', icon: Settings },
+  { id: 'settings', label: 'Config', icon: Settings },
 ];
 
 export const DesktopSidebar = ({ side = 'left' }: { side?: 'left' | 'right' }) => {
-  const { activeTab, setActiveTab, draco, user } = useAppStore();
+  const { activeTab, setActiveTab } = useAppStore();
 
   return (
-    <aside className={cn(
-      "hidden lg:flex flex-col w-64 h-screen fixed top-0 bg-card/50 backdrop-blur-xl z-40",
-      side === 'left' ? "left-0 border-r border-border/50" : "right-0 border-l border-border/50",
-    )}>
-      {/* Logo/Brand */}
-      <div className="p-6 border-b border-border/30">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden">
-            <img src={dracoLogo} alt="Draco Habits" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg text-gradient-primary">Draco Habits</h1>
-            <p className="text-xs text-muted-foreground">Gamifique seus hábitos</p>
-          </div>
-        </div>
-      </div>
-
-      {/* User Info */}
-      <div className="p-4 border-b border-border/30">
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20">
-          <div className="w-10 h-10 animate-float">
-            <DracoIcon level={draco.level} color={draco.color} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">
-              {user?.firstName || 'Usuário'}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Nível {draco.level} • {draco.totalXP} XP
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+    <nav
+      className={cn(
+        "hidden lg:flex fixed top-1/2 -translate-y-1/2 z-50 glass-card rounded-2xl",
+        side === 'left' ? "left-4" : "right-4"
+      )}
+    >
+      <div className="flex flex-col items-center justify-around py-3 px-1 gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -63,32 +33,26 @@ export const DesktopSidebar = ({ side = 'left' }: { side?: 'left' | 'right' }) =
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                'relative w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200',
-                isActive
-                  ? 'gradient-fire text-primary-foreground shadow-lg'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/30'
+                'relative flex flex-col items-center justify-center w-14 h-14 transition-all duration-200',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span className="font-medium">{tab.label}</span>
               {isActive && (
                 <motion.div
-                  layoutId="activeTabDesktop"
-                  className="absolute inset-0 gradient-fire rounded-xl -z-10"
+                  layoutId="activeTabSidebar"
+                  className={cn(
+                    "absolute inset-y-2 w-0.5 gradient-fire rounded-full",
+                    side === 'left' ? "right-0" : "left-0"
+                  )}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
+              <Icon className={cn('w-5 h-5', isActive && 'animate-scale-in')} />
+              <span className="text-[10px] mt-1 font-medium">{tab.label}</span>
             </button>
           );
         })}
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-border/30">
-        <p className="text-xs text-center text-muted-foreground">
-          © 2024 Draco Habits
-        </p>
       </div>
-    </aside>
+    </nav>
   );
 };
