@@ -373,6 +373,7 @@ export type Database = {
           notifications_enabled: boolean
           progress_display_mode: string
           show_emojis: boolean
+          streak_color: string | null
           tab_position: string | null
           theme_color: string
           updated_at: string
@@ -397,6 +398,7 @@ export type Database = {
           notifications_enabled?: boolean
           progress_display_mode?: string
           show_emojis?: boolean
+          streak_color?: string | null
           tab_position?: string | null
           theme_color?: string
           updated_at?: string
@@ -421,6 +423,7 @@ export type Database = {
           notifications_enabled?: boolean
           progress_display_mode?: string
           show_emojis?: boolean
+          streak_color?: string | null
           tab_position?: string | null
           theme_color?: string
           updated_at?: string
