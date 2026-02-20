@@ -187,6 +187,7 @@ export type Database = {
           completed: boolean
           created_at: string
           date: string
+          draco_save_used: boolean | null
           habit_id: string
           id: string
           micro_goals_completed: number
@@ -196,6 +197,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           date: string
+          draco_save_used?: boolean | null
           habit_id: string
           id?: string
           micro_goals_completed?: number
@@ -205,6 +207,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           date?: string
+          draco_save_used?: boolean | null
           habit_id?: string
           id?: string
           micro_goals_completed?: number
@@ -359,6 +362,7 @@ export type Database = {
           account_created_at: string | null
           created_at: string
           dark_mode: boolean
+          draco_saves: number | null
           glass_blur: number
           glass_opacity: number
           id: string
@@ -369,6 +373,7 @@ export type Database = {
           notifications_enabled: boolean
           progress_display_mode: string
           show_emojis: boolean
+          tab_position: string | null
           theme_color: string
           updated_at: string
           user_id: string
@@ -381,6 +386,7 @@ export type Database = {
           account_created_at?: string | null
           created_at?: string
           dark_mode?: boolean
+          draco_saves?: number | null
           glass_blur?: number
           glass_opacity?: number
           id?: string
@@ -391,6 +397,7 @@ export type Database = {
           notifications_enabled?: boolean
           progress_display_mode?: string
           show_emojis?: boolean
+          tab_position?: string | null
           theme_color?: string
           updated_at?: string
           user_id: string
@@ -403,6 +410,7 @@ export type Database = {
           account_created_at?: string | null
           created_at?: string
           dark_mode?: boolean
+          draco_saves?: number | null
           glass_blur?: number
           glass_opacity?: number
           id?: string
@@ -413,6 +421,7 @@ export type Database = {
           notifications_enabled?: boolean
           progress_display_mode?: string
           show_emojis?: boolean
+          tab_position?: string | null
           theme_color?: string
           updated_at?: string
           user_id?: string
