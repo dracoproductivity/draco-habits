@@ -52,7 +52,7 @@ interface SettingsRow {
   glass_opacity: number;
   draco_saves: number | null;
   tab_position: string | null;
-  streak_color?: string | null;
+  streak_color: string | null;
 }
 
 interface GoalRow {
