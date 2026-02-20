@@ -252,6 +252,7 @@ export const useCloudSync = () => {
           glassOpacity: settings.glass_opacity ?? 65,
           dracoSaves: settings.draco_saves ?? 0,
           tabPosition: (settings.tab_position ?? 'bottom') as AppSettings["tabPosition"],
+          streakColor: settings.streak_color || undefined,
         });
       }
 
@@ -487,6 +488,7 @@ export const useCloudSync = () => {
         glass_opacity: mergedSettings.glassOpacity ?? 65,
         draco_saves: mergedSettings.dracoSaves ?? 0,
         tab_position: (mergedSettings.tabPosition ?? 'bottom') as string,
+        streak_color: mergedSettings.streakColor ?? null,
       };
 
       const { error } = await supabase.from("user_settings").upsert(
