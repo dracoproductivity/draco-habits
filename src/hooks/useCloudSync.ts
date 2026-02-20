@@ -50,9 +50,9 @@ interface SettingsRow {
   wallpaper_mobile_dark: string | null;
   glass_blur: number;
   glass_opacity: number;
-  streak_color: string | null;
   draco_saves: number | null;
   tab_position: string | null;
+  streak_color?: string | null;
 }
 
 interface GoalRow {
@@ -250,14 +250,9 @@ export const useCloudSync = () => {
           wallpaperMobileDark: settings.wallpaper_mobile_dark || undefined,
           glassBlur: settings.glass_blur ?? 20,
           glassOpacity: settings.glass_opacity ?? 65,
-          ...(settings.draco_saves != null ? { dracoSaves: settings.draco_saves } : {}),
-          ...(settings.tab_position ? { tabPosition: settings.tab_position as any } : {}),
+          dracoSaves: settings.draco_saves ?? 0,
+          tabPosition: (settings.tab_position ?? 'bottom') as AppSettings["tabPosition"],
         });
-
-        // Only overwrite streakColor if cloud has an actual value
-        if (settings.streak_color) {
-          useAppStore.getState().updateSettings({ streakColor: settings.streak_color });
-        }
       }
 
       // Load goals
@@ -469,8 +464,8 @@ export const useCloudSync = () => {
         darkMode: mergedSettings.darkMode,
       });
 
-      // Core fields that always exist in the DB
-      const corePayload: Record<string, unknown> = {
+      // Build a properly typed settings payload matching the DB schema
+      const settingsPayload = {
         user_id: userId,
         theme_color: mergedSettings.themeColor,
         progress_display_mode: mergedSettings.progressDisplayMode,
@@ -480,46 +475,32 @@ export const useCloudSync = () => {
           Array.isArray(mergedSettings.notificationReminders) ? mergedSettings.notificationReminders : []
         ),
         dark_mode: mergedSettings.darkMode,
-        min_sleep_hours: mergedSettings.minSleepHours,
-        max_phone_hours: mergedSettings.maxPhoneHours,
-        account_created_at: mergedSettings.accountCreatedAt,
-        last_daily_log_date: mergedSettings.lastDailyLogDate,
+        min_sleep_hours: mergedSettings.minSleepHours ?? null,
+        max_phone_hours: mergedSettings.maxPhoneHours ?? null,
+        account_created_at: mergedSettings.accountCreatedAt ?? null,
+        last_daily_log_date: mergedSettings.lastDailyLogDate ?? null,
         wallpaper_light: mergedSettings.wallpaperLight ?? null,
         wallpaper_dark: mergedSettings.wallpaperDark ?? null,
         wallpaper_mobile_light: mergedSettings.wallpaperMobileLight ?? null,
         wallpaper_mobile_dark: mergedSettings.wallpaperMobileDark ?? null,
         glass_blur: mergedSettings.glassBlur ?? 20,
         glass_opacity: mergedSettings.glassOpacity ?? 65,
-        streak_color: mergedSettings.streakColor ?? null,
-      };
-
-      // Extended fields (may not exist in DB yet)
-      const extendedPayload = {
-        ...corePayload,
         draco_saves: mergedSettings.dracoSaves ?? 0,
-        tab_position: mergedSettings.tabPosition ?? 'bottom',
+        tab_position: (mergedSettings.tabPosition ?? 'bottom') as string,
       };
 
-      // Try with all fields first
       const { error } = await supabase.from("user_settings").upsert(
-        extendedPayload,
+        settingsPayload,
         { onConflict: "user_id" },
       );
 
       if (error) {
-        console.warn("[CloudSync] saveSettings: Extended save FAILED:", error.message);
-        // Retry with core fields only (in case new columns don't exist yet)
-        const { error: fallbackError } = await supabase.from("user_settings").upsert(
-          corePayload,
-          { onConflict: "user_id" },
-        );
-        if (fallbackError) {
-          console.error("[CloudSync] saveSettings: Fallback also FAILED:", fallbackError);
-        } else {
-          console.log("[CloudSync] saveSettings: Fallback save succeeded (without draco_saves/tab_position)");
-        }
+        console.error("[CloudSync] saveSettings: Save FAILED:", error.message, error);
       } else {
-        console.log("[CloudSync] saveSettings: Save succeeded");
+        console.log("[CloudSync] saveSettings: Save succeeded", {
+          theme_color: settingsPayload.theme_color,
+          draco_saves: settingsPayload.draco_saves,
+        });
       }
     },
     [user?.id],
