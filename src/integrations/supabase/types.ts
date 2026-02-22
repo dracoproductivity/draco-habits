@@ -252,6 +252,7 @@ export type Database = {
           start_date: string | null
           updated_at: string
           user_id: string
+          vacation_mode: boolean
           xp_reward: number | null
         }
         Insert: {
@@ -282,6 +283,7 @@ export type Database = {
           start_date?: string | null
           updated_at?: string
           user_id: string
+          vacation_mode?: boolean
           xp_reward?: number | null
         }
         Update: {
@@ -312,6 +314,7 @@ export type Database = {
           start_date?: string | null
           updated_at?: string
           user_id?: string
+          vacation_mode?: boolean
           xp_reward?: number | null
         }
         Relationships: [

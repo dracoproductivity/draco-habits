@@ -606,6 +606,7 @@ export const useCloudSync = () => {
         micro_goals_names: habit.microGoalsNames || [],
         is_bad_habit: habit.isBadHabit || false,
         archived: habit.archived || false,
+        vacation_mode: habit.vacationMode || false,
         // Schedule history fields
         schedule_updated_at: habit.scheduleUpdatedAt || null,
         previous_selected_days: habit.previousWeekDays || null,

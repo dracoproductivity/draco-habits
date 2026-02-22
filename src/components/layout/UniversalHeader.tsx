@@ -163,18 +163,6 @@ export const UniversalHeader = () => {
         )}
       </div>
 
-      {/* Dark/Light mode toggle */}
-      <button
-        onClick={toggleDarkMode}
-        className="w-8 h-8 rounded-xl glass-card flex items-center justify-center hover:border-primary/40 transition-all"
-      >
-        {settings.darkMode ? (
-          <Sun className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <Moon className="w-4 h-4 text-muted-foreground" />
-        )}
-      </button>
-
       {/* Notifications */}
       <div className="relative">
         <button
@@ -204,6 +192,18 @@ export const UniversalHeader = () => {
           </AnimatePresence>
         )}
       </div>
+
+      {/* Dark/Light mode toggle */}
+      <button
+        onClick={toggleDarkMode}
+        className="w-8 h-8 rounded-xl glass-card flex items-center justify-center hover:border-primary/40 transition-all"
+      >
+        {settings.darkMode ? (
+          <Sun className="w-4 h-4 text-muted-foreground" />
+        ) : (
+          <Moon className="w-4 h-4 text-muted-foreground" />
+        )}
+      </button>
     </>
   );
 
